@@ -9,10 +9,15 @@ import seaborn as sb
 sb.set(
     context="paper",
     style="ticks",
-    font_scale=1.6,
-    font="sans-serif",
+    font="serif",
     rc={
         "lines.linewidth": 1.2,
+        "axes.titleweight": "bold",
+        "font.serif": "Latin Modern Roman",
+        "mathtext.fontset": "custom",
+        "mathtext.it": "Latin Modern Math:italic",
+        "mathtext.cal": "Latin Modern Math",
+        "mathtext.rm": "Latin Modern Math",
         "axes.titleweight": "bold",
     },
 )
