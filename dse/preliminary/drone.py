@@ -37,10 +37,10 @@ def area(R):
 
 
 def thrust(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V):
-    t1 = (1 / 6) * rho * A * SR * a * theta_0 * R**2
-    t2 = (1 / 4) * rho * A * SR * a * theta_0 + (1 / 8) * SR * rho * A * theta_tw
+    t1 = (1 / 6) * rho * A * SR * a * theta_0 * R**2 + (1 / 8) * SR * a * rho * A * theta_tw * R**2
+    t2 = (1 / 4) * rho * A * SR * a * theta_0 + (1 / 8) * SR * a * rho * A * theta_tw
     t3 = (-1 / 4) * SR * a * rho * A * R
-    T = (omega**2) * t1 + (V * np.cos(alpha)) * t2 + omega * (vi + V * np.sin(alpha)) * t3
+    T = (omega**2) * t1 + (V * np.cos(alpha))**2 * t2 + omega * (vi + V * np.sin(alpha)) * t3
     return T
 
 
