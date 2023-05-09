@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.special import ellipkinc, ellipeinc
+
 ## Constants
 rho0 = 1.0 * 10 ** -2  # [kg/m3] Zero elevation density of Mars
 T0_low = 145  # [K] Lowest zero elevation temperature
@@ -47,16 +49,47 @@ def mass_convergence(m_misc):
         rho_polyethylene = 940  # [kg/m^3]
         m = S*t*rho_polyethylene + m_misc
         m_lst.append(m)
-    return m, m_lst, j_lst, V, r
+    return m, m_lst, j_lst, V, r, S
 
 for m_misc in list(np.arange(1,3010,1)):
-    m_end, m_lst, j_lst, V, r = mass_convergence(m_misc)
+    m_end, m_lst, j_lst, V, r, S = mass_convergence(m_misc)
     if m_end >= m_goal:
         print(f"\nFinal total mass = {m_end}")
         print(f"Effective payload = {m_misc}\n")
-        print(f"Total volume = {V} and radius of sphere = {r}")
+        print(f"Total volume = {V} and radius of sphere = {r} with surface area = {S}")
         break
 
-plt.plot(j_lst, m_lst)
-plt.show()
+# plt.plot(j_lst, m_lst)
+# plt.show()
 
+CF = 0.08  # Skin friction coefficient of Ultra-High-Molecular-Weight Polyethylene
+F_ratio = 4.65  # Fineness ration L_a / D_m
+
+D_m = ((3*8*V)/(4*np.pi*F_ratio))**(1/3)
+L_a = F_ratio * D_m
+
+V_cruise = 200/3.6
+mu = 7.1284038*10**-6
+Re = (rho0 * V_cruise * L_a) / mu
+CF = 0.045*(Re**(-1/6))  # Skin friction coefficient by literature
+
+a = c = D_m/2
+b = L_a/2
+
+phi = np.arccos(c/a)
+m = (a**2 * (b**2 - c**2)) / (b**2 * (a**2 - c**2))
+
+temp = ellipeinc(phi, m)*np.sin(phi)**2 + ellipkinc(phi, m)*np.cos(phi)**2
+ellipsoid_area = 2*np.pi*(c**2 + a*b*temp/np.sin(phi))
+print(f"Ellipsoid surface area = {ellipsoid_area}")
+
+CD0 = CF * (4*(F_ratio)**(1/3) + 6*(F_ratio)**(-1.2) + 24*(F_ratio)**(-2.7))
+print(L_a)
+print(D_m)
+print(Re)
+print(CF)
+print(CD0)
+
+CD = CD0
+D = 0.5*rho0*(V_cruise**2)*np.pi*(D_m**2)*CD
+print(D)
