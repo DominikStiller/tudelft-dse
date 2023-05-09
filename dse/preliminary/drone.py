@@ -25,8 +25,8 @@ SR = 1                      # solidity ratio
 a = 2 * np.pi               # lift curve slope
 thetazerodeg = 1            # zero pitch angle
 thetazerorad = thetazerodeg * (90 * np.pi)
-thatatwistdeg = 1              # twist angle
-thetatwistrad = thatatwistdeg * (90 * np.pi)
+thetatwistdeg = 1              # twist angle
+thetatwistrad = thetatwistdeg * (90 * np.pi)
 V = 111                     # free stream velocity
 alphadeg = 5                # angle of attack
 alpharad = alphadeg * (90 * np.pi)
@@ -48,7 +48,19 @@ def hubforce():
     H = (omega * V * np.cos(alpharad)) * h1 + V * np.cos(alpharad) * (vi + V * np.sin(alpharad)) * h2
     return H
 
+def rotortorque():
+    q1 = ((1/8) * rho * A * SR * Cd * R**3)
+    q2 = ((1/8) * rho * A * SR * Cd)
+    q3 = ((1/4) * SR * a * rho * A * thetazerorad * R**2 + (1/8) * rho * A * SR * a * thetatwistrad * R**2)
+    q4 = ((-1/4) * SR * a * rho * A * R)
+    Q = (omega**2) * q1 + ((V * np.cos(alpharad))**2) * q2 + omega * (vi + V * np.sin(alpharad)) * q3 + ((vi + V * np.sin(alpharad))**2) * q4
+    return Q
 
+def rollingmoment():
+    r1 = ((-1/6) * SR * a * rho * A * thetazerorad * R**2 - (1/8) * rho * A * SR * a * thetatwistrad * R**2)
+    r2 = ((1/8) * SR * a * rho * A * R)
+    R = (omega * V * np.cos(alpharad)) * r1 + (V * np.cos(alpharad))(vi + V * np.sin(alpharad)) * r2
+    return R
 
 T = thrust()
 print(T)
