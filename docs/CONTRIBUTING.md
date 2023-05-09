@@ -7,7 +7,7 @@ This project uses the [_Black_ code style](https://github.com/psf/black) for con
 
 Some more guidelines to follow:
 * **Use SI units everywhere.**
-* **Write a lot of [unit tests](https://docs.python.org/3/library/unittest.html).** This catches errors close to the source and gives you confidence that your code works. If you're using PyCharm, create unit tests for a method by Right-click > Go To > Tests. From the console, all tests can be run using `python -m unittest` or using the script in `bin/tests.sh`.
+* **Write a lot of [unit tests](https://docs.python.org/3/library/unittest.html).** This catches errors close to the source and gives you confidence that your code works. If you're using PyCharm, create unit tests for a method by Right-click > Go To > Tests. From the console, all tests can be run using `python -m unittest`.
 * Do not use local paths in code that is to be merged into main. This leads to unnecessary changes. Prefer passing paths as command line arguments, which can be set in the PyCharm run configuration. Local paths are okay in experimental code.
 * Use [type hints](https://docs.python.org/3/library/typing.html) and [docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) for every method. This helps prevent errors and assists others with using your method properly.
 * Ideally, only a single person works on a file at a time to prevent merge conflicts. This requires a certain file structure, avoiding long files and preferring small, specialized files.
