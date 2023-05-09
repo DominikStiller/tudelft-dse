@@ -14,20 +14,16 @@ def velocity_induced_forward_flight(T, rho, A, V):
     return np.sqrt(-(V**2) / 2 + np.sqrt(V**4 / 4 + (T / (2 * rho * A)) ** 2))
 
 
-psideg = 5  #
-psirad = psideg * (90 * np.pi)
-dL = 100  # liftbalde
-dD = 5  # dragblade
 rho = 0.01  # density
-R = 5  # radius of rotor
-omega = 6 * (2 * np.pi)  # anglular speed of rotor
-SR = 0.1  # solidity ratio
+R = 10  # radius of rotor
+omega = 4 * (2 * np.pi)  # anglular speed of rotor
 # a = 2 * np.pi               # lift curve slope
+chord = 0.4
 a = 0.1 * 180 / np.pi  # lift curve slope
-theta_0 = np.radians(1)  # zero pitch angle
-theta_tw = np.radians(1)  # twist angle
-V = 111  # free stream velocity
-alpha = np.radians(5)  # angle of attack
+theta_0 = np.radians(8)  # zero pitch angle
+theta_tw = np.radians(8)  # twist angle
+n_blades = 3
+n_rotors = 4
 
 Cd = 0.01  # avg drag coefficient
 
@@ -36,24 +32,57 @@ def area(R):
     return np.pi * R**2
 
 
-def thrust(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V):
-    t1 = (1 / 6) * rho * A * SR * a * theta_0 * R**2 + (1 / 8) * SR * a * rho * A * theta_tw * R**2
+def solidity_ratio(c, R):
+    return n_blades * c / (np.pi * R)
+
+
+def _thrust_single_blade(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V):
+    t1 = (1 / 6) * rho * A * SR * a * theta_0 * R**2 + (
+        1 / 8
+    ) * SR * a * rho * A * theta_tw * R**2
     t2 = (1 / 4) * rho * A * SR * a * theta_0 + (1 / 8) * SR * a * rho * A * theta_tw
     t3 = (-1 / 4) * SR * a * rho * A * R
-    T = (omega**2) * t1 + (V * np.cos(alpha))**2 * t2 + omega * (vi + V * np.sin(alpha)) * t3
+    T = (omega**2) * t1 + (V * np.cos(alpha)) ** 2 * t2 + omega * (vi + V * np.sin(alpha)) * t3
     return T
 
 
-def solve_thrust():
+def solve_thrust_hover():
     def f(T):
         A = area(R)
+        SR = solidity_ratio(chord, R)
         vi = velocity_induced_hover(T, rho, A)
-        T_calc = thrust(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V)
-        print(T_calc)
+        V = 0
+        alpha = 0
+        T_calc = _thrust_single_blade(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V)
         return T - T_calc
 
     res = scipy.optimize.least_squares(f, x0=5e3, bounds=(1, np.inf))
-    print(res)
+    T_per_blade = res.x[0]
+    return T_per_blade * n_blades * n_rotors
+
+
+def solve_thrust_forward_flight(V, alpha):
+    """
+    Calculate rotor thrust in forward flight.
+
+    Args:
+        V: forward velocity [m/s]
+        alpha: angle of attack [rad]
+
+    Returns:
+        Thrust [N]
+    """
+
+    def f(T):
+        A = area(R)
+        SR = solidity_ratio(chord, R)
+        vi = velocity_induced_forward_flight(T, rho, A, V)
+        T_calc = _thrust_single_blade(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V)
+        return T - T_calc
+
+    res = scipy.optimize.least_squares(f, x0=5e3, bounds=(1, np.inf))
+    T_per_blade = res.x[0]
+    return T_per_blade * n_blades * n_rotors
 
 
 def hubforce():
@@ -89,4 +118,5 @@ def rollingmoment():
 
 
 if __name__ == "__main__":
-    solve_thrust()
+    print(solve_thrust_hover())
+    print(solve_thrust_forward_flight(111, 0))
