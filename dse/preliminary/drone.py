@@ -1,5 +1,24 @@
 import numpy as np
 import scipy
+import matplotlib.pyplot as plt
+
+from dse.plotting import format_plot
+
+rho = 0.01  # density
+speed_of_sound = 220
+M_max = 0.8  # maximum mach number
+
+# Geometric parameters
+R = 3  # radius of rotor
+omega = 209  # angular speed of rotor [omega 209 = 2000 RPM]
+chord = 0.3
+a = 0.1 * 180 / np.pi  # lift curve slope
+theta_0 = np.radians(15)  # zero pitch angle
+theta_tw = np.radians(5)  # twist angle
+n_blades = 5
+n_rotors = 4
+
+Cd = 0.01  # avg drag coefficient
 
 
 def velocity_induced_hover(T, rho, A):
@@ -14,26 +33,21 @@ def velocity_induced_forward_flight(T, rho, A, V):
     return np.sqrt(-(V**2) / 2 + np.sqrt(V**4 / 4 + (T / (2 * rho * A)) ** 2))
 
 
-rho = 0.01  # density
-R = 10  # radius of rotor
-omega = 4 * (2 * np.pi)  # anglular speed of rotor
-# a = 2 * np.pi               # lift curve slope
-chord = 0.4
-a = 0.1 * 180 / np.pi  # lift curve slope
-theta_0 = np.radians(8)  # zero pitch angle
-theta_tw = np.radians(8)  # twist angle
-n_blades = 3
-n_rotors = 4
-
-Cd = 0.01  # avg drag coefficient
-
-
 def area(R):
     return np.pi * R**2
 
 
 def solidity_ratio(c, R):
     return n_blades * c / (np.pi * R)
+
+
+def tip_mach(omega, R):
+    v_tip = omega * R
+    return v_tip / speed_of_sound
+
+
+def omega_from_rpm(rpm):
+    return rpm / 60 * 2 * np.pi
 
 
 def _thrust_single_blade(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V):
@@ -46,7 +60,7 @@ def _thrust_single_blade(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, 
     return T
 
 
-def solve_thrust_hover():
+def solve_thrust_hover(R=R, omega=omega):
     def f(T):
         A = area(R)
         SR = solidity_ratio(chord, R)
@@ -56,7 +70,7 @@ def solve_thrust_hover():
         T_calc = _thrust_single_blade(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V)
         return T - T_calc
 
-    res = scipy.optimize.least_squares(f, x0=5e3, bounds=(1, np.inf))
+    res = scipy.optimize.least_squares(f, x0=5e3, bounds=(0, np.inf))
     T_per_blade = res.x[0]
     return T_per_blade * n_blades * n_rotors
 
@@ -82,6 +96,8 @@ def solve_thrust_forward_flight(V, alpha):
 
     res = scipy.optimize.least_squares(f, x0=5e3, bounds=(1, np.inf))
     T_per_blade = res.x[0]
+    A = area(R)
+    print(velocity_induced_forward_flight(T_per_blade, rho, A, V))
     return T_per_blade * n_blades * n_rotors
 
 
@@ -117,6 +133,34 @@ def rollingmoment():
     return R
 
 
+def plot_radius_rpm_range():
+    RR = np.arange(0.2, 5.5, 0.1)
+    rpms = np.hstack([[200], np.arange(500, 2501, 500)])
+
+    R_maxs = []
+    T_max = []
+    for rpm in rpms:
+        T = []
+        omega = omega_from_rpm(rpm)
+        for R in RR:
+            T.append(solve_thrust_hover(R, omega))
+        plt.plot(RR, T, label=f"{rpm} rpm")
+
+        R_max = M_max * speed_of_sound / omega
+        R_maxs.append(R_max)
+        T_max.append(solve_thrust_hover(R_max, omega))
+
+    plt.scatter(R_maxs, T_max, marker="x", label="Max. radius for M<=0.8")
+    plt.xlabel("Radius [m]")
+    plt.ylabel("Thrust [N]")
+    plt.yscale("log")
+    plt.axhline(3.71 * 3000, c="black", label="Weight at 3000 kg")
+    plt.legend()
+    format_plot()
+    plt.show()
+
+
 if __name__ == "__main__":
-    print(solve_thrust_hover())
-    print(solve_thrust_forward_flight(111, 0))
+    # print(solve_thrust_hover())
+    # print(solve_thrust_forward_flight(111, 0))
+    plot_radius_rpm_range()
