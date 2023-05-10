@@ -84,17 +84,3 @@ def radius_mass_iteration():
 
     return MTOM, R
 
-
-def aircraft_estimation(Rf, Lf, Lt, MTOM, LD, Wpress):
-    n_ult = 4.4
-    g_M = 3.71
-    rho = 0.01
-    v_cruise = 154
-
-    q = 0.5 * rho * v_cruise**2
-    Sf = 2*np.pi*Rf * Lf
-    fuselage_weight = 0.052 * Sf**1.086 * (n_ult * MTOM * g_M)**0.177 * Lt**(-0.051) * LD**(-0.072) * q**0.241 + Wpress
-    return fuselage_weight
-
-
-print(aircraft_estimation(1, 15, 13, 3000, 1.5/0.11, 0))
