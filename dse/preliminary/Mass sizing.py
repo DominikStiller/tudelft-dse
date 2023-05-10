@@ -18,24 +18,29 @@ def weights(n_blades, n_legs, n_engines, radius, tip_speed, MTOM, wet_area, engi
     W_main_rotor_hub_and_hinge = 0.0037 * n_blades**0.28 * R**1.5 * OR**0.43 * (2/3 * W_main_rotor_blades + g_E*J/R**2)**0.55
     W_fuselage = 6.9 * (GW / 1000)**0.49 * Lf**0.61 * Sw**0.25
     W_legs = 1.1 * 40 * (GW / 1000)**(2/3) * n_legs**0.54
-    W_propulsion = 2 * We**0.59 * n_engines**0.2
+    W_engines = engine_mass * n_engines
+    W_misc = 200 * 2.205
 
-    return np.array([2 * W_main_rotor_blades, 2 * W_main_rotor_hub_and_hinge, W_fuselage, W_legs, W_propulsion]) / 3.281
+    return np.array([4 * W_main_rotor_blades, 2 * W_main_rotor_hub_and_hinge, W_fuselage, W_legs, W_engines, W_misc]) / 2.205
 
 
-diff = 10
-MTOM = 3000
-useful_mass = 800  # Payload + fuel
-R = 15
-tip_speed = 200
-Sw = 117
-m_e = 600
-while diff > 0.01:
-    W_array = weights(n_blades=6, n_engines=2, n_legs=2,
-                      radius=R, tip_speed=tip_speed, MTOM=MTOM,
-                      wet_area=Sw, engine_mass=m_e)
-    diff = abs(((np.sum(W_array) + useful_mass) - MTOM) / MTOM)
-    MTOM = np.sum(W_array) + useful_mass
 
-print(W_array)
-print(np.sum(W_array))
+for R in range(5, 12):
+    diff = 10
+    MTOM = 3000
+    useful_mass = 800  # Payload + fuel
+    tip_speed = 200
+    Sw = 2*np.pi*1 * 1.5*R + np.pi * 1**2  # Dummy
+    m_e = 122  # Dummy
+    while diff > 0.01:
+        W_array = weights(n_blades=6, n_engines=2, n_legs=2,
+                          radius=R, tip_speed=tip_speed, MTOM=MTOM,
+                          wet_area=Sw, engine_mass=m_e)
+        diff = abs(((np.sum(W_array) + useful_mass) - MTOM) / MTOM)
+        MTOM = np.sum(W_array) + useful_mass
+    print(R)
+    print(W_array)
+    print(np.sum(W_array))
+    print('\n')
+
+
