@@ -5,7 +5,7 @@ from scipy import integrate
 
 
 def RadiusfromMass(M):
-    T_init = M * 3.721 / N_rotor
+    T_init = 1.1*M * 3.721 / N_rotor
     b=6 #Number of blades per rotor
     a=6 #Lift Curve slope [1/rad]
     R=1
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     # Blade Element Method with ideal twist
     N_rotor = 4
 
-
+print(RadiusfromMass(3000))
 ''''
 hp = T*v1*0.01315
 DL = T/A
