@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from RotorEngineSizing import RadiusfromMass
 
 
 def MTOM_estimate(L2D):
@@ -47,23 +49,52 @@ def weights(n_blades, n_legs, n_engines, radius, tip_speed, MTOM, wet_area, engi
     return np.array([4 * W_main_rotor_blades, 2 * W_main_rotor_hub_and_hinge, W_fuselage, W_legs, W_engines, W_misc]) / 2.205
 
 
-
-for R in range(5, 12):
-    diff = 10
-    MTOM = 3000
+def radius_mass_iteration():
+    diff1 = 10
     useful_mass = 800  # Payload + fuel
     tip_speed = 200
-    Sw = 2*np.pi*1 * 1.5*R + np.pi * 1**2  # Dummy
     m_e = 122  # Dummy
-    while diff > 0.01:
-        W_array = weights(n_blades=6, n_engines=2, n_legs=2,
-                          radius=R, tip_speed=tip_speed, MTOM=MTOM,
-                          wet_area=Sw, engine_mass=m_e)
-        diff = abs(((np.sum(W_array) + useful_mass) - MTOM) / MTOM)
-        MTOM = np.sum(W_array) + useful_mass
-    print(R)
-    print(W_array)
-    print(np.sum(W_array))
-    print('\n')
+    MTOM = 2000
+
+    m_list = list()
+    r_list = list()
+    while diff1 > 0.01:
+        R = RadiusfromMass(MTOM)[0]
+        r_list.append(R)
+
+        diff2 = 10
+        Sw = 2 * np.pi * 1 * 1.5 * R + np.pi * 1 ** 2  # Cylinder of radius 1m
+        while diff2 > 0.01:
+            W_array = weights(n_blades=6, n_engines=2, n_legs=2,
+                              radius=R, tip_speed=tip_speed, MTOM=MTOM,
+                              wet_area=Sw, engine_mass=m_e)
+            diff2 = abs(((np.sum(W_array) + useful_mass) - MTOM) / MTOM)
+            MTOM = np.sum(W_array) + useful_mass
+
+        m_list.append(MTOM)
+
+        diff1 = (RadiusfromMass(MTOM)[0] - R) / R
+
+        if len(m_list) > 8:
+            plt.scatter(np.array(m_list) / 1000, r_list)
+            plt.xlabel('MTOM [T]')
+            plt.ylabel('R [m]')
+            plt.show()
+            return OverflowError
+
+    return MTOM, R
 
 
+def aircraft_estimation(Rf, Lf, Lt, MTOM, LD, Wpress):
+    n_ult = 4.4
+    g_M = 3.71
+    rho = 0.01
+    v_cruise = 154
+
+    q = 0.5 * rho * v_cruise**2
+    Sf = 2*np.pi*Rf * Lf
+    fuselage_weight = 0.052 * Sf**1.086 * (n_ult * MTOM * g_M)**0.177 * Lt**(-0.051) * LD**(-0.072) * q**0.241 + Wpress
+    return fuselage_weight
+
+
+print(aircraft_estimation(1, 15, 13, 3000, 1.5/0.11, 0))
