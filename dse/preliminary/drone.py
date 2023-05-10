@@ -6,17 +6,21 @@ from dse.plotting import format_plot
 
 rho = 0.01  # density
 speed_of_sound = 220
-M_max = 0.8  # maximum mach number
+M_max = 0.85  # maximum mach number
+mass = 3000
+g_mars = 3.71
 
 # Geometric parameters
-R = 3  # radius of rotor
+R = 17  # radius of rotor
 omega = 209  # angular speed of rotor [omega 209 = 2000 RPM]
-chord = 0.3
-a = 0.1 * 180 / np.pi  # lift curve slope
-theta_0 = np.radians(15)  # zero pitch angle
-theta_tw = np.radians(5)  # twist angle
-n_blades = 5
-n_rotors = 4
+chord = 0.68
+# a = 0.11 * 180 / np.pi  # lift curve slope
+a = 6  # lift curve slope
+theta_0 = np.radians(25)  # zero pitch angle
+theta_tw = np.radians(8)  # twist angle
+n_blades = 4
+n_rotors = 4  # if coaxial, use number of axes
+coaxial = True
 
 Cd = 0.03  # avg drag coefficient
 
@@ -79,6 +83,7 @@ def rotortorque(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V):
 def solve_thrust_hover(R=R, omega=omega):
     def f(T):
         A = area(R)
+        chord = R / 20
         SR = solidity_ratio(chord, R)
         vi = velocity_induced_hover(T, rho, A)
         V = 0
@@ -88,7 +93,10 @@ def solve_thrust_hover(R=R, omega=omega):
 
     res = scipy.optimize.least_squares(f, x0=5e3, bounds=(0, np.inf))
     T_per_rotor = res.x[0]
-    return T_per_rotor * n_rotors
+    if coaxial:
+        return 2 * T_per_rotor * n_rotors * 0.88
+    else:
+        return T_per_rotor * n_rotors
 
 
 def solve_thrust_forward_flight(V, alpha):
@@ -219,7 +227,7 @@ def plot_radius_rpm_range():
     plt.xlabel("Radius [m]")
     plt.ylabel("Thrust [N]")
     plt.yscale("log")
-    plt.axhline(3.71 * 3000, c="black", label="Weight at 3000 kg")
+    plt.axhline(mass * g_mars, c="black", label="Weight at 3000 kg")
     plt.legend()
     format_plot()
     plt.show()
@@ -240,13 +248,10 @@ if __name__ == "__main__":
 
     plot_radius_rpm_range()
 
-
-"""
-    alpha = np.arange(-60, 60, 0.1)
-    thrust = []
-    for i in alpha:
-        thrust.append(solve_thrust_forward_flight(111, np.radians(i)))
-
-    plt.plot(alpha, thrust)
-    plt.show()
-"""
+    # alpha = np.arange(-60, 60, 0.1)
+    # thrust = []
+    # for i in alpha:
+    #     thrust.append(solve_thrust_forward_flight(111, np.radians(i)))
+    #
+    # plt.plot(alpha, thrust)
+    # plt.show()
