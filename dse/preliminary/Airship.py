@@ -32,7 +32,7 @@ drho = drho_low  # Choose lowest drho value
 p0 = p0_low
 
 m_goal = 2700
-t_min = 0.0001014
+t_min = 0.000101
 m_lst = []
 j_lst = []
 
@@ -137,14 +137,7 @@ def Reynolds():
     L_a = F_ratio * D_m
     mu = mu0*(T0_low/T0)**(3/2)*((T0 + S)/(T0_low+S))
     Re = (rho0*V_cruise*L_a)/(mu)
-    print(mu)
     return Re, L_a, D_m
-
-
-
-
-
-
 
 # CF = 0.08  # Skin friction coefficient of Ultra-High-Molecular-Weight Polyethylene
 F_ratio = 4.65  # Fineness ration L_a / D_m
@@ -152,9 +145,6 @@ V_cruise = 400/3.6
 
 Re, L_a, D_m = Reynolds()
 CF = 0.045*(Re**(-1/6))  # Skin friction coefficient by literature
-
-
-
 
 # a = c = D_m/2
 # b = L_a/2
