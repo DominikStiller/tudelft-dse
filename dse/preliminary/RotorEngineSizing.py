@@ -26,7 +26,7 @@ def RadiusfromMass(M):
         integral, accuracy = integrate.quad(func, 0, R)
         T = 0.88 * b*rho*omega**2 *a*c * integral
 
-    Hp = T*v1*N_rotor
+    Hp = T*v1*N_rotor*0.00134
     return R, accuracy, Hp
 
 
@@ -37,7 +37,6 @@ if __name__ == '__main__':
 
     # Blade Element Method with ideal twist
     N_rotor = 4
-    print(RadiusfromMass(3000))
 
 
 ''''
