@@ -14,10 +14,7 @@ def RadiusfromMass(M):
     b=6 #Number of blades per rotor
     a=6 #Lift Curve slope [1/rad]
     R=1
-    c=R/25 #Chord of each rotor
-    A=np.pi* R**2 #Area of the rotor
-    omega = 200/R
-    v1 = np.sqrt(T_init/(2*rho*A))
+
     theta_tip = 10 *np.pi/180
     T=0
 
@@ -26,10 +23,16 @@ def RadiusfromMass(M):
 
     while T<T_init:
         R=R+0.1
+        c = R / 25  # Chord of each rotor
+        A = np.pi * R ** 2  # Area of the rotor
+        omega = 200 / R
+        v1 = np.sqrt(T_init / (2 * rho * A))
         #T=0.88 * b * rho * omega**2 * a *c/2*(theta_tip * R**3 /2-(v1 * (np.log(v1**2 + (omega*R)**2)-np.log(v1**2))/(2*omega)))
         integral, accuracy = integrate.quad(func, 0, R)
         T = 0.88 * b*rho*omega**2 *a*c * integral
-    return R, accuracy
+
+    Hp = T*v1*N_rotor
+    return R, accuracy, Hp
 
 print(RadiusfromMass(3000))
 ''''
