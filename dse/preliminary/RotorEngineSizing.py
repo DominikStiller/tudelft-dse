@@ -3,12 +3,7 @@ import matplotlib.pyplot as plt
 #Given Values
 from scipy import integrate
 
-gm=3.721
-MTOW = 3000*gm
-rho = 0.01 #kg/m3
 
-#Blade Element Method with ideal twist
-N_rotor = 4
 def RadiusfromMass(M):
     T_init = M * 3.721 / N_rotor
     b=6 #Number of blades per rotor
@@ -34,7 +29,17 @@ def RadiusfromMass(M):
     Hp = T*v1*N_rotor
     return R, accuracy, Hp
 
-print(RadiusfromMass(3000))
+
+if __name__ == '__main__':
+    gm = 3.721
+    MTOW = 3000 * gm
+    rho = 0.01  # kg/m3
+
+    # Blade Element Method with ideal twist
+    N_rotor = 4
+    print(RadiusfromMass(3000))
+
+
 ''''
 hp = T*v1*0.01315
 DL = T/A
