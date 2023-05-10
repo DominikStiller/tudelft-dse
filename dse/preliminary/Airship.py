@@ -54,18 +54,6 @@ def mass_convergence(m_misc):
         m_lst.append(m)
     return m, m_lst, j_lst, V, r, S
 
-def Reynolds(misc):
-    V = mass_convergence(misc)[-2]
-    Dm = (6 / (4.65 * np.pi) * V)**(1/3)
-    la = 4.65 * Dm
-    print(la)
-    mu = mu0*(T0_low/T0)**(3/2)*((T0 + S)/(T0_low+S))
-    Re = (rho0*V_cruise*la)/(mu)
-
-    print(mu)
-    return Re
-
-
 for m_misc in list(np.arange(1,3010,1)):
     m_end, m_lst, j_lst, V, r, S = mass_convergence(m_misc)
     if m_end >= m_goal:
@@ -77,15 +65,18 @@ for m_misc in list(np.arange(1,3010,1)):
 # plt.plot(j_lst, m_lst)
 # plt.show()
 
-CF = 0.08  # Skin friction coefficient of Ultra-High-Molecular-Weight Polyethylene
+def Reynolds():
+    D_m = ((3 * 8 * V) / (4 * np.pi * F_ratio)) ** (1 / 3)
+    L_a = F_ratio * D_m
+    mu = mu0*(T0_low/T0)**(3/2)*((T0 + S)/(T0_low+S))
+    Re = (rho0*V_cruise*L_a)/(mu)
+    return Re, L_a, D_m
+
+# CF = 0.08  # Skin friction coefficient of Ultra-High-Molecular-Weight Polyethylene
 F_ratio = 4.65  # Fineness ration L_a / D_m
-
-D_m = ((3*8*V)/(4*np.pi*F_ratio))**(1/3)
-L_a = F_ratio * D_m
-
 V_cruise = 400/3.6
-mu = 7.1284038*10**-6
-Re = (rho0 * V_cruise * L_a) / mu
+
+Re, L_a, D_m = Reynolds()
 CF = 0.045*(Re**(-1/6))  # Skin friction coefficient by literature
 
 # a = c = D_m/2
