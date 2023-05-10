@@ -99,3 +99,47 @@ print(f"Design CD0 = {CD0}")
 CD = CD0
 D = 0.5*rho0*(V_cruise**2)*np.pi*((D_m/2)**2)*CD
 print(f"Drag force = {D} N")
+
+### Hybrid Blimp-Wing Design ###
+m_total = m_end
+# m_total = m_wing + m_balloonskin + m_misc2
+
+L_wing = m_total*g_M - V*drho*g_M
+
+def S_wing(L_wing):
+    CL = 1.5
+    S = L_wing/(1/2 * rho0 * V_cruise ** 2 * CL)
+    return S
+
+def m_wing(S):
+    wingloading = 848.8/179
+    m_wing = S * wingloading
+    return m_wing
+
+def mass_convergence2(m_wing,m_misc):
+    m = m_wing + m_misc
+    for j in range(20):
+        j_lst.append(j)
+        V = m/drho
+        r = ((3)/(4*np.pi)*V)**(1/3)
+        t_req = (p_ratio - 1) * p0 * r / (2 * sigma_yield_polyethylene)
+        if t_req <= t_min:
+            t = t_min
+        else:
+            t = t_req
+        S = 4 * np.pi * r**2
+        rho_kevlar = 1380 # [kg/m3]
+        rho_polyethylene = 940  # [kg/m^3]
+        m += S*t*rho_polyethylene
+        m_lst.append(m)
+    return m, m_lst, j_lst, V, r, S
+
+for m_misc in list(np.arange(1,3010,1)):
+    m_end, m_lst, j_lst, V, r, S = mass_convergence(m_misc)
+    if m_end >= m_goal:
+        print(f"\nFinal total mass = {m_end} kg")
+        print(f"Effective payload = {m_misc} kg\n")
+        print(f"Total volume = {V} m^3 and radius of sphere = {r} m with surface area = {S} m^2")
+        break
+
+CD = CD0_blimp + CD0_wing + CL**2/(np.pi*A*e)
