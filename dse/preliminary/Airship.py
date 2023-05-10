@@ -4,8 +4,11 @@ from scipy.special import ellipkinc, ellipeinc
 
 ## Constants
 rho0 = 1.0 * 10 ** -2  # [kg/m3] Zero elevation density of Mars
-T0_low = 200  #145  # [K] Lowest zero elevation temperature
+T0_low = 145  # [K] Lowest zero elevation temperature
+T0 = 273 # [K] T0 per definition
 T0_high = 284  # [K] Highest zero elevation temperature
+S = 222  # [K] Entropy
+mu0 = 1.37*10**-5  # [Ns/m2]
 R_M = 191  # [J/K Kg] Specific Gas constant of Martian Air
 R_universal = 8.314  # [J/mol] Universal gas constant
 y = 1.2  # [-] Ratio of specific heats
@@ -50,6 +53,18 @@ def mass_convergence(m_misc):
         m = S*t*rho_polyethylene + m_misc
         m_lst.append(m)
     return m, m_lst, j_lst, V, r, S
+
+def Reynolds(misc):
+    V = mass_convergence(misc)[-2]
+    Dm = (6 / (4.65 * np.pi) * V)**(1/3)
+    la = 4.65 * Dm
+    print(la)
+    mu = mu0*(T0_low/T0)**(3/2)*((T0 + S)/(T0_low+S))
+    Re = (rho0*V_cruise*la)/(mu)
+
+    print(mu)
+    return Re
+
 
 for m_misc in list(np.arange(1,3010,1)):
     m_end, m_lst, j_lst, V, r, S = mass_convergence(m_misc)
