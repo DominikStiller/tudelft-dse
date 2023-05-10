@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from RotorEngineSizing import RadiusfromMass
 
 
 # Function calculates weight of the blades, engines, landing gear, fuselage and propulsion system
@@ -24,23 +26,37 @@ def weights(n_blades, n_legs, n_engines, radius, tip_speed, MTOM, wet_area, engi
     return np.array([4 * W_main_rotor_blades, 2 * W_main_rotor_hub_and_hinge, W_fuselage, W_legs, W_engines, W_misc]) / 2.205
 
 
+diff1 = 10
+useful_mass = 800  # Payload + fuel
+tip_speed = 200
+m_e = 122  # Dummy
+MTOM = 2000
 
-for R in range(5, 12):
-    diff = 10
-    MTOM = 3000
-    useful_mass = 800  # Payload + fuel
-    tip_speed = 200
-    Sw = 2*np.pi*1 * 1.5*R + np.pi * 1**2  # Dummy
-    m_e = 122  # Dummy
-    while diff > 0.01:
+m_list = list()
+r_list = list()
+while diff1 > 0.01:
+    R = RadiusfromMass(MTOM)[0]
+    r_list.append(R)
+
+    diff2 = 10
+    Sw = 2*np.pi*1 * 1.5*R + np.pi * 1**2  # Cylinder of radius 1m
+    while diff2 > 0.01:
         W_array = weights(n_blades=6, n_engines=2, n_legs=2,
                           radius=R, tip_speed=tip_speed, MTOM=MTOM,
                           wet_area=Sw, engine_mass=m_e)
-        diff = abs(((np.sum(W_array) + useful_mass) - MTOM) / MTOM)
+        diff2 = abs(((np.sum(W_array) + useful_mass) - MTOM) / MTOM)
         MTOM = np.sum(W_array) + useful_mass
-    print(R)
-    print(W_array)
-    print(np.sum(W_array))
-    print('\n')
 
+    m_list.append(MTOM)
 
+    diff1 = (RadiusfromMass(MTOM)[0] - R) / R
+
+    if len(m_list) > 8:
+        plt.scatter(np.array(m_list)/1000, r_list)
+        plt.xlabel('MTOM [T]')
+        plt.ylabel('R [m]')
+        plt.show()
+        break
+
+# print(f'MTOM = {MTOM} kg')
+# print(f'R = {R} m')
