@@ -31,10 +31,11 @@ def RadiusfromMass(M):
         integral, accuracy = integrate.quad(func, 0, R)
         T = 0.88 * b*rho*omega**2 *a*c * integral
 
-    Hp = T*v1*N_rotor
-    return R, accuracy, Hp
+    Hp = T*v1*N_rotor*0.01315
+    TO_FuelMass = Hp*2*1/6 * 0.4536 #HP*SFC*Hour
 
-print(RadiusfromMass(3000))
+    return R, accuracy, TO_FuelMass
+print(RadiusfromMass(1000))
 ''''
 hp = T*v1*0.01315
 DL = T/A

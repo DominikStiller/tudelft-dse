@@ -1,6 +1,29 @@
 import numpy as np
 
 
+def MTOM_estimate(L2D):
+    Wcrew = 250 * 2.205 #kg
+    Wpayload = 100 * 2.205 #kg
+
+    we_w0 = 0.55
+
+    R = 2000*1000*3.28
+    C = 1/3600 # kg/hr
+    V = 150*3.28 #m/s
+    wc_w0 = np.exp(-R*C/(V * L2D))
+
+    wf_w0 = 1.06*(1-wc_w0)
+
+    A=0.72
+    C=-0.03
+    w0_init = 400
+    w0_found = 300
+    while (w0_init-w0_found)/w0_found > 0.01:
+        we_w0 = A * w0_init ** C
+
+        w0_found = (Wcrew + Wpayload) / (1 - wf_w0 - we_w0)
+    return w0_found
+
 # Function calculates weight of the blades, engines, landing gear, fuselage and propulsion system
 # Function does not account for payload, fuel, hydraulics, instruments, electrical system, avionics or cockpit controls
 def weights(n_blades, n_legs, n_engines, radius, tip_speed, MTOM, wet_area, engine_mass):
