@@ -11,15 +11,15 @@ mass = 3000
 g_mars = 3.71
 
 # Geometric parameters
+c_to_R_ratio = 1/20  # ratio of chord to radius
 R = 17  # radius of rotor
 omega = 209  # angular speed of rotor [omega 209 = 2000 RPM]
-chord = 0.68
 # a = 0.11 * 180 / np.pi  # lift curve slope
 a = 6  # lift curve slope
 theta_0 = np.radians(25)  # zero pitch angle
 theta_tw = np.radians(8)  # twist angle
 n_blades = 4
-n_rotors = 4  # if coaxial, use number of axes
+n_rotors = 8  # if coaxial, use number of axes
 coaxial = True
 
 Cd = 0.03  # avg drag coefficient
@@ -45,9 +45,9 @@ def solidity_ratio(c, R):
     return n_blades * c / (np.pi * R)
 
 
-def tip_mach(omega, R):
-    v_tip = omega * R
-    return v_tip / speed_of_sound
+def tip_mach(omega, R, V_fwd=0):
+    V_tip = omega * R
+    return (V_tip + V_fwd) / speed_of_sound
 
 
 def omega_from_rpm(rpm):
@@ -83,7 +83,7 @@ def rotortorque(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V):
 def solve_thrust_hover(R=R, omega=omega):
     def f(T):
         A = area(R)
-        chord = R / 20
+        chord = R * c_to_R_ratio
         SR = solidity_ratio(chord, R)
         vi = velocity_induced_hover(T, rho, A)
         V = 0
@@ -207,8 +207,8 @@ def rollingmoment():
 
 
 def plot_radius_rpm_range():
-    RR = np.arange(0.2, 5.5, 0.1)
-    rpms = np.hstack([[200], np.arange(500, 2501, 500)])
+    RR = np.arange(0.2, 10.5, 0.1)
+    rpms = np.hstack([[200, 300, 400], np.arange(500, 2501, 500)])
 
     R_maxs = []
     T_max = []
@@ -237,11 +237,11 @@ if __name__ == "__main__":
     speed = 111
     angle_of_attack = -0.05
     climb_speed = 100
-    print("forces:")
+    # print("forces:")
     # print(solve_thrust_hover())
     # print(solve_thrust_forward_flight(speed, angle_of_attack))
     # print(solve_thrust_vertical_climb(20))
-    print("torques")
+    # print("torques")
     # print(solve_rotor_torque_hover())
     # print(solve_rotor_torque_forward_flight(speed, angle_of_attack))
     # print(solve_rotor_torque_vertical_climb(climb_speed))
