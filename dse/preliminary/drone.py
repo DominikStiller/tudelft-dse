@@ -99,7 +99,7 @@ def solve_thrust_hover(R=R, omega=omega):
         return T_per_rotor * n_rotors
 
 
-def solve_thrust_forward_flight(V, alpha):
+def solve_thrust_forward_flight(V, alpha, R=R, omega=omega):
     """
     Calculate rotor thrust in forward flight.
 
@@ -113,6 +113,7 @@ def solve_thrust_forward_flight(V, alpha):
 
     def f(T):
         A = area(R)
+        chord = R * c_to_R_ratio
         SR = solidity_ratio(chord, R)
         vi = velocity_induced_forward_flight(T, rho, A, V)
         T_calc = _thrust_single_rotor(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V)
@@ -123,7 +124,7 @@ def solve_thrust_forward_flight(V, alpha):
     return T_per_rotor * n_rotors
 
 
-def solve_thrust_vertical_climb(V_c):
+def solve_thrust_vertical_climb(V_c, R=R, omega=omega):
     """
     Calculate rotor thrust in forward flight.
 
@@ -139,6 +140,7 @@ def solve_thrust_vertical_climb(V_c):
 
     def f(T):
         A = area(R)
+        chord = R * c_to_R_ratio
         SR = solidity_ratio(chord, R)
         vi = velocity_induced_vertical_climb(T, rho, A, V)
         T_calc = _thrust_single_rotor(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V)
@@ -149,18 +151,19 @@ def solve_thrust_vertical_climb(V_c):
     return T_per_rotor * n_rotors
 
 
-def solve_rotor_torque_hover():
+def solve_rotor_torque_hover(R=R, omega=omega):
     V = 0
     alpha = 0
     A = area(R)
+    chord = R * c_to_R_ratio
     SR = solidity_ratio(chord, R)
-    T = solve_thrust_hover()
+    T = solve_thrust_hover(R, omega)
     vi = velocity_induced_hover(T, rho, A)
     torquecalc = rotortorque(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V)
     return torquecalc
 
 
-def solve_rotor_torque_forward_flight(V, alpha):
+def solve_rotor_torque_forward_flight(V, alpha, R=R, omega=omega):
     """
     Calculate rotor thrust in forward flight.
 
@@ -172,24 +175,26 @@ def solve_rotor_torque_forward_flight(V, alpha):
         Total thrust of all rotors [N]
     """
     A = area(R)
+    chord = R * c_to_R_ratio
     SR = solidity_ratio(chord, R)
-    T = solve_thrust_forward_flight(V, alpha)
+    T = solve_thrust_forward_flight(V, alpha, R, omega)
     vi = velocity_induced_forward_flight(T, rho, A, V)
     torquecalc = rotortorque(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V)
     return torquecalc
 
 
-def solve_rotor_torque_vertical_climb(V_c):
+def solve_rotor_torque_vertical_climb(V_c, R=R, omega=omega):
     alpha = np.pi / 2
     V = V_c
     A = area(R)
+    chord = R * c_to_R_ratio
     SR = solidity_ratio(chord, R)
-    T = solve_thrust_vertical_climb(V)
+    T = solve_thrust_vertical_climb(V, R, omega)
     vi = velocity_induced_vertical_climb(T, rho, A, V)
     torquecalc = rotortorque(rho, A, SR, a, theta_0, theta_tw, R, alpha, vi, omega, V)
     return torquecalc
 
-
+'''
 def hubforce():
     h1 = (1 / 4) * rho * A * SR * Cd * R
     h2 = (1 / 4) * rho * A * SR * a * (theta_0 + theta_tw / 2)
@@ -204,7 +209,7 @@ def rollingmoment():
     r2 = (1 / 8) * SR * a * rho * A * R
     R = (omega * V * np.cos(alpha)) * r1 + (V * np.cos(alpha))(vi + V * np.sin(alpha)) * r2
     return R
-
+'''
 
 def plot_radius_rpm_range():
     RR = np.arange(0.2, 10.5, 0.1)
@@ -212,6 +217,7 @@ def plot_radius_rpm_range():
 
     R_maxs = []
     T_max = []
+    omegas = []
     for rpm in rpms:
         T = []
         omega = omega_from_rpm(rpm)
@@ -221,6 +227,7 @@ def plot_radius_rpm_range():
 
         R_max = M_max * speed_of_sound / omega
         R_maxs.append(R_max)
+        omegas.append(omega)
         T_max.append(solve_thrust_hover(R_max, omega))
 
     plt.scatter(R_maxs, T_max, marker="x", label="Max. radius for M<=0.8")
@@ -231,12 +238,13 @@ def plot_radius_rpm_range():
     plt.legend()
     format_plot()
     plt.show()
+    return R_maxs, T_max, rpms * (2 * np.pi/ 60)
 
 
 if __name__ == "__main__":
     speed = 111
-    angle_of_attack = -0.05
-    climb_speed = 100
+    angle_of_attack = np.radians(-5)
+    climb_speed = 10
     # print("forces:")
     # print(solve_thrust_hover())
     # print(solve_thrust_forward_flight(speed, angle_of_attack))
@@ -246,12 +254,26 @@ if __name__ == "__main__":
     # print(solve_rotor_torque_forward_flight(speed, angle_of_attack))
     # print(solve_rotor_torque_vertical_climb(climb_speed))
 
-    plot_radius_rpm_range()
+    rmax, tmaxhower, omegas = plot_radius_rpm_range()
+    tmaxclimb = []
+    tmaxcruise = []
+    torquehower = []
+    torqueclimb = []
+    torquecruise = []
+    for i in range(len(omegas)):
+        tmaxclimb.append(solve_thrust_vertical_climb(climb_speed, rmax[i], omegas[i]))
+        tmaxcruise.append(solve_thrust_forward_flight(speed, angle_of_attack, rmax[i], omegas[i]))
+        torquehower.append(solve_rotor_torque_hover(rmax[i], omegas[i]))
+        torqueclimb.append(solve_rotor_torque_vertical_climb(climb_speed, rmax[i], omegas[i]))
+        torquecruise.append(solve_rotor_torque_forward_flight(speed, angle_of_attack, rmax[i], omegas[i]))
 
-    # alpha = np.arange(-60, 60, 0.1)
-    # thrust = []
-    # for i in alpha:
-    #     thrust.append(solve_thrust_forward_flight(111, np.radians(i)))
-    #
-    # plt.plot(alpha, thrust)
-    # plt.show()
+    #print('thrusts')
+    #print(tmaxhower)
+    #print(tmaxclimb)
+    #print(tmaxcruise)
+    #print('torques')
+    #print(torquehower)
+    #print(torqueclimb)
+    #print(torquecruise)
+
+
