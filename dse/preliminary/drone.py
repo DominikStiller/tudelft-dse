@@ -11,7 +11,7 @@ mass = 3000
 g_mars = 3.71
 
 # Geometric parameters
-c_to_R_ratio = 1/20  # ratio of chord to radius
+c_to_R_ratio = 1 / 20  # ratio of chord to radius
 R = 17  # radius of rotor
 omega = 209  # angular speed of rotor [omega 209 = 2000 RPM]
 # a = 0.11 * 180 / np.pi  # lift curve slope
@@ -19,7 +19,7 @@ a = 6  # lift curve slope
 theta_0 = np.radians(25)  # zero pitch angle
 theta_tw = np.radians(8)  # twist angle
 n_blades = 4
-n_rotors = 8  # if coaxial, use number of axes
+n_rotors = 4  # if coaxial, use number of axes
 coaxial = True
 
 Cd = 0.03  # avg drag coefficient
@@ -48,6 +48,11 @@ def solidity_ratio(c, R):
 def tip_mach(omega, R, V_fwd=0):
     V_tip = omega * R
     return (V_tip + V_fwd) / speed_of_sound
+
+
+def thrust_coefficient(T, R, omega):
+    A = np.pi * R**2
+    return T / (rho * A * omega**2 * A**2)
 
 
 def omega_from_rpm(rpm):
@@ -247,6 +252,13 @@ if __name__ == "__main__":
     # print(solve_rotor_torque_vertical_climb(climb_speed))
 
     plot_radius_rpm_range()
+
+    ct = thrust_coefficient(solve_thrust_hover(R, omega), R, omega)
+    sigma = solidity_ratio(R * c_to_R_ratio, R)
+    print(ct / sigma)
+
+    # iterate_weights(n_blades=n_blades,
+    #                 n_legs=2, n_engines=n_rotors, radius, c_to_R_ratio, tip_speed, MTOM, wet_area, engine_mass)
 
     # alpha = np.arange(-60, 60, 0.1)
     # thrust = []
