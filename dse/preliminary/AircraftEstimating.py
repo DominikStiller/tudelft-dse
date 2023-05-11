@@ -29,71 +29,82 @@ print(w0_found/2.205)
 
 print(wf_w0*w0_found/2.205)
 
-    #TEST
-def RadiusMass(M, N_rotors):
-    gm=3.721
-    T_min = M*gm /N_rotors
-    N_blades = 6
-    b=N_blades
-    T=0
-    R=1
-    while T<T_min:
-        R+=0.1
-        c=R/20
-        theta_tip = 6*np.pi/180
-        x0 = 0.1
-        V_m = 220
-        v_tip = 0.92*V_m
-        omega = v_tip/R
-        rho = 0.01
-        n_elements = 10
-        a0 = 6
-        alpha0 = 2*np.pi/180
-        A = np.pi*R**2
-        r2R = np.arange(1, n_elements+1)/n_elements
-        c2R = c/R
-        M_local = (r2R)*(omega*R/V_m)
-        a = a0/(np.sqrt(1-M_local**2))
-        Dtheta = theta_tip/r2R
-        theta0 = -min(Dtheta-np.ones(n_elements,)*alpha0)+theta_tip
-        theta = theta0+Dtheta-alpha0
-        v12Omegar = a*b*c2R/(16*np.pi*r2R)*(-1+np.sqrt(1+(32*np.pi*theta*r2R)/(a*b*c2R)))
-        alpha = theta-np.arctan(v12Omegar)
-        alpha = 6*np.pi/180 * np.ones(n_elements)
-        cl = a*alpha
-        cd = 0.025
-        print(alpha*180/np.pi)
-        DctDr2R = b*r2R**2*c2R*cl/(2*np.pi)
+def DragEstimation(lf, hf, Swing, t2c, Vcr, visc_cr, Cl, AR, rho):
+    Oswald = 0.9
+    #Fuselage
+    bf=hf
+    Cd_fusS = 0.0031*lf*(bf+hf)
+    print(Cd_fusS)
 
-        funCT = InterpolatedUnivariateSpline(r2R, DctDr2R)
-        Ct_lossless = funCT.integral(0, 1)
-        if Ct_lossless<0.006:
-            B = 1-0.06/b
-        else: B = 1-np.sqrt(2.27*Ct_lossless-0.01)/b
+    #Wing
+    Cd_wingS = 0.0054*(1+3*t2c*np.cos(0)**2)*Swing #Sweep is 0
 
-        Ct = Ct_lossless - funCT.integral(B, 1)
+    print(Cd_wingS)
+    #Engines
+    Cd_engineS = 2*0.07*0.08
 
-        Dcq0Dr2R = b*r2R**3*c2R*cd/(2*np.pi)
-        funCQ0 = InterpolatedUnivariateSpline(r2R, Dcq0Dr2R)
-        CQ_profile = funCQ0.integral(x0, 1)
-        DcqiDr2R = b*r2R**3*c2R*cl*v12Omegar/(2*np.pi)
-        funCQi = InterpolatedUnivariateSpline(r2R, DcqiDr2R)
-        CQ_induced = funCQi.integral(B, 1)
+    #Undercarriage
+    r_uc = 1.08 #Main gear retracted in strealined fairings
+    #Reynolds correction
+    r_Re = 47*(Vcr*lf/visc_cr)**(-0.2)
+    #Tailplane
+    r_t = 1.24
 
-        DCQ_I = 0.01*CQ_induced
+    Cd_0 = r_Re*r_uc*(r_t*(Cd_fusS+Cd_wingS+Cd_engineS))/Swing
 
-        DL = Ct*rho*(omega*R)**2
+    Cd = Cd_0+Cl**2/(np.pi*AR*Oswald)
+    D = Cd*rho*0.5*Vcr**2*Swing
+    print('Drag of the aircraft will be of '+str(D)+'[N]')
+    return D
 
-        Ct2sigma = Ct/(b*c/(np.pi*R))
+print(DragEstimation(23.8, 2.1, 84, 0.12, 154, 5.167E-4 , 1.2, 20, rho=0.01))
 
-        Cq = (CQ_profile+CQ_induced+DCQ_I)*.93
+#Weight Prediction:
+def Class2Weight(Wto, N_ult, R, AR, wingbraced, V_cr):
+    b=2*1.5*R
+    c=b/AR
+    bf=c
+    lf = 1.78+c*3
+    if c<1.78:
+        lf=1.78*4
+        bf=1.78
+    Swing = (b-bf)*c
+    Stail = Swing*c/(1.5*R)
 
-        T=rho*A*(omega*R)**2*Ct
-        power = rho*A*(omega*R)**3*Cq
+    hf=bf
 
-    return R, T, power#*0.00134
+    #Crude Estimation
+    Wstruc2Wto = 0.447*np.sqrt(N_ult)*(bf*hf*lf/Wto)**0.24
 
-print(RadiusMass(3000, 4))
 
-def twist(theta):
-    alpha =  theta - np.arctan((theta))
+    #Wing Group
+    Wwing2Wto = 4.9e-3*b**0.75*(1+np.sqrt(1.905/b))*N_ult**0.55*((b/c)/(Wto/Swing))**0.3
+    if wingbraced == True:
+        Wwing2Wto*=0.7
+
+    #Tail Group
+    Wtail2Wto = 0.64*(N_ult*Stail**2)**0.75
+
+    #Body Group
+    lamdaf = lf/hf
+    Vdive = 1.25*V_cr
+    lt = lf
+    S_g = np.pi*hf*lf*(1-2/lamdaf)**(2/3)*(1+1/(lamdaf**2))
+    Wf = .23*np.sqrt(Vdive*lt/(bf+hf))*S_g**1.2
+
+    #Control Surfaces
+    ksc=0.64 #transport plane with powered controls
+    Wsc = 0.768*ksc*Wto**(2/3)
+
+    #Total Weight
+    Wtot = Wwing2Wto*Wto+Wtail2Wto+Wf+Wsc
+
+    print('Very Crude Structural Estimate: '+str(Wstruc2Wto*Wto))
+    print('Less crude estimate: \n')
+    print('Wing weight: '+str(Wwing2Wto*Wto)+'[kg]')
+    print('Tail weight: ' + str(Wtail2Wto) + '[kg]')
+    print('Body weight: '+str(Wf)+'[kg]')
+    print('Control Surfaces: '+str(Wsc)+'[kg]')
+    print('Available weight for batteries: '+str(Wto-Wtot-400))
+
+Class2Weight(Wto=3000, N_ult=4.4, R=14.1, AR=28, wingbraced=True, V_cr=154)
