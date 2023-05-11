@@ -26,6 +26,7 @@ def MTOM_estimate(L2D):
         w0_found = (Wcrew + Wpayload) / (1 - wf_w0 - we_w0)
     return w0_found
 
+
 # Function calculates weight of the blades, engines, landing gear, fuselage and propulsion system
 # Function does not account for payload, fuel, hydraulics, instruments, electrical system, avionics or cockpit controls
 def weights(n_blades, n_legs, n_engines, radius, tip_speed, MTOM, wet_area, engine_mass):
@@ -83,3 +84,6 @@ def radius_mass_iteration():
             return OverflowError
 
     return MTOM, R
+
+
+print(weights(n_blades=6, n_legs=2, n_engines=2, radius=14.1, tip_speed=200, MTOM=3000, wet_area=24.43, engine_mass=166))
