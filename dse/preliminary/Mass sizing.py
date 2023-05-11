@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from RotorEngineSizing import RadiusfromMass
 
-
+rho=0.01
 def MTOM_estimate(L2D):
-    Wcrew = 250 * 2.205 #kg
+    Wcrew = 300 * 2.205 #kg
     Wpayload = 100 * 2.205 #kg
 
     we_w0 = 0.55
@@ -83,4 +83,3 @@ def radius_mass_iteration():
             return OverflowError
 
     return MTOM, R
-
