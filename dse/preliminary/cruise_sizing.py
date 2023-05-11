@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def area_and_thrust(thrust_deflection, cl, cd, MTOM):
+def area_and_thrust(thrust_deflection, cl, cd, MTOM, q):
+    g_mars=3.721
     A = np.array([[cl * q, np.sin(np.radians(thrust_deflection))],
                   [-cd * q, np.cos(np.radians(thrust_deflection))]])
     B = np.array([MTOM * g_mars, 0])
@@ -48,5 +49,5 @@ if __name__ == '__main__':
     ax2.plot([results_arr[0][0], results_arr[0][-1]], [max_thrust, max_thrust])
     ax2.set(xlabel='Thrust deflection [deg]', ylabel='Thrust [N]')
     ax2.grid()
-    plt.savefig('S&T-vs-gamma.png')
+    #plt.savefig('S&T-vs-gamma.png')
     plt.show()

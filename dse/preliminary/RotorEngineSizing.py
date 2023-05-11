@@ -5,6 +5,7 @@ from scipy import integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
 
 
+'''
 def RadiusfromMass(M):
     N_rotor=4
     T_init = 1.1*M * 3.721 / N_rotor
@@ -38,7 +39,7 @@ def RadiusfromMass(M):
     FM = np.sqrt(sigma/2) * Ct**(3/2)*Cq
     Hp = T*v1*N_rotor*0.00134
     return R, accuracy, Hp, sigma, Ct, Cq, FM
-
+'''
 def RadiusMassElementMomentum(M, N_rotors, coaxial):
     gm=3.721
     T_min = 1.1*M*gm /N_rotors
@@ -49,6 +50,7 @@ def RadiusMassElementMomentum(M, N_rotors, coaxial):
     while T<T_min:
         R+=0.1
         c=R/20
+        sigma = b*c/(np.pi*R)
         theta_tip = 6*np.pi/180
         x0 = 0.1
         V_m = 220
@@ -71,6 +73,9 @@ def RadiusMassElementMomentum(M, N_rotors, coaxial):
         alpha = 6*np.pi/180 * np.ones(n_elements)
         cl = a*alpha
         cd = 0.025
+        #S1223
+        #cl = 1.6
+        #cd=0.05
         DctDr2R = b*r2R**2*c2R*cl/(2*np.pi)
 
         funCT = InterpolatedUnivariateSpline(r2R, DctDr2R)
@@ -115,8 +120,9 @@ def RadiusMassElementMomentum(M, N_rotors, coaxial):
     print('Rotor Power: '+str(power)+'[W]')
     print('Total Aircraft power: '+str(power*N_rotors)+'[W]')
     print('Weight per rotor with '+str(b)+' blades is '+ str(Rotor_mass)+'[kg]')
+    print('Total Rotor mass for entire aircraft: '+str(Rotor_mass*N_rotors))
 
-    return R, T, power/745.7, power
+    return R, T, power/745.7, power*N_rotors, Rotor_mass*N_rotors
 
 if __name__ == '__main__':
     gm = 3.721

@@ -1,10 +1,29 @@
 
 
 #Payload Range Diagram
-#GW_lndng = GW_to - (UsedFuel-WUTO)
-#Payload = GW_to-GW_min - (UsedFuel+ WUTO + Reserves + AuxFuelTank)
 
-#Range = integrate.quad(funcSR, 0, 1)[0]
+def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density):
+    g_mars=3.721
+    b = 2 * 1.5 * R
+    c = b / AR
+    bf = c
+    lf = 1.78 + c * 3
+    if c < 1.78:
+        lf = 1.78 * 4
+        bf = 1.78
+    hf=bf
+    Swing = (b - bf) * c
+    T_to = 1.1 * Wto * g_mars
+    T_cr = area_and_thrust(0, 1.2, 0.11, Wto, 0.5 * 0.01 * V_cr)[1] + DragEstimation(lf, hf, Swing, 0.12, V_cr,
+                                                                                     5.167E-4, 1.2, AR, rho=0.01)
+    Power = T_to * np.sqrt(T_to / (2 * 0.01 * np.pi * R * R))
+    print(T_cr * np.sqrt(T_cr / (2 * 0.01 * np.pi * R * R)))
+    E_TO = Power * (4 / 6)
+    E_cr = ((Wto - Wtot - 400) * E_density - E_TO)
+    P_cr = T_cr * np.sqrt(T_cr / (2 * 0.01 * np.pi * R * R))
+    Endurance = E_cr / P_cr
+    Range = Endurance * V_cr * 3.6
+    return Range, Endurance
 
 #Climb Performance
 import numpy as np

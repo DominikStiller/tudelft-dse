@@ -1,6 +1,9 @@
 import numpy as np
 import scipy.integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
+from RotorEngineSizing import RadiusMassElementMomentum
+from PerformanceAnalysis import RangeCalc
+from cruise_sizing import area_and_thrust
 
 Wcrew = 300 * 2.205 #kg
 Wpayload = 100 * 2.205 #kg
@@ -34,12 +37,10 @@ def DragEstimation(lf, hf, Swing, t2c, Vcr, visc_cr, Cl, AR, rho):
     #Fuselage
     bf=hf
     Cd_fusS = 0.0031*lf*(bf+hf)
-    print(Cd_fusS)
 
     #Wing
     Cd_wingS = 0.0054*(1+3*t2c*np.cos(0)**2)*Swing #Sweep is 0
 
-    print(Cd_wingS)
     #Engines
     Cd_engineS = 2*0.07*0.08
 
@@ -50,17 +51,43 @@ def DragEstimation(lf, hf, Swing, t2c, Vcr, visc_cr, Cl, AR, rho):
     #Tailplane
     r_t = 1.24
 
-    Cd_0 = r_Re*r_uc*(r_t*(Cd_fusS+Cd_wingS+Cd_engineS))/Swing
+    Cd_0 = r_Re*r_uc*(r_t*(Cd_fusS+Cd_engineS))/Swing
 
     Cd = Cd_0+Cl**2/(np.pi*AR*Oswald)
     D = Cd*rho*0.5*Vcr**2*Swing
-    print('Drag of the aircraft will be of '+str(D)+'[N]')
+    print('Drag of the aircraft without wing will be of '+str(D)+'[N]')
     return D
 
-print(DragEstimation(23.8, 2.1, 84, 0.12, 154, 5.167E-4 , 1.2, 20, rho=0.01))
+
+
+def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density):
+    g_mars=3.721
+    b = 2 * 1.5 * R
+    c = b / AR
+    bf = c
+    lf = 1.78 + c * 3
+    if c < 1.78:
+        lf = 1.78 * 4
+        bf = 1.78
+    hf=bf
+    Swing = (b - bf) * c
+    T_to = 1.1 * Wto * g_mars
+    T_cr = area_and_thrust(0, 1.2, 0.11, Wto, 0.5 * 0.01 * V_cr)[1] + DragEstimation(lf, hf, Swing, 0.12, V_cr,
+                                                                                     5.167E-4, 1.2, AR, rho=0.01)
+    Power = T_to * np.sqrt(T_to / (2 * 0.01 * np.pi * R * R))
+    print(T_cr * np.sqrt(T_cr / (2 * 0.01 * np.pi * R * R)))
+    E_TO = Power * (4 / 6)
+    E_cr = ((Wto - Wtot - 400) * E_density - E_TO)
+    P_cr = T_cr * np.sqrt(T_cr / (2 * 0.01 * np.pi * R * R))
+    Endurance = E_cr / P_cr
+    Range = Endurance * V_cr * 3.6
+    return Range, Endurance
+
 
 #Weight Prediction:
-def Class2Weight(Wto, N_ult, R, AR, wingbraced, V_cr):
+def Class2Weight(Wto, N_ult, AR, wingbraced, V_cr, E_density):
+    g_mars=3.721
+    R, T, hp, Power, RotorMass = RadiusMassElementMomentum(Wto, 4, coaxial=True)
     b=2*1.5*R
     c=b/AR
     bf=c
@@ -97,7 +124,8 @@ def Class2Weight(Wto, N_ult, R, AR, wingbraced, V_cr):
     Wsc = 0.768*ksc*Wto**(2/3)
 
     #Total Weight
-    Wtot = Wwing2Wto*Wto+Wtail2Wto+Wf+Wsc
+    Wtot = Wwing2Wto*Wto+Wtail2Wto+Wf+Wsc+RotorMass
+    Range, Endurance = RangeCalc(Wto, Wtot, R, AR, V_cr, E_density)
 
     print('Very Crude Structural Estimate: '+str(Wstruc2Wto*Wto))
     print('Less crude estimate: \n')
@@ -105,6 +133,10 @@ def Class2Weight(Wto, N_ult, R, AR, wingbraced, V_cr):
     print('Tail weight: ' + str(Wtail2Wto) + '[kg]')
     print('Body weight: '+str(Wf)+'[kg]')
     print('Control Surfaces: '+str(Wsc)+'[kg]')
-    print('Available weight for batteries: '+str(Wto-Wtot-400))
+    print('Available weight for batteries: '+str(Wto-Wtot-400)+'[m]')
+    print('Available Endurance: '+str(Endurance)+'[h]')
+    print('Available Range: '+str(Range)+'[km]')
+    print('Flight Radius: '+str(Range/2)+'[km]')
 
-Class2Weight(Wto=3000, N_ult=4.4, R=14.1, AR=28, wingbraced=True, V_cr=154)
+Class2Weight(Wto=3000, N_ult=4.4, AR=28, wingbraced=True, V_cr=154, E_density=333)
+
