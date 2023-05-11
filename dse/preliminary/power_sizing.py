@@ -57,15 +57,15 @@ if __name__ == '__main__':
     print(f'Mass of the solar panels = {panelMass} kg')
 
 
-    # Plot the map of Mars
-    marsMap = np.asarray(Image.open('Figures/MarsMapBlackAndWhite.jpg'))
-    plt.imshow(marsMap)
-
-    # Plot the power surplus
-    divNorm = mcolors.TwoSlopeNorm(vmin=np.min(powerSurplus)/1000, vcenter=0, vmax=np.max(powerSurplus)/1000)
-    plt.pcolormesh(powerSurplus / 1000, alpha=0.6, cmap='RdYlGn', norm=divNorm)
-    plt.colorbar(fraction=0.025, pad=0.04, label='Energy surplus during cruise [kW]')
-    plt.axis('off')
-    plt.tight_layout()
-    plt.savefig('Figures/EnergySurplusCruise.png')
-    plt.show()
+    # # Plot the map of Mars
+    # marsMap = np.asarray(Image.open('Figures/MarsMapBlackAndWhite.jpg'))
+    # plt.imshow(marsMap)
+    #
+    # # Plot the power surplus
+    # divNorm = mcolors.TwoSlopeNorm(vmin=np.min(powerSurplus)/1000, vcenter=0, vmax=np.max(powerSurplus)/1000)
+    # plt.pcolormesh(powerSurplus / 1000, alpha=0.6, cmap='RdYlGn', norm=divNorm)
+    # plt.colorbar(fraction=0.025, pad=0.04, label='Energy surplus during cruise [kW]')
+    # plt.axis('off')
+    # plt.tight_layout()
+    # plt.savefig('Figures/EnergySurplusCruise.png')
+    # plt.show()
