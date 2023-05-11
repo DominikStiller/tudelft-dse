@@ -9,12 +9,15 @@ def RadiusfromMass(M):
     b=6 #Number of blades per rotor
     a=6 #Lift Curve slope [1/rad]
     R=1
-
+    cd=0.06
     theta_tip = 10 *np.pi/180
     T=0
 
     def func(x):
         return theta_tip*R*x - x**2 * np.arctan(v1/(omega*x))
+
+    def func2(x):
+        return x*c*rho/2*omega**2 * (x**2*a*(theta_tip/(x/R)-np.arctan(v1/(omega*x)))*np.arctan(v1/(omega*x))+cd*x**2)
 
     while T<T_init:
         R=R+0.1
@@ -24,10 +27,15 @@ def RadiusfromMass(M):
         v1 = np.sqrt(T_init / (2 * rho * A))
         #T=0.88 * b * rho * omega**2 * a *c/2*(theta_tip * R**3 /2-(v1 * (np.log(v1**2 + (omega*R)**2)-np.log(v1**2))/(2*omega)))
         integral, accuracy = integrate.quad(func, 0, R)
-        T = 0.88 * b*rho*omega**2 *a*c * integral
-
+        T = 0.88 * b/2*rho*omega**2 *a*c * integral
+        Q, Q_accuracy = integrate.quad(func2, 0, R)
+        Q = Q*0.88*b
+    sigma = b*c/(np.pi*R)
+    Cq = Q/(rho*sigma*A*(omega*R)**2*R)
+    Ct = T/(rho*sigma*A*(omega*R)**2)
+    FM = np.sqrt(sigma/2) * Ct**(3/2)*Cq
     Hp = T*v1*N_rotor*0.00134
-    return R, accuracy, Hp
+    return R, accuracy, Hp, sigma, Ct, Cq, FM
 
 
 if __name__ == '__main__':
