@@ -137,8 +137,9 @@ def solve_thrust_vertical_climb(V_c, R=R, omega=omega):
     Calculate rotor thrust in forward flight.
 
     Args:
-        V: forward velocity [m/s]
-        alpha: angle of attack [rad]
+        V_c: climb speed [m/s]
+        R: radius [rad]
+        omega = angular velocity [rad/s]
 
     Returns:
         Total thrust of all rotors [N]
@@ -280,6 +281,44 @@ def engine_and_fuel_mass(torque, omega):
     # fuel consumption = 205 g/kWh if 1680 hp so assume 20.5 g/kWh for 115 hp based on S6U-PTA engine
     print(f"fuel mass = {fc} kg")
 
+def dragandliftofbody(V):
+    q = 0.5 * rho * V**2
+
+    # fus = 3 * 2 * 5 area approx
+    aoafus = [-8, -6, -4, -2, 0, 2, 4, 6, 8]
+    CDfus = [0.10, 0.09, 0.10, 0.10, 0.10, 0.11, 0.11, 0.12, 0.13]
+    CLfus = [-0.06, -0.04, -0.02, 0, 0.02, 0.03, 0.04, 0.06, 0.08]
+    Afus = 3 * 2
+
+    # blade drag coefficients
+    alphablade = aoafus[2] + 8 + 17 * (1 / 2)
+    # acording to koning 2019 at M = 0.5
+    clablade = 0.1
+    cl_cd = 15
+    Clblade = clablade * alphablade
+    Cdblade = Clblade / cl_cd
+    lblades = 7
+    ARb = 20
+    e = 0.7
+    nrblades = 4
+    nrrotors = 8
+
+    # connector drag coefficient
+    Cdconnect = 0.04
+    Clconnect = 0.6
+    lconnect = 7 * 1.2
+    ARc = 20
+
+    Dfus = (CDfus[2] + (CLfus[2]**2) / (np.pi * (5/3) * e)) * Afus * q
+    Dblades = (Cdblade + (Clblade**2) / (np.pi * ARb * e)) * nrblades * nrrotors * ((lblades**2)/ARb) * q
+    Dconnect = (Cdconnect + (Clconnect**2) / (np.pi * ARc * e)) * nrrotors * ((lconnect**2/ARc)) * q
+
+    Lfus = CLfus[2] * q * Afus
+    Lconnect = Clconnect * nrrotors * ((lconnect**2/ARc)) * q
+
+    print(f"The total drag is: {Dfus + Dblades + Dconnect} \n The drag of the blades is {Dblades} \n The drag of the connectors is {Dconnect} \n The drag of the fuselage is {Dfus}")
+    print(f"The total lift is: {Lfus + Lconnect} \n The lift of the connectors is {Lconnect} \n The lift of the fuselage is {Lfus}")
+
 if __name__ == "__main__":
     ct = thrust_coefficient(solve_thrust_hover(R, omega), R, omega)
     sigma = solidity_ratio(R * c_to_R_ratio, R)
@@ -289,10 +328,14 @@ if __name__ == "__main__":
     angle_of_attack = np.radians(-5)
     climb_speed = 10
 
+    dragandliftofbody(speed)
+    quit()
+
     rmax, tmaxhower, omegas = plot_radius_rpm_range()
     tmaxhower, tmaxclimb, tmaxcruise, torquehower, torqueclimb, torquecruise = thrust_and_force_for_optimum_Tip_Mach(speed, angle_of_attack, climb_speed)
 
     engine_and_fuel_mass(torquehower[0], omegas[0])
+
     print('thrusts')
     print(tmaxhower)
     print(tmaxclimb)
