@@ -272,7 +272,7 @@ def engine_and_fuel_mass(torque, omega):
     power = torque * omega
     hp = power/745.7
     kwh = power * 60 / 1000
-    fc = (kwh * 0.025 / 0.568044) * 1.5
+    fc = (kwh * 0.025 / 0.568044) * 1.5 * 2 # *2 added for the way back
 
     # kg per hp 0.2 to 0.4 of avg helicopter engine based on PT6 engine series
     print(f"engine mass lower bound = {0.2 * hp * (1 / 0.568044)} kg per engine, {0.2 * hp * 8 * (1 / 0.568044)} kg total")
@@ -328,13 +328,12 @@ if __name__ == "__main__":
     angle_of_attack = np.radians(-5)
     climb_speed = 10
 
-    dragandliftofbody(speed)
-    quit()
-
     rmax, tmaxhower, omegas = plot_radius_rpm_range()
     tmaxhower, tmaxclimb, tmaxcruise, torquehower, torqueclimb, torquecruise = thrust_and_force_for_optimum_Tip_Mach(speed, angle_of_attack, climb_speed)
 
     engine_and_fuel_mass(torquehower[0], omegas[0])
+
+    dragandliftofbody(speed)
 
     print('thrusts')
     print(tmaxhower)
