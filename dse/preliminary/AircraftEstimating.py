@@ -2,7 +2,7 @@ import numpy as np
 import scipy.integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
 from RotorEngineSizing import RadiusMassElementMomentum
-from PerformanceAnalysis import RangeCalc
+#from PerformanceAnalysis import RangeCalc
 from cruise_sizing import area_and_thrust
 
 Wcrew = 300 * 2.205 #kg
@@ -75,9 +75,8 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density):
     T_cr = area_and_thrust(0, 1.2, 0.11, Wto, 0.5 * 0.01 * V_cr)[1] + DragEstimation(lf, hf, Swing, 0.12, V_cr,
                                                                                      5.167E-4, 1.2, AR, rho=0.01)
     Power = T_to * np.sqrt(T_to / (2 * 0.01 * np.pi * R * R))
-    print(T_cr * np.sqrt(T_cr / (2 * 0.01 * np.pi * R * R)))
     E_TO = Power * (4 / 6)
-    E_cr = ((Wto - Wtot - 400) * E_density - E_TO)
+    E_cr = ((Wto - Wtot) * E_density - E_TO)
     P_cr = T_cr * np.sqrt(T_cr / (2 * 0.01 * np.pi * R * R))
     Endurance = E_cr / P_cr
     Range = Endurance * V_cr * 3.6
@@ -85,7 +84,7 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density):
 
 
 #Weight Prediction:
-def Class2Weight(Wto, N_ult, AR, wingbraced, V_cr, E_density):
+def Class2Weight(Wto, N_ult, AR, wingbraced, V_cr, E_density, m_payload, m_solar):
     g_mars=3.721
     R, T, hp, Power, RotorMass = RadiusMassElementMomentum(Wto, 4, coaxial=True)
     b=2*1.5*R
@@ -124,7 +123,7 @@ def Class2Weight(Wto, N_ult, AR, wingbraced, V_cr, E_density):
     Wsc = 0.768*ksc*Wto**(2/3)
 
     #Total Weight
-    Wtot = Wwing2Wto*Wto+Wtail2Wto+Wf+Wsc+RotorMass
+    Wtot = Wwing2Wto*Wto+Wtail2Wto+Wf+Wsc+RotorMass+m_payload+m_solar
     Range, Endurance = RangeCalc(Wto, Wtot, R, AR, V_cr, E_density)
 
     print('Very Crude Structural Estimate: '+str(Wstruc2Wto*Wto))
@@ -133,10 +132,11 @@ def Class2Weight(Wto, N_ult, AR, wingbraced, V_cr, E_density):
     print('Tail weight: ' + str(Wtail2Wto) + '[kg]')
     print('Body weight: '+str(Wf)+'[kg]')
     print('Control Surfaces: '+str(Wsc)+'[kg]')
-    print('Available weight for batteries: '+str(Wto-Wtot-400)+'[m]')
+    print('Available weight for batteries: '+str(Wto-Wtot)+'[m]')
     print('Available Endurance: '+str(Endurance)+'[h]')
     print('Available Range: '+str(Range)+'[km]')
     print('Flight Radius: '+str(Range/2)+'[km]')
+    return Range
 
-Class2Weight(Wto=3000, N_ult=4.4, AR=28, wingbraced=True, V_cr=154, E_density=333)
+Class2Weight(Wto=3000, N_ult=4.4, AR=28, wingbraced=True, V_cr=154, E_density=333, m_payload=400,m_solar = 0)
 
