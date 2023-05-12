@@ -60,3 +60,4 @@ if __name__ == '__main__':
         diff = abs((Totalweight-Mass_design)/Mass_design)
         print(Totalweight)
         Mass_design = Totalweight
+        print(S)
