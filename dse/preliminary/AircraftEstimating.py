@@ -52,11 +52,11 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
         lf = 1.78 * 4
         bf = 1.78
     hf = bf  # Height of the fuselage
-    Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * constants['airDensity'] * V_cr)[0]
+    Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr)[0]
 
     # Thrust estimations
     T_to = 1.1 * Wto * g_mars
-    T_cr = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * constants['airDensity'] * V_cr)[1] + \
+    T_cr = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr)[1] + \
            DragEstimation(lf, hf, Swing, 0.12, V_cr, 5.167E-4, 1.2, AR, rho=0.01)
 
     # Power and energy
@@ -96,7 +96,7 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
         bf = 1.78
 
     # Wing and tail area
-    Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * constants['airDensity'] * V_cr)[0]
+    Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr)[0]
     Stail = Swing * c / (1.5 * R)
 
     # Wing Group
