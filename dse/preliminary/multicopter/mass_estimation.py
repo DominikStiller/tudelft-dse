@@ -4,7 +4,13 @@ rho_titanium = 4429
 rho_cfrp = 1750
 sigma_y_titanium = 900e6
 sigma_ult_titanium = sigma_y_titanium / 1.5
-sigma_ult_cfrp = 0.3 * 3e9
+sigma_ult_cfrp = 0.3 * 3e9 / 1.5
+
+# clf5605 airfoil (Ingenuity) properties
+t_c_ratio = 0.05  # thickness to chord
+h_c_ratio = 0.049  # max camber to chord
+
+blade_hollowness = 0.6
 
 
 def m_to_ft(m):
@@ -23,24 +29,24 @@ def lbs_to_kg(lbs):
     return lbs / 2.205
 
 
-def calc_spar(rho, sigma_y, T_per_rotor, length):
-    sigma_design = 0.9 * sigma_y
+def calc_spar(rho, sigma_ult, T_per_rotor, length):
     t = 2e-3
 
-    diameter_to_length_ratio = np.sqrt(4 * T_per_rotor / (np.pi * sigma_design * t * length))
+    # Set diameter such that maximum stress = sigma_ult
+    diameter_to_length_ratio = np.sqrt(4 * T_per_rotor / (np.pi * sigma_ult * t * length))
     diameter = diameter_to_length_ratio * length
     volume = np.pi * t * diameter * length
     return volume * rho, diameter
 
 
-def calc_blade_mass(rho, chord, radius):
-    t = 0.05 * chord  # for clf5605, t/c=0.05
+def calc_blade(rho, chord, radius):
+    t = t_c_ratio * chord  # for clf5605, t/c=0.05
     A = t * chord / 2  # triangle
-    V = A * radius
-    return rho * V
+    V = A * radius * (1 - blade_hollowness)
+    return rho * V, t
 
 
-def weights(
+def calc_component_masses(
     n_blades,
     n_rotors,
     coaxial,
@@ -87,7 +93,7 @@ def weights(
     g_E = m_to_ft(9.81)
     J = c * R**3 / 3
 
-    # Obtain weights in lbs
+    # Obtain masses in lbs
     W_rotors = n_total_rotors * n_blades * kg_to_lbs(blade_mass)
     W_engines = kg_to_lbs(n_engines * engine_mass)
     W_hubs = (
@@ -103,8 +109,8 @@ def weights(
     )
     W_fuselage = 6.9 * (GW / 1000) ** 0.49 * fuselage_length**0.61 * Sw**0.25
     W_spars = kg_to_lbs(n_rotors * spar_mass)
-    W_legs = 40 * (GW / 1000) ** (2 / 3) * n_legs**0.54
-    W_misc = kg_to_lbs(200)  # 200 kg for miscellaneous items
+    W_legs = 40 * (GW / 1000) ** (2 / 3) * n_legs**0.54 / 3
+    W_misc = kg_to_lbs(400)  # 400 kg for miscellaneous items (fuel system, cockpit, avionics, ...)
 
     return lbs_to_kg(
         np.array(
@@ -121,7 +127,7 @@ def weights(
     )
 
 
-def iterate_weights(
+def iterate_mass(
     payload_mass,
     fuel_mass,
     n_blades,
@@ -140,7 +146,7 @@ def iterate_weights(
 ):
     diff = 1
     while diff > 0.01:
-        W_array = weights(
+        W_array = calc_component_masses(
             n_blades,
             n_rotors,
             coaxial,
@@ -163,30 +169,6 @@ def iterate_weights(
 
 
 if __name__ == "__main__":
-    # diff = 10
-    # MTOM = 3000
-    # useful_mass = 800  # Payload + fuel
-    # R = 15
-    # tip_speed = 200
-    # Sw = 117
-    # m_e = 600
-    # while diff > 0.01:
-    #     W_array = weights(
-    #         n_blades=6,
-    #         n_engines=2,
-    #         n_legs=2,
-    #         radius=R,
-    #         tip_speed=tip_speed,
-    #         MTOM=MTOM,
-    #         wet_area_fuselage=Sw,
-    #         engine_mass=m_e,
-    #     )
-    #     diff = abs(((np.sum(W_array) + useful_mass) - MTOM) / MTOM)
-    #     MTOM = np.sum(W_array) + useful_mass
-    #
-    # print(W_array)
-    # print(np.sum(W_array))
-
     # (n_rotors, n_blades, radius)
     params = [
         # (2, 6, 9.5),
@@ -208,23 +190,23 @@ if __name__ == "__main__":
 
         rho_blades = rho_cfrp
 
-        payload_mass = 340
-        fuel_mass = 500
+        payload_mass = 350
+        fuel_mass = 600
         coaxial = True
-        n_legs = 3
+        n_legs = 4
         c_to_R_ratio = 1 / 20
         tip_speed = 220 * 0.85
         MTOM = 2700
-        wet_area_fuselage = 5 * 3 * 2
         fuselage_length = 5
-        engine_mass = 40
+        wet_area_fuselage = fuselage_length * 3 * 2
+        engine_mass = 60
         spar_length = radius * 1.2
         spar_mass, spar_diameter = calc_spar(
             rho_spar, sigma_ult_spar, 11130 / n_rotors, spar_length
         )
-        blade_mass = calc_blade_mass(rho_blades, radius * c_to_R_ratio, radius)
+        blade_mass, blade_thickness = calc_blade(rho_blades, radius * c_to_R_ratio, radius)
 
-        W_total, W_components = iterate_weights(
+        W_total, W_components = iterate_mass(
             payload_mass,
             fuel_mass,
             n_blades,
@@ -241,5 +223,5 @@ if __name__ == "__main__":
             spar_mass,
             blade_mass,
         )
-        print(f"{n_rotors=} {n_blades=} {spar_diameter=:.2} {W_total=}")
+        print(f"{n_rotors=} {n_blades=} {spar_diameter=:.2} {blade_thickness=} {W_total=}")
         print(W_components)
