@@ -54,6 +54,7 @@ def size_power_subsystem(radius, takeOffThrust, cruiseThrust, cruiseTime, takeOf
     cruiseBattery = cruiseEnergy / const['batteryEnergyDensity']
     panelMass = collectingArea * solarPanelDensity
     print(f'Mass of the batteries = {batteryMass} kg')
+    print(f'For cruise we need: {cruiseBattery*100/batteryMass}%')
     print(f'Mass of the solar panels = {panelMass} kg')
 
     if plot:
@@ -71,7 +72,7 @@ def size_power_subsystem(radius, takeOffThrust, cruiseThrust, cruiseTime, takeOf
         plt.savefig('../Figures/EnergySurplusCruise.png')
         plt.show()
 
-    return cruiseBattery, panelMass, powerSurplus
+    return batteryMass, panelMass, powerSurplus
 
 
 if __name__ == '__main__':

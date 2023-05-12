@@ -31,6 +31,7 @@ def AircraftClimbPerf(m_bat_cr, P_dens_cr, M_design, R, V_cr):
     T_max = (P_climb_ac / (np.sqrt(1 / (2 * const['airDensity'] * np.pi * R**2))))**(2/3)
     gamma = np.arctan(T_max/W - const['cd']/const['cl'])
     ROC_cr = np.sin(gamma)*V_cr
+    print(f'ROC in aircraft configuration: {ROC_cr} [m/s]')
     return ROC_cr
 
 
@@ -50,5 +51,6 @@ def RotorClimbPerf(MTOM, R, n_rotors):
         V_c += 0.1
         Dhp = MTOW/550 * (V_c/2 + np.sqrt((V_c/2)**2 + v_1hover**2) - v_1hover)
     ROC_vert = V_c / 3.28084
+    print(f'ROC in rotorcraft configuration: {ROC_vert} [m/s]')
 
     return ROC_vert
