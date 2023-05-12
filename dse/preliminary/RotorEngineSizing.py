@@ -41,10 +41,9 @@ def RadiusfromMass(M):
     Hp = T*v1*N_rotor*0.00134
     return R, accuracy, Hp, sigma, Ct, Cq, FM
 '''
-def RadiusMassElementMomentum(M, N_rotors, coaxial, V_tip):
+def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip):
     gm=3.721
     T_min = 1.1*M*gm /N_rotors
-    N_blades = 6
     b=N_blades
     T=0
     R=1
