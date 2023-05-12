@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
+from cruise_sizing import max_tipSpeed
 
 '''
 def RadiusfromMass(M):
@@ -40,22 +41,24 @@ def RadiusfromMass(M):
     Hp = T*v1*N_rotor*0.00134
     return R, accuracy, Hp, sigma, Ct, Cq, FM
 '''
-def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip):
+def RadiusMassElementMomentum(M, N_rotors, coaxial, V_tip):
     gm=3.721
     T_min = 1.1*M*gm /N_rotors
+    N_blades = 6
     b=N_blades
     T=0
     R=1
     while T<T_min:
         R+=0.1
         c=R/20
+        sigma = b*c/(np.pi*R)
         theta_tip = 6*np.pi/180
         x0 = c/R
         V_m = 220
         v_tip = V_tip
         omega = v_tip/R
         rho = 0.01
-        n_elements = 15
+        n_elements = 10
         a0 = 6
         alpha0 = 2*np.pi/180
         A = np.pi*R**2
@@ -73,7 +76,7 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip):
         cd = 0.025
         #S1223
         cl = 1.6
-        cd=0.03
+        cd=0.05
         DctDr2R = b*r2R**2*c2R*cl/(2*np.pi)
 
         funCT = InterpolatedUnivariateSpline(r2R, DctDr2R)
@@ -103,7 +106,7 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip):
         if coaxial == True:
             T*=0.88
         power = rho*A*(omega*R)**3*Cq
-        #power = T * np.sqrt(T / (2 * 0.01 * np.pi * R * R))
+        power = T * np.sqrt(T / (2 * 0.01 * np.pi * R * R))
 
     #Rotor Weight:
     def NACA0012airfoilfunction(x):
@@ -133,62 +136,78 @@ if __name__ == '__main__':
 
     RadiusMassElementMomentum(3000, 4, 6, coaxial=True,V_tip= 168)
 
-    V_tip = np.arange(130, 200, 0.5)
-    R=np.empty(np.shape(V_tip))
-    i=0
-    for v in V_tip:
-        R[i] = RadiusMassElementMomentum(3000, 4, 6, coaxial=True, V_tip=v)[0]
-        i+=1
+    cruiseSpeed = np.linspace(112, 154)
+    a, b = max_tipSpeed(cruiseSpeed)
+    V_tip = a * cruiseSpeed + b
 
-    def monoexp(x, m, t, b):
-        return m*np.exp(-t*x)+b
-    popt, pcov = curve_fit(monoexp, V_tip, R, (37.031, 0.006, 0))
-    print(f'Rotor Radius: {popt[0]}*e^(-{popt[1]}x) + {popt[2]}) ')
-    print(pcov)
-    plt.scatter(V_tip, R)
-    plt.plot(monoexp( V_tip, 37.031, -0.006, 0), R)
+    R = np.empty(np.shape(V_tip))
+    for i in range(len(V_tip)):
+        R[i] = RadiusMassElementMomentum(3000, 4, coaxial=True, V_tip=V_tip[i])[0]
+
+    def oneOverX(x, a, b, c, d):
+        return a/(b*x+c) + d
+
+    popt2, pcov2, infoDict, msg, ier = curve_fit(oneOverX, V_tip, R, full_output=True)
+    print(f'Rotor Radius =  {popt2[0]}/({popt2[1]}x + {popt2[2]}) + {popt2[3]}')
+    print(pcov2)
+    plt.scatter(V_tip, R, alpha=0.5)
+    plt.plot(V_tip, oneOverX(V_tip, *popt2), 'r--')
+    plt.xlabel('Tip speed [m/s]')
+    plt.ylabel('Rotor radius [m]')
     plt.show()
 
-''''
-hp = T*v1*0.01315
-DL = T/A
 
-plt.scatter(R, T)
-plt.plot(R, T_init*np.ones(np.shape(R)))
-plt.show()
+    plt.plot(cruiseSpeed, oneOverX(a*cruiseSpeed+b, *popt2), label=f'{np.round(popt2[0], 2)}/'
+                                                                   f'({np.round(popt2[1]*a, 2)}cruiseSpeed + '
+                                                                   f'{np.round(popt2[1]*b + popt2[2], 2)}) + '
+                                                                   f'{np.round(popt2[3], 2)})')
+    plt.xlabel('Cruise speed [m/s]')
+    plt.ylabel('Rotor radius [m]')
+    plt.legend()
+    plt.show()
+    print(f'rotorRadius = {np.round(popt2[0], 2)}/({np.round(popt2[1]*a, 2)}cruiseSpeed + '
+          f'{np.round(popt2[1]*b + popt2[2], 2)}) + {np.round(popt2[3], 2)})')
 
-#Using above values:
-
-R1=21.5#[m]
-A1=np.pi* R1**2
-omega1 = 200/R1
-c1=R1/25
-sigma = 6*c1/(np.pi*R1)
-Ct = T_init/(rho*A1*(omega1*R1)**2)
-
-T=np.empty(23,)
-hp=np.empty(23,)
-DL=np.empty(23,)
-for R in range(2, 25):
-    c = R / 25
-    A = np.pi * R ** 2
-    omega = 200 / R
-    v1 = np.sqrt(T_init / (2 * rho * A))
-    theta_tip = 10 * np.pi / 180
-    T[R-2] = b * rho * omega ** 2 * a * c / 2 * (
-                theta_tip * R ** 3 / 2 - (v1 * (np.log(v1 ** 2 + (omega * R) ** 2) - np.log(v1 ** 2)) / (2 * omega)))
-    hp[R-2] = T[R-2] * v1 * 0.01315
-    DL[R-2] = T[R-2] / A
-
-R=np.arange(2, 25, 1)
-
-plt.scatter(R, T)
-plt.plot(R, T_init*np.ones(np.shape(R)))
-plt.show()
-
-plt.scatter(R, hp)
-plt.show()
-
-plt.scatter(R, DL)
-plt.show()
-'''
+    ''''
+    hp = T*v1*0.01315
+    DL = T/A
+    
+    plt.scatter(R, T)
+    plt.plot(R, T_init*np.ones(np.shape(R)))
+    plt.show()
+    
+    #Using above values:
+    
+    R1=21.5#[m]
+    A1=np.pi* R1**2
+    omega1 = 200/R1
+    c1=R1/25
+    sigma = 6*c1/(np.pi*R1)
+    Ct = T_init/(rho*A1*(omega1*R1)**2)
+    
+    T=np.empty(23,)
+    hp=np.empty(23,)
+    DL=np.empty(23,)
+    for R in range(2, 25):
+        c = R / 25
+        A = np.pi * R ** 2
+        omega = 200 / R
+        v1 = np.sqrt(T_init / (2 * rho * A))
+        theta_tip = 10 * np.pi / 180
+        T[R-2] = b * rho * omega ** 2 * a * c / 2 * (
+                    theta_tip * R ** 3 / 2 - (v1 * (np.log(v1 ** 2 + (omega * R) ** 2) - np.log(v1 ** 2)) / (2 * omega)))
+        hp[R-2] = T[R-2] * v1 * 0.01315
+        DL[R-2] = T[R-2] / A
+    
+    R=np.arange(2, 25, 1)
+    
+    plt.scatter(R, T)
+    plt.plot(R, T_init*np.ones(np.shape(R)))
+    plt.show()
+    
+    plt.scatter(R, hp)
+    plt.show()
+    
+    plt.scatter(R, DL)
+    plt.show()
+    '''
