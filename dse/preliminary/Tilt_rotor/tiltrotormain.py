@@ -3,7 +3,7 @@ from AircraftEstimating import Class2Weight, DragEstimation
 from cruise_sizing import area_and_thrust
 from power_sizing import size_power_subsystem
 from constants import const
-from dse.preliminary.PerformanceAnalysis import PayloadRange, AircraftClimbPerf, RotorClimbPerf
+from PerformanceAnalysis import PayloadRange, AircraftClimbPerf, RotorClimbPerf
 
 if __name__ == '__main__':
     # Sizing of Rotor:
