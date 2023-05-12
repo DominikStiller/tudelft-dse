@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
     R = np.empty(np.shape(V_tip))
     for i in range(len(V_tip)):
-        R[i] = RadiusMassElementMomentum(3000, 4, coaxial=True, V_tip=V_tip[i])[0]
+        R[i] = RadiusMassElementMomentum(3000, 4, 6, coaxial=True, V_tip=V_tip[i])[0]
 
     def oneOverX(x, a, b, c, d):
         return a/(b*x+c) + d
