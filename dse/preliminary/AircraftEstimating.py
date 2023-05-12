@@ -61,7 +61,6 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
     Power = power(T_to, R)
     E_TO = Power * (1 / 6)  # Assuming take-off time of 10min
     m_TO = max(Power / P_density, E_TO / E_density_TO)
-    E_TO = Power * (1 / 6)  # Assuming take-off time of 10min
 
     # Cruise
     P_cr = power(T_cr, R)
@@ -117,8 +116,8 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     print('Tail weight: ' + str(Wtail2Wto) + '[kg]')
     print('Body weight: ' + str(Wf) + '[kg]')
     print('Control Surfaces: ' + str(Wsc) + '[kg]')
-    print('Available weight for batteries: ' + str(Wto - Wtot) + '[kg]')
-    print('Available Endurance: ' + str(Endurance) + '[h]')
-    print('Available Range: ' + str(Range) + '[km]')
-    print('Flight Radius: ' + str(Range / 2) + '[km]')
+    #print('Available weight for batteries: ' + str(Wto - Wtot) + '[kg]')
+    #print('Available Endurance: ' + str(Endurance) + '[h]')
+    #print('Available Range: ' + str(Range) + '[km]')
+    #print('Flight Radius: ' + str(Range / 2) + '[km]')
     return Range, Wwing2Wto * Wto, Wtail2Wto, Wf, Wsc
