@@ -42,7 +42,7 @@ def DragEstimation(lf, hf, Swing, t2c, Vcr, visc_cr, Cl, AR, rho):
 
 
 def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
-    g_mars = constants['airDensity']
+    g_mars = constants['gravityMars']
 
     # Dimensions
     b = 2 * 1.5 * R  # Wingspan

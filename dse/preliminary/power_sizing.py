@@ -1,3 +1,4 @@
+from tiltrotormain import constants
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -15,7 +16,7 @@ def power(thrust, radius):
 
 def size_power_subsystem(radius, takeOffThrust, cruiseThrust, cruiseTime, takeOffTime, surfaceArea, plot=False):
     # Define constants
-    averageIrradiance = 2 / np.pi * 590  # average intensity during the day
+    averageIrradiance = 2 / np.pi * constants['irradiance']  # average intensity during the day
     takeOffThrust = takeOffThrust
     cruiseThrust = cruiseThrust
     rotorRadius = radius
