@@ -5,19 +5,18 @@ from dse.preliminary.AircraftEstimating import Class2Weight
 #Payload Range Diagram
 
 
-def PayloadRange(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, payloadmass, Mass_solar):
-    payloadmass = np.arange(400, 689, 1)
-    RangeArr = Class2Weight(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, payloadmass, Mass_solar)
+def PayloadRange(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, Mass_solar, minpayload, minRange):
+    payloadmass=np.arange(minpayload, 700, 1)
+    RangeArr = Class2Weight(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, payloadmass, Mass_solar)[0]
 
-    RangeLimity, RangeLimitx = [0, 900], [1000, 1000]
-    PayloadLimity, PayloadLimitx = [400, 400], [0, 6000]
+    RangeLimity, RangeLimitx = [0, 900], [minRange, minRange]
+    PayloadLimity, PayloadLimitx = [400, 400], [0, 20000]
     PayRange, axis = plt.subplots()
 
     axis.plot(RangeArr, payloadmass)
     axis.plot(RangeLimitx, RangeLimity, label='Limit set by minimum Range requirement')
     axis.plot(PayloadLimitx, PayloadLimity, label='Limit set by minimum Payload requirement')
     plt.legend(loc='best')
-    plt.xlim(0, 6000)
     plt.ylim(250, 800)
     plt.savefig('Tiltrotor-PayloadRangeDiagram.pdf')
     plt.show()
