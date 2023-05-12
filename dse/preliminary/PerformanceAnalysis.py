@@ -29,17 +29,29 @@ def PayloadRange():
 def AircraftClimbPerf(T, W, Cl, Cd):
     gamma_climb = np.arctan(T/W - Cd/Cl)
 
-def RotorClimbPerf():
-    V_c = 3*3.28084 #Climb Velocity
-    v_1hover = 14*3.28084 #m/s
-    MTOW = 3000 * 0.45
+def RotorClimbPerf(MTOM, R):
+    MTOW = MTOM * 0.45
+    A = np.pi*R**2
+    T_max= 1.1*MTOM*3.721/4
+    T_hover = MTOM*3.721/4
+    rho=0.01
+    V_c = 0*3.28084 #Climb Velocity
+    v_1max = np.sqrt(T_max/(2*rho*A)) #m/s
+    v_1hover = np.sqrt(T_hover/(2*rho*A)) #m/s
     v_1c = -V_c/2 + np.sqrt((V_c/2)**2+v_1hover**2)
 
-    Dhp = MTOW/550 *(V_c/2 + np.sqrt((V_c/2)**2+v_1hover**2)-v_1hover)
-    print(Dhp)
+    DhpActual = T_max*v_1max - T_hover*v_1hover /745.7
+    Dhp=0
+    v_1hover *= 3.28084
+    while Dhp <= DhpActual:
+        V_c+=0.1
+        Dhp = MTOW/550 *(V_c/2 + np.sqrt((V_c/2)**2+v_1hover**2)-v_1hover)
+
+    print(V_c/3.28084)
     #Dhp = (MTOW*(v_1c+V_c)+4*(Dv/MTOW)*rho/2*(v_1c+V_c)**3*A_M+(DA*Cd)*)
 
 
 
 #Calling Previous functions
 PayloadRange()
+RotorClimbPerf(3000, 14.1)

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 #Given Values
 from scipy import integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
-
+from scipy.optimize import curve_fit
 
 '''
 def RadiusfromMass(M):
@@ -40,7 +40,7 @@ def RadiusfromMass(M):
     Hp = T*v1*N_rotor*0.00134
     return R, accuracy, Hp, sigma, Ct, Cq, FM
 '''
-def RadiusMassElementMomentum(M, N_rotors, coaxial):
+def RadiusMassElementMomentum(M, N_rotors, coaxial, V_tip):
     gm=3.721
     T_min = 1.1*M*gm /N_rotors
     N_blades = 6
@@ -52,9 +52,9 @@ def RadiusMassElementMomentum(M, N_rotors, coaxial):
         c=R/20
         sigma = b*c/(np.pi*R)
         theta_tip = 6*np.pi/180
-        x0 = 0.1
+        x0 = c/R
         V_m = 220
-        v_tip = 0.92*V_m
+        v_tip = V_tip
         omega = v_tip/R
         rho = 0.01
         n_elements = 10
@@ -74,12 +74,12 @@ def RadiusMassElementMomentum(M, N_rotors, coaxial):
         cl = a*alpha
         cd = 0.025
         #S1223
-        #cl = 1.6
-        #cd=0.05
+        cl = 1.6
+        cd=0.05
         DctDr2R = b*r2R**2*c2R*cl/(2*np.pi)
 
         funCT = InterpolatedUnivariateSpline(r2R, DctDr2R)
-        Ct_lossless = funCT.integral(0, 1)
+        Ct_lossless = funCT.integral(x0, 1)
         if Ct_lossless<0.006:
             B = 1-0.06/b
         else: B = 1-np.sqrt(2.27*Ct_lossless-0.01)/b
@@ -105,6 +105,7 @@ def RadiusMassElementMomentum(M, N_rotors, coaxial):
         if coaxial == True:
             T*=0.88
         power = rho*A*(omega*R)**3*Cq
+        power = T * np.sqrt(T / (2 * 0.01 * np.pi * R * R))
 
     #Rotor Weight:
     def NACA0012airfoilfunction(x):
@@ -132,10 +133,23 @@ if __name__ == '__main__':
     # Blade Element Method with ideal twist
     N_rotor = 4
 
-RadiusMassElementMomentum(3000, 4, coaxial=True)
+RadiusMassElementMomentum(3000, 4, coaxial=True,V_tip= 168)
 
+V_tip = np.arange(130, 200, 0.5)
+R=np.empty(np.shape(V_tip))
+i=0
+for v in V_tip:
+    R[i] = RadiusMassElementMomentum(3000, 4, coaxial=True, V_tip=v)[0]
+    i+=1
 
-
+def monoexp(x, m, t, b):
+    return m*np.exp(-t*x)+b
+popt, pcov = curve_fit(monoexp, V_tip, R, (37.031, 0.006, 0))
+print(f'Rotor Radius: {popt[0]}*e^(-{popt[1]}x) + {popt[2]}) ')
+print(pcov)
+plt.scatter(V_tip, R)
+plt.plot(monoexp( V_tip, 37.031, -0.006, 0), R)
+plt.show()
 
 ''''
 hp = T*v1*0.01315
