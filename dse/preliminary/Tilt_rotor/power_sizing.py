@@ -58,7 +58,7 @@ def size_power_subsystem(radius, takeOffThrust, cruiseThrust, cruiseTime, takeOf
 
     if plot:
         # Plot the map of Mars
-        marsMap = np.asarray(Image.open('Figures/MarsMapBlackAndWhite.jpg'))
+        marsMap = np.asarray(Image.open('../Figures/MarsMapBlackAndWhite.jpg'))
         plt.imshow(marsMap)
 
         # Plot the power surplus
@@ -68,7 +68,7 @@ def size_power_subsystem(radius, takeOffThrust, cruiseThrust, cruiseTime, takeOf
         plt.colorbar(fraction=0.025, pad=0.04, label='Energy surplus during cruise [kW]')
         plt.axis('off')
         plt.tight_layout()
-        plt.savefig('Figures/EnergySurplusCruise.png')
+        plt.savefig('../Figures/EnergySurplusCruise.png')
         plt.show()
 
     return cruiseBattery, panelMass, powerSurplus
@@ -83,4 +83,4 @@ if __name__ == '__main__':
     takeOffTime = 600
     collectingArea = 60
 
-    size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, takeOffTime, collectingArea, plot=False)
+    size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, takeOffTime, collectingArea, plot=True)
