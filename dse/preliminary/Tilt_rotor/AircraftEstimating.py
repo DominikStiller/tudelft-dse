@@ -8,14 +8,15 @@ def DragEstimation(R, Swing, t2c, Vcr, visc_cr, AR):
     Oswald = 0.9
 
     # Dimensions
-    b = np.sqrt(Swing*AR) # Wingspan
+    b = max(np.sqrt(Swing * AR), 3*R)  # wingspan
     c = b / AR  # chord
-    bf = c  # Width of the fuselage = chord
-    lf = 1.78 + c * 3  # Length of the fuselage equals 1.78 + 3c
-    if c < 1.78:  # Establish lower bounds
-        lf = 1.78 * 4
-        bf = 1.78
-    hf = bf  # Height of the fuselage
+    bf = c / 2  # Fuselage width
+    lf = c * 2  # Fuselage length
+    if c < 1.78:
+        lf = 1.78 * 2.5
+        bf = 1
+    hf = bf  # Fuselage height
+    # Initial dimensions
 
     # Fuselage
     Cd_fusS = 0.0031 * lf * (bf + hf)
@@ -49,8 +50,17 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
 
     # Dimensions
 
-    Swing, T_wing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr**2)
-    b= np.sqrt(Swing*AR) # Wingspan
+    Swing, T_wing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr ** 2)
+    b = max(np.sqrt(Swing * AR), 3*R)  # wingspan
+    c = b / AR  # chord
+    bf = c / 2  # Fuselage width
+    lf = c * 2  # Fuselage length
+    if c < 1.78:
+        lf = 1.78 * 2.5
+        bf = 1
+    hf = bf  # Fuselage height
+    # Initial dimensions, T_wing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr**2)
+    b= max(np.sqrt(Swing * AR), 3*R) # Wingspan
     c = b / AR  # chord
     bf = c  # Width of the fuselage = chord
     lf = 1.78 + c * 3  # Length of the fuselage equals 1.78 + 3c
@@ -86,16 +96,17 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
 # Weight Prediction:
 def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_density, E_density_TO, m_payload,
                  m_solar, print_results=True):
-    # Initial dimensions
     Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr ** 2)[0]
-    b = np.sqrt(Swing * AR) # wingspan
+    b = max(np.sqrt(Swing * AR), 3*R)  # wingspan
     c = b / AR  # chord
-    bf = c/2  # Fuselage width
-    lf = c * 3  # Fuselage length
+    bf = c / 2  # Fuselage width
+    lf = c * 2  # Fuselage length
     if c < 1.78:
-        lf = 1.78 * 3
+        lf = 1.78 * 2.5
         bf = 1
     hf = bf  # Fuselage height
+    # Initial dimensions
+
 
     # Wing and tail area
 
@@ -110,7 +121,7 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     Wtail2Wto = 0.64 * (N_ult * Stail ** 2) ** 0.75
 
     # Body Group
-    Vdive = 1.25 * V_cr
+    Vdive = 1.1 * V_cr
     lt = lf
     S_g = 4/3 * np.pi * hf**3 + 2*np.pi*hf * lf
     Wf = .23 * np.sqrt(Vdive * lt / (bf + hf)) * S_g ** 1.2

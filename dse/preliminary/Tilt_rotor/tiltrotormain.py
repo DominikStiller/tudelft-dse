@@ -15,7 +15,7 @@ if __name__ == '__main__':
     Mass_payload = 400  # kg
 
     DesignRange = 1000 #km
-    TakeoffTime = 10/60 * 4
+    TakeoffTime = 10/60 * 1
 
     TotalRotors = 4
     coaxial = True
@@ -61,4 +61,3 @@ if __name__ == '__main__':
         print(Totalweight)
         Mass_design = Totalweight
         #diff = 0.001
-        print(S, R*3, R*3/AR)
