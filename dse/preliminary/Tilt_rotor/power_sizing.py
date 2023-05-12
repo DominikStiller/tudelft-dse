@@ -6,7 +6,7 @@ import numpy as np
 
 
 def v_i(thrust, radius):
-    rho = 0.01
+    rho = const['airDensity']
     return np.sqrt(thrust/(2*rho*np.pi*radius**2))
 
 
@@ -22,7 +22,7 @@ def size_power_subsystem(radius, takeOffThrust, cruiseThrust, cruiseTime, takeOf
     rotorRadius = radius
     cruiseTime = cruiseTime / 3600
     takeOffTime = takeOffTime/3600
-    collectingArea = surfaceArea
+    collectingArea = surfaceArea/2
     solarPanelDensity = 1.76  # https://www.spectrolab.com/DataSheets/Panel/panels.pdf
 
     # Define the initial arrays

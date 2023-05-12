@@ -8,7 +8,7 @@ def DragEstimation(R, Swing, t2c, Vcr, visc_cr, AR):
     Oswald = 0.9
 
     # Dimensions
-    b = 2 * 1.5 * R  # Wingspan
+    b = np.sqrt(Swing*AR) # Wingspan
     c = b / AR  # chord
     bf = c  # Width of the fuselage = chord
     lf = 1.78 + c * 3  # Length of the fuselage equals 1.78 + 3c
@@ -48,7 +48,9 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
     g_mars = const['gravityMars']
 
     # Dimensions
-    b = 2 * 1.5 * R  # Wingspan
+
+    Swing, T_wing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr**2)
+    b= np.sqrt(Swing*AR) # Wingspan
     c = b / AR  # chord
     bf = c  # Width of the fuselage = chord
     lf = 1.78 + c * 3  # Length of the fuselage equals 1.78 + 3c
@@ -57,7 +59,7 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
         bf = 1.78
     hf = bf  # Height of the fuselage
 
-    Swing, T_wing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr**2)
+
 
     # Thrust estimations
     T_to = 1.1 * Wto * g_mars
@@ -85,7 +87,8 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
 def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_density, E_density_TO, m_payload,
                  m_solar, print_results=True):
     # Initial dimensions
-    b = 2 * 1.5 * R  # wingspan
+    Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr ** 2)[0]
+    b = np.sqrt(Swing * AR) # wingspan
     c = b / AR  # chord
     bf = c/2  # Fuselage width
     lf = c * 3  # Fuselage length
@@ -95,7 +98,7 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     hf = bf  # Fuselage height
 
     # Wing and tail area
-    Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr**2)[0]
+
     Stail = Swing * c / (1.5 * R)
 
     # Wing Group

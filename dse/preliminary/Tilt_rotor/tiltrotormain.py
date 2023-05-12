@@ -15,6 +15,7 @@ if __name__ == '__main__':
     Mass_payload = 400  # kg
 
     DesignRange = 1000 #km
+    TakeoffTime = 10/60 * 4
 
     TotalRotors = 4
     coaxial = True
@@ -25,7 +26,7 @@ if __name__ == '__main__':
     wingbraced = True
     V_cr = 400/3.6  # m/s
     E_density = 333.33  # W/kg
-    P_density_cr = 212  # wh/kg
+    P_density_cr = 300  # wh/kg
     P_density_TO = 700  # Wh/kg Power Density of the devices used for take-off
     E_density_TO = 300  # W/kg
     Volume_bat = 450  # Wh/L
@@ -41,7 +42,7 @@ if __name__ == '__main__':
 
         # Size batteries for cruise and solar panels
         cruiseThrust += DragEstimation(R=R, Swing=S, t2c=const['t/c'], Vcr=V_cr, visc_cr=const['visc_cr'], AR=AR)
-        batteryMass, panelMass, powerSurplus = size_power_subsystem(R, takeOffThrustPerEngine, cruiseThrust, 1e6 / V_cr, 600, S/2,
+        batteryMass, panelMass, powerSurplus = size_power_subsystem(R, takeOffThrustPerEngine, cruiseThrust, DesignRange / V_cr + TakeoffTime, TakeoffTime, S,
                                                                       plot=True)
 
         # Calculate weights
@@ -50,8 +51,7 @@ if __name__ == '__main__':
                                                                                         E_density_TO, Mass_payload, panelMass)
 
         # Payload-Range
-        PayloadRange(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO,
-                     panelMass, Mass_payload, minRange=1000)
+        PayloadRange(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, panelMass, Mass_payload, DesignRange)
 
         # Climb Performance
         ROC_cruise = AircraftClimbPerf(batteryMass, P_density_cr, Mass_design, R, V_cr)
@@ -60,4 +60,5 @@ if __name__ == '__main__':
         diff = abs((Totalweight-Mass_design)/Mass_design)
         print(Totalweight)
         Mass_design = Totalweight
-        print(S)
+        #diff = 0.001
+        print(S, R*3, R*3/AR)

@@ -94,12 +94,6 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
     fillfactor = 0.3
     Rotor_mass = const['bladeDensity']*R*Area*fillfactor
 
-    x=np.arange(0, 1, 0.01)
-    plt.plot(x, S1223_top(x))
-    plt.plot(x, S1223_bottom(x))
-    plt.axis('equal')
-    plt.show()
-
     if print_results:
         print('Given the mass of '+str(M)+'kg, the following applied: \n')
         print('Rotor Radius: '+str(R)+'[m]')
