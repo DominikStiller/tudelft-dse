@@ -3,19 +3,7 @@ from AircraftEstimating import Class2Weight
 from cruise_sizing import area_and_thrust
 
 
-# Constant
-constants = {
-    'gravityMars': 3.71,
-    'airDensity': 0.01,
-    'soundSpeed': 220,
-    'cl': 1.6,
-    'cd': 0.03,
-    'irradiance': 590,
-    'solarPanelDensity': 1.76
-}
-
-
-if __name__ =='__main__':
+if __name__ == '__main__':
     # Sizing of Rotor:
     margin = 0.1
     Mass_thrust = 3000*(1+margin)  # kg

@@ -1,11 +1,11 @@
 import numpy as np
 import scipy.stats as sstats
 import matplotlib.pyplot as plt
-from tiltrotormain import constants
+from constants import const
 
 
 def area_and_thrust(thrust_deflection, cl, cd, MTOM, q):
-    g_mars = constants['gravityMars']
+    g_mars = const['gravityMars']
     A = np.array([[cl * q, np.sin(np.radians(thrust_deflection))],
                   [-cd * q, np.cos(np.radians(thrust_deflection))]])
     B = np.array([MTOM * g_mars, 0])
