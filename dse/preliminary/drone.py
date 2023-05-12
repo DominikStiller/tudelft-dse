@@ -272,11 +272,10 @@ def engine_and_fuel_mass(torque, omega):
     power = torque * omega
     hp = power/745.7
     kwh = power * 60 / 1000
-    fc = (kwh * 0.025 / 0.568044) * 1.5 * 2 # *2 added for the way back
-
+    fc = (kwh * 0.025 / 0.568044) * 2# *2 added as safety factor
     # kg per hp 0.2 to 0.4 of avg helicopter engine based on PT6 engine series
-    print(f"engine mass lower bound = {0.2 * hp * (1 / 0.568044)} kg per engine, {0.2 * hp * 8 * (1 / 0.568044)} kg total")
-    print(f"engine mass upper bound = {0.4 * hp * (1 / 0.568044)} kg per engine, {0.4 * hp * 8 * (1 / 0.568044)} kg total")
+    print(f"engine mass lower bound = {0.2 * hp * (1 / 0.568044)} kg per engine, {0.2 * hp * 4 * (1 / 0.568044)} kg total")
+    print(f"engine mass upper bound = {0.4 * hp * (1 / 0.568044)} kg per engine, {0.4 * hp * 4 * (1 / 0.568044)} kg total")
 
     # fuel consumption = 205 g/kWh if 1680 hp so assume 20.5 g/kWh for 115 hp based on S6U-PTA engine
     print(f"fuel mass = {fc} kg")
@@ -301,7 +300,7 @@ def dragandliftofbody(V):
     ARb = 20
     e = 0.7
     nrblades = 4
-    nrrotors = 8
+    nrrotors = 4 #not rotors but like nr of coaxial rotors
 
     # connector drag coefficient
     Cdconnect = 0.04
@@ -325,7 +324,7 @@ if __name__ == "__main__":
     print(ct / sigma)
 
     speed = 111
-    angle_of_attack = np.radians(-5)
+    angle_of_attack = np.radians(10)
     climb_speed = 10
 
     rmax, tmaxhower, omegas = plot_radius_rpm_range()
