@@ -13,7 +13,7 @@ g_mars = 3.71
 # Geometric parameters
 c_to_R_ratio = 1 / 20  # ratio of chord to radius
 R = 7  # radius of rotor
-omega = 0.66  # angular speed of rotor [omega 0.66 = 250 RPM]
+omega = 26.2  # angular speed of rotor [omega 0.66 = 250 RPM]
 # a = 0.11 * 180 / np.pi  # lift curve slope
 a = 6  # lift curve slope
 theta_0 = np.radians(25)  # zero pitch angle
@@ -349,13 +349,18 @@ def dragandliftofbody(V):
 if __name__ == "__main__":
     ct = thrust_coefficient(solve_thrust_hover(R, omega) / (2 * n_rotors), R, omega)
     sigma = solidity_ratio(R * c_to_R_ratio, R)
-    print(ct / sigma)
+    print(ct / sigma, sigma)
+
+    print(solve_thrust_hover(R, 26))
+    alpha = 5
+    print(solve_thrust_forward_flight(111, np.radians(alpha), R, 11) * np.cos(np.radians(alpha)))
+    print(solve_thrust_forward_flight(111, np.radians(alpha), R, 11) * np.sin(np.radians(alpha)))
 
     speed = 111
     angle_of_attack = np.radians(10)
     climb_speed = 10
 
-    plot_radius_rpm_range()
+    # plot_radius_rpm_range()
 
     # rmax, tmaxhower, omegas = plot_radius_rpm_range()
     # tmaxhower, tmaxclimb, tmaxcruise, torquehower, torqueclimb, torquecruise = thrust_and_force_for_optimum_Tip_Mach(speed, angle_of_attack, climb_speed)

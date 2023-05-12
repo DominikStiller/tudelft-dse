@@ -191,10 +191,11 @@ if __name__ == "__main__":
         rho_blades = rho_cfrp
 
         payload_mass = 350
-        fuel_mass = 600
+        fuel_mass = 437 * 1.3
         coaxial = True
         n_legs = 4
         c_to_R_ratio = 1 / 20
+        chord = radius * c_to_R_ratio
         tip_speed = 220 * 0.85
         MTOM = 2700
         fuselage_length = 5
@@ -204,7 +205,7 @@ if __name__ == "__main__":
         spar_mass, spar_diameter = calc_spar(
             rho_spar, sigma_ult_spar, 11130 / n_rotors, spar_length
         )
-        blade_mass, blade_thickness = calc_blade(rho_blades, radius * c_to_R_ratio, radius)
+        blade_mass, blade_thickness = calc_blade(rho_blades, chord, radius)
 
         W_total, W_components = iterate_mass(
             payload_mass,
@@ -223,5 +224,7 @@ if __name__ == "__main__":
             spar_mass,
             blade_mass,
         )
-        print(f"{n_rotors=} {n_blades=} {spar_diameter=:.2} {blade_thickness=} {W_total=}")
-        print(W_components)
+        print(
+            f"{n_rotors=} {n_blades=} {blade_thickness=} {chord=} {spar_length=:.2} {spar_diameter=:.2} {W_total=}"
+        )
+        print(np.sum(W_components))
