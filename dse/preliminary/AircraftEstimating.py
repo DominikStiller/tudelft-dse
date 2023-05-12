@@ -65,16 +65,19 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
     Power = power(T_to, R)
     E_TO = Power * (1 / 6)  # Assuming take-off time of 10min
     m_TO = max(Power / P_density, E_TO / E_density_TO)
+    E_TO = Power * (1 / 6)  # Assuming take-off time of 10min
 
     # Cruise
     P_cr = power(T_cr, R)
     E_cr = ((Wto - Wtot - m_TO) * E_density)  # Use all remaining mass for batteries
-
+    m_battery_cr = Wto - Wtot - m_TO
+    Endurance = E_cr / P_cr
+    Range = Endurance * V_cr * 3.6
     # Range and endurance
     Endurance = E_cr / P_cr  # hours
     Range = Endurance * V_cr * 3.6  # km
 
-    return Range, Endurance, m_battery_TO, m_battery_cr
+    return Range, Endurance, m_TO, m_battery_cr
 
 
 # Weight Prediction:
