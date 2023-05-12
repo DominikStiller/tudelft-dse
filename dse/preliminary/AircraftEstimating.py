@@ -69,9 +69,6 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
     m_battery_cr = Wto - Wtot - m_TO
     Endurance = E_cr / P_cr
     Range = Endurance * V_cr * 3.6
-    # Range and endurance
-    Endurance = E_cr / P_cr  # hours
-    Range = Endurance * V_cr * 3.6  # km
 
     return Range, Endurance, m_TO, m_battery_cr
 
@@ -124,4 +121,4 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     print('Available Endurance: ' + str(Endurance) + '[h]')
     print('Available Range: ' + str(Range) + '[km]')
     print('Flight Radius: ' + str(Range / 2) + '[km]')
-    return Wwing2Wto * Wto, Wtail2Wto, Wf, Wsc
+    return Range, Wwing2Wto * Wto, Wtail2Wto, Wf, Wsc
