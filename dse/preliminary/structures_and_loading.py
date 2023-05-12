@@ -6,9 +6,7 @@ def wing_bending(MTOM, wingspan, engineMass, rotorMass, n_rotors, wingMass):
     thrustPerEngine = 1.1 * MTOM * g / 2
     engineWeight = engineMass * g + rotorMass * n_rotors * g
     wingWeight = wingMass * g
-
-    momentAtBase = (thrustPerEngine - engineWeight) * wingspan/2 - wingWeight * wingspan/4
-    return momentAtBase
+    ...
 
 
 if __name__ == '__main__':
