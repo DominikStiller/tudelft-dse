@@ -1,18 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from tiltrotormain import constants
 from scipy import integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
 from cruise_sizing import max_tipSpeed
 from power_sizing import power
+from constants import const
 
 
 def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_results=False):
     # Rename constants
-    gm = constants['gravityMars']
-    rho = constants['airDensity']
-    V_m = constants['soundSpeed']
+    gm = const['gravityMars']
+    rho = const['airDensity']
+    V_m = const['soundSpeed']
 
     b = N_blades
     v_tip = V_tip
@@ -94,8 +94,8 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
 
 
 if __name__ == '__main__':
-    gm = constants['gravityMars']
-    rho = constants['airDensity']  # kg/m3
+    gm = const['gravityMars']
+    rho = const['airDensity']  # kg/m3
     MTOW = 3000 * gm
 
     # Blade Element Method with ideal twist
