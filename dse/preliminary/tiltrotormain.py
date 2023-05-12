@@ -6,7 +6,9 @@ from AircraftEstimating import Class2Weight
 constants = {
     'gravityMars': 3.71,
     'airDensity': 0.01,
-    'soundSpeed': 220
+    'soundSpeed': 220,
+    'cl': 1.6,
+    'cd': 0.03
 }
 
 # Sizing of Rotor:
@@ -30,7 +32,7 @@ P_density_TO = 700  # Wh/kg Power Density of the devices used for take-off
 E_density_TO =  300  # W/kg
 Volume_bat = 450  # Wh/L
 
-# Calculate parameters
+# Calculate rotor dimensions, power and mass
 R, T, Horsepower, Power, mass_rotors = RadiusMassElementMomentum(Mass_thrust, TotalRotors, BladePerRotor, coaxial, TipSpeed)
 Class2Weight(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, Mass_payload, Mass_solar)
 
