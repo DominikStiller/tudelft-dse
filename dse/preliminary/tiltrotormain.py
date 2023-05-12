@@ -1,6 +1,7 @@
 from RotorEngineSizing import RadiusMassElementMomentum
 from AircraftEstimating import Class2Weight
 from cruise_sizing import area_and_thrust
+from constants import const
 
 
 if __name__ == '__main__':
@@ -29,8 +30,8 @@ if __name__ == '__main__':
     R, takeOffThrust, horsepowerPerEngine, totalPower, mass_rotors = RadiusMassElementMomentum(Mass_thrust, TotalRotors, BladePerRotor, coaxial, TipSpeed)
 
     # Calculate wing area
-    S, cruiseThrust = area_and_thrust(0, constants['cl'], constants['cd'], Mass_design, 0.5*constants['airDensity']*V_cr**2)
-    Mass_solar = constants['solarPanelDensity'] * S
+    S, cruiseThrust = area_and_thrust(0, const['cl'], const['cd'], Mass_design, 0.5*const['airDensity']*V_cr**2)
+    Mass_solar = const['solarPanelDensity'] * S
 
     # Calculate weights
     wingWeight, tailWeight, bodyWeight, controlSurfacesWeight = Class2Weight(R, mass_rotors, Mass_design, N_ult, AR,
