@@ -42,17 +42,17 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
     b = 2 * 1.5 * R  # Wingspan
     c = b / AR  # chord
     bf = c  # Width of the fuselage = chord
-    hf = bf  # Height of the fuselage
     lf = 1.78 + c * 3  # Length of the fuselage equals 1.78 + 3c
     if c < 1.78:  # Establish lower bounds
         lf = 1.78 * 4
         bf = 1.78
 
-    Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr**2)[0]
+    hf = bf  # Height of the fuselage
+    Swing, T_wing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr**2)
 
     # Thrust estimations
     T_to = 1.1 * Wto * g_mars
-    T_cr = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr**2)[1] + \
+    T_cr = T_wing + \
            DragEstimation(lf, hf, Swing, 0.12, V_cr, 5.167E-4, 1.2, AR, rho=0.01)
 
     # Power and energy
