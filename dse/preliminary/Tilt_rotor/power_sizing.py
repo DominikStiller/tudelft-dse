@@ -23,7 +23,6 @@ def size_power_subsystem(radius, takeOffThrust, cruiseThrust, cruiseTime, takeOf
     cruiseTime = cruiseTime / 3600
     takeOffTime = takeOffTime/3600
     collectingArea = surfaceArea
-    batteryEnergyDensity = 350
     solarPanelDensity = 1.76  # https://www.spectrolab.com/DataSheets/Panel/panels.pdf
 
     # Define the initial arrays
@@ -33,8 +32,8 @@ def size_power_subsystem(radius, takeOffThrust, cruiseThrust, cruiseTime, takeOf
     intensity = averageIrradiance * np.reshape(np.cos(lat), (lat.size, 1)) * np.ones(lon.size)
 
     # Power calculations
-    takeOffPower = power(takeOffThrust, rotorRadius)
-    cruisePower = power(cruiseThrust, rotorRadius)
+    takeOffPower = 4 * power(takeOffThrust, rotorRadius)
+    cruisePower = 4 * power(cruiseThrust, rotorRadius)
     takeOffEnergy = takeOffPower * takeOffTime
     cruiseEnergy = cruisePower * cruiseTime
 
@@ -51,8 +50,8 @@ def size_power_subsystem(radius, takeOffThrust, cruiseThrust, cruiseTime, takeOf
 
     # Size the batteries and the arrays
     energyConsumption = 2 * takeOffEnergy + cruiseEnergy
-    batteryMass = energyConsumption / batteryEnergyDensity
-    cruiseBattery = cruiseEnergy / batteryEnergyDensity
+    batteryMass = max(energyConsumption / const['batteryEnergyDensity'], takeOffPower/const['batteryPowerDensity'])
+    cruiseBattery = cruiseEnergy / const['batteryEnergyDensity']
     panelMass = collectingArea * solarPanelDensity
     print(f'Mass of the batteries = {batteryMass} kg')
     print(f'Mass of the solar panels = {panelMass} kg')
@@ -63,9 +62,9 @@ def size_power_subsystem(radius, takeOffThrust, cruiseThrust, cruiseTime, takeOf
         plt.imshow(marsMap)
 
         # Plot the power surplus
-        # divNorm = mcolors.TwoSlopeNorm(vmin=np.min(powerSurplus)/1000, vcenter=0, vmax=np.max(powerSurplus)/1000)
-        # plt.pcolormesh(powerSurplus / 1000, alpha=0.6, cmap='RdYlGn', norm=divNorm)
-        plt.pcolormesh(powerSurplus / 1000, alpha=0.6, cmap='RdYlGn')
+        divNorm = mcolors.TwoSlopeNorm(vmin=np.min(powerSurplus)/1000, vcenter=0, vmax=np.max(powerSurplus)/1000)
+        plt.pcolormesh(powerSurplus / 1000, alpha=0.6, cmap='RdYlGn', norm=divNorm)
+        # plt.pcolormesh(powerSurplus / 1000, alpha=0.6, cmap='RdYlGn')
         plt.colorbar(fraction=0.025, pad=0.04, label='Energy surplus during cruise [kW]')
         plt.axis('off')
         plt.tight_layout()

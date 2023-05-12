@@ -46,8 +46,8 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
         alpha = 6*np.pi/180 * np.ones(n_elements)
 
         #S1223
-        cl = 1.6
-        cd = 0.05
+        cl = const['cl']
+        cd = const['cd']
         DctDr2R = b*r2R**2*c2R*cl/(2*np.pi)
 
         funCT = InterpolatedUnivariateSpline(r2R, DctDr2R)
@@ -74,13 +74,14 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
         pow = power(T, R)
 
     #Rotor Weight:
+    # TODO: Update to S1223 Airfoil
     def NACA0012airfoilfunction(x):
         return 5 * 0.12 * (0.2969 * (x**0.5) - 0.1260 * x - 0.3516 * (x ** 2) + 0.2843 * (x ** 3) - 0.1036 * (x ** 4))
 
 
     Area = integrate.quad(NACA0012airfoilfunction, 0, 1)[0] * c
     fillfactor = 0.3
-    Rotor_mass = 1500*R*Area*fillfactor
+    Rotor_mass = const['bladeDensity']*R*Area*fillfactor
 
     if print_results:
         print('Given the mass of '+str(M)+'kg, the following applied: \n')
@@ -88,7 +89,7 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
         print('Rotor Power: ' + str(pow) + '[W]')
         print('Total Aircraft power: ' + str(pow * N_rotors) + '[W]')
         print('Weight per rotor with '+str(b)+' blades is '+ str(Rotor_mass)+'[kg]')
-        print('Total Rotor mass for entire aircraft: '+str(Rotor_mass*N_rotors))
+        print(f'Total Rotor mass for entire aircraft: {Rotor_mass*N_rotors}[kg]')
 
     return R, T, pow / 745.7, pow * N_rotors, Rotor_mass * N_rotors
 
