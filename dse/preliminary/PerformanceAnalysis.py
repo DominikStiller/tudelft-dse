@@ -1,6 +1,4 @@
-
-
-import np as np
+import numpy as np
 from matplotlib import pyplot as plt
 
 from dse.preliminary.AircraftEstimating import Class2Weight
@@ -8,7 +6,7 @@ from dse.preliminary.AircraftEstimating import Class2Weight
 
 
 def PayloadRange(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, payloadmass, Mass_solar):
-    payloadmass=np.arange(400, 689, 1)
+    payloadmass = np.arange(400, 689, 1)
     RangeArr = Class2Weight(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, payloadmass, Mass_solar)
 
     RangeLimity, RangeLimitx = [0, 900], [1000, 1000]

@@ -1,6 +1,7 @@
 from RotorEngineSizing import RadiusMassElementMomentum
 from AircraftEstimating import Class2Weight
 from cruise_sizing import area_and_thrust
+from power_sizing import size_power_subsystem
 from constants import const
 
 
@@ -27,15 +28,16 @@ if __name__ == '__main__':
 
 
     # Calculate rotor dimensions, power and mass
-    R, takeOffThrust, horsepowerPerEngine, totalPower, mass_rotors = RadiusMassElementMomentum(Mass_thrust, TotalRotors, BladePerRotor, coaxial, TipSpeed)
+    R, takeOffThrust, horsepowerPerRotor, totalPower, mass_rotors = RadiusMassElementMomentum(Mass_thrust, TotalRotors, BladePerRotor, coaxial, TipSpeed)
 
     # Calculate wing area
     S, cruiseThrust = area_and_thrust(0, const['cl'], const['cd'], Mass_design, 0.5*const['airDensity']*V_cr**2)
-    Mass_solar = const['solarPanelDensity'] * S
+
+    # Size batteries for cruise and solar panels
+    cruiseBattery, panelMass, powerSurplus = size_power_subsystem(R, takeOffThrust, cruiseThrust, 1e6/V_cr, 600, S,
+                                                                  plot=True)
 
     # Calculate weights
     wingWeight, tailWeight, bodyWeight, controlSurfacesWeight = Class2Weight(R, mass_rotors, Mass_design, N_ult, AR,
                                                                              wingbraced, V_cr, E_density, P_density_TO,
-                                                                             E_density_TO, Mass_payload, Mass_solar)
-
-
+                                                                             E_density_TO, Mass_payload, panelMass)
