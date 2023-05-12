@@ -5,10 +5,9 @@ from power_sizing import power
 import scipy.integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
 from RotorEngineSizing import RadiusMassElementMomentum
-
-
-# from PerformanceAnalysis import RangeCalc
-
+#from PerformanceAnalysis import RangeCalc
+from cruise_sizing import area_and_thrust
+from power_sizing import power
 
 def DragEstimation(lf, hf, Swing, t2c, Vcr, visc_cr, Cl, AR, rho):
     Oswald = 0.9
@@ -66,16 +65,19 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
     Power = power(T_to, R)
     E_TO = Power * (1 / 6)  # Assuming take-off time of 10min
     m_TO = max(Power / P_density, E_TO / E_density_TO)
+    E_TO = Power * (1 / 6)  # Assuming take-off time of 10min
 
     # Cruise
     P_cr = power(T_cr, R)
     E_cr = ((Wto - Wtot - m_TO) * E_density)  # Use all remaining mass for batteries
-
+    m_battery_cr = Wto - Wtot - m_TO
+    Endurance = E_cr / P_cr
+    Range = Endurance * V_cr * 3.6
     # Range and endurance
     Endurance = E_cr / P_cr  # hours
     Range = Endurance * V_cr * 3.6  # km
 
-    return Range, Endurance
+    return Range, Endurance, m_TO, m_battery_cr
 
 
 # Weight Prediction:
@@ -116,9 +118,9 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     ksc = 0.64  # transport plane with powered controls
     Wsc = 0.768 * ksc * Wto ** (2 / 3)
 
-    # Total Weight
-    Wtot = Wwing2Wto * Wto + Wtail2Wto + Wf + Wsc + RotorMass + m_payload + m_solar
-    Range, Endurance = RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO)
+    #Total Weight
+    Wtot = Wwing2Wto*Wto+Wtail2Wto+Wf+Wsc+RotorMass+m_payload+m_solar
+    Range, Endurance, m_battery_TO, m_battery_cr = RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO)
 
     print('Wing weight: ' + str(Wwing2Wto * Wto) + '[kg]')
     print('Tail weight: ' + str(Wtail2Wto) + '[kg]')
