@@ -41,8 +41,8 @@ def RadiusfromMass(M):
     Hp = T*v1*N_rotor*0.00134
     return R, accuracy, Hp, sigma, Ct, Cq, FM
 '''
-def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip):
-    gm=3.71
+def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_results=False):
+    gm=3.721
     T_min = 1.1*M*gm /N_rotors
     b=N_blades
     T=0
@@ -116,17 +116,18 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip):
     fillfactor=0.3
     Rotor_mass = 1500*R*Area*fillfactor
 
-    print('Given the mass of '+str(M)+'kg, the following applied: \n')
-    print('Rotor Radius: '+str(R)+'[m]')
-    print('Rotor Power: '+str(power)+'[W]')
-    print('Total Aircraft power: '+str(power*N_rotors)+'[W]')
-    print('Weight per rotor with '+str(b)+' blades is '+ str(Rotor_mass)+'[kg]')
-    print('Total Rotor mass for entire aircraft: '+str(Rotor_mass*N_rotors))
+    if print_results:
+        print('Given the mass of '+str(M)+'kg, the following applied: \n')
+        print('Rotor Radius: '+str(R)+'[m]')
+        print('Rotor Power: '+str(power)+'[W]')
+        print('Total Aircraft power: '+str(power*N_rotors)+'[W]')
+        print('Weight per rotor with '+str(b)+' blades is '+ str(Rotor_mass)+'[kg]')
+        print('Total Rotor mass for entire aircraft: '+str(Rotor_mass*N_rotors))
 
     return R, T, power/745.7, power*N_rotors, Rotor_mass*N_rotors
 
 if __name__ == '__main__':
-    gm = 3.71
+    gm = 3.721
     MTOW = 3000 * gm
     rho = 0.01  # kg/m3
 
