@@ -42,7 +42,7 @@ def RadiusfromMass(M):
     return R, accuracy, Hp, sigma, Ct, Cq, FM
 '''
 def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip):
-    gm=3.721
+    gm=3.71
     T_min = 1.1*M*gm /N_rotors
     b=N_blades
     T=0
@@ -126,7 +126,7 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip):
     return R, T, power/745.7, power*N_rotors, Rotor_mass*N_rotors
 
 if __name__ == '__main__':
-    gm = 3.721
+    gm = 3.71
     MTOW = 3000 * gm
     rho = 0.01  # kg/m3
 

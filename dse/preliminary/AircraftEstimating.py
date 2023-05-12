@@ -4,6 +4,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 from RotorEngineSizing import RadiusMassElementMomentum
 #from PerformanceAnalysis import RangeCalc
 from cruise_sizing import area_and_thrust
+from power_sizing import power
 
 def DragEstimation(lf, hf, Swing, t2c, Vcr, visc_cr, Cl, AR, rho):
     Oswald = 0.9
@@ -34,7 +35,7 @@ def DragEstimation(lf, hf, Swing, t2c, Vcr, visc_cr, Cl, AR, rho):
 
 
 def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
-    g_mars=3.721
+    g_mars=3.71
     b = 2 * 1.5 * R
     c = b / AR
     bf = c
@@ -47,15 +48,16 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
     T_to = 1.1 * Wto * g_mars
     T_cr = area_and_thrust(0, 1.2, 0.11, Wto, 0.5 * 0.01 * V_cr)[1] + DragEstimation(lf, hf, Swing, 0.12, V_cr,
                                                                                      5.167E-4, 1.2, AR, rho=0.01)
-    Power = T_to * np.sqrt(T_to / (2 * 0.01 * np.pi * R * R))
+    Power = power(T_to, R)
     E_TO = Power * (1 / 6) #Assuming take-off time of 10min
-    m_TO = max(Power/P_density, E_TO/E_density_TO)
-    E_cr = ((Wto - Wtot-m_TO) * E_density )
+    m_battery_TO = max(Power/P_density, E_TO/E_density_TO)
+    m_battery_cr = Wto - Wtot-m_battery_TO
+    E_cr = (m_battery_cr) * E_density
     P_cr = T_cr * np.sqrt(T_cr / (2 * 0.01 * np.pi * R * R))
     Endurance = E_cr / P_cr
     Range = Endurance * V_cr * 3.6
 
-    return Range, Endurance
+    return Range, Endurance, m_battery_TO, m_battery_cr
 
 
 #Weight Prediction:
@@ -99,7 +101,7 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
 
     #Total Weight
     Wtot = Wwing2Wto*Wto+Wtail2Wto+Wf+Wsc+RotorMass+m_payload+m_solar
-    Range, Endurance = RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO)
+    Range, Endurance, m_battery_TO, m_battery_cr = RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO)
 
     print('Very Crude Structural Estimate: '+str(Wstruc2Wto*Wto))
     print('Less crude estimate: \n')

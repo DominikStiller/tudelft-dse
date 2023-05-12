@@ -7,9 +7,9 @@ from dse.preliminary.AircraftEstimating import Class2Weight
 #Payload Range Diagram
 
 
-def PayloadRange():
+def PayloadRange(R, mass_rotors, Mass_design:
     payloadmass=np.arange(400, 689, 1)
-    RangeArr = Class2Weight(Wto=3000, N_ult=4.4, AR=28, wingbraced=True, V_cr=154, E_density=333, m_payload=payloadmass, m_solar=0)
+    RangeArr = Class2Weight(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, payloadmass, Mass_solar)
 
     RangeLimity, RangeLimitx = [0, 900], [1000, 1000]
     PayloadLimity, PayloadLimitx = [400, 400], [0, 6000]
@@ -26,7 +26,9 @@ def PayloadRange():
 
 
 #Climb Performance
-def AircraftClimbPerf(T, W, Cl, Cd):
+def AircraftClimbPerf(m_bat_cr, P_dens_cr, W, Cl, Cd):
+    #Aircraft sustained climb is reliant on the batteries used:
+    T = m_bat_cr*P_dens_cr
     gamma_climb = np.arctan(T/W - Cd/Cl)
 
 def RotorClimbPerf(MTOM, R):
