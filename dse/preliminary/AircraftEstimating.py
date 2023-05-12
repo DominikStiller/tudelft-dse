@@ -2,12 +2,7 @@ import numpy as np
 from constants import const
 from cruise_sizing import area_and_thrust
 from power_sizing import power
-import scipy.integrate
-from scipy.interpolate import InterpolatedUnivariateSpline
-from RotorEngineSizing import RadiusMassElementMomentum
-#from PerformanceAnalysis import RangeCalc
-from cruise_sizing import area_and_thrust
-from power_sizing import power
+
 
 def DragEstimation(lf, hf, Swing, t2c, Vcr, visc_cr, Cl, AR, rho):
     Oswald = 0.9
@@ -47,16 +42,17 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
     b = 2 * 1.5 * R  # Wingspan
     c = b / AR  # chord
     bf = c  # Width of the fuselage = chord
+    hf = bf  # Height of the fuselage
     lf = 1.78 + c * 3  # Length of the fuselage equals 1.78 + 3c
     if c < 1.78:  # Establish lower bounds
         lf = 1.78 * 4
         bf = 1.78
-    hf = bf  # Height of the fuselage
-    Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr)[0]
+
+    Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr**2)[0]
 
     # Thrust estimations
     T_to = 1.1 * Wto * g_mars
-    T_cr = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr)[1] + \
+    T_cr = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr**2)[1] + \
            DragEstimation(lf, hf, Swing, 0.12, V_cr, 5.167E-4, 1.2, AR, rho=0.01)
 
     # Power and energy
@@ -83,8 +79,6 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
 # Weight Prediction:
 def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_density, E_density_TO, m_payload,
                  m_solar):
-    g_mars = const['gravityMars']
-
     # Initial dimensions
     b = 2 * 1.5 * R  # wingspan
     c = b / AR  # chord
@@ -96,7 +90,7 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
         bf = 1.78
 
     # Wing and tail area
-    Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr)[0]
+    Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr**2)[0]
     Stail = Swing * c / (1.5 * R)
 
     # Wing Group
