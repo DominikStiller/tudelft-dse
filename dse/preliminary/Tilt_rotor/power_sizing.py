@@ -14,16 +14,12 @@ def power(thrust, radius):
     return thrust * v_i(thrust, radius)
 
 
-def size_power_subsystem(radius, takeOffThrust, cruiseThrust, cruiseTime, takeOffTime, surfaceArea, plot=False):
+def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, takeOffTime, surfaceArea, plot=False):
     # Define constants
     averageIrradiance = 2 / np.pi * const['irradiance']  # average intensity during the day
-    takeOffThrust = takeOffThrust
-    cruiseThrust = cruiseThrust
-    rotorRadius = radius
-    cruiseTime = cruiseTime / 3600
-    takeOffTime = takeOffTime/3600
-    collectingArea = surfaceArea/2
-    solarPanelDensity = 1.76  # https://www.spectrolab.com/DataSheets/Panel/panels.pdf
+    cruiseTime /= 3600
+    takeOffTime /= 3600
+    collectingArea = surfaceArea / 2
 
     # Define the initial arrays
     lat = np.radians(np.linspace(-90, 90, 360))
@@ -52,7 +48,7 @@ def size_power_subsystem(radius, takeOffThrust, cruiseThrust, cruiseTime, takeOf
     energyConsumption = 2 * takeOffEnergy + cruiseEnergy
     batteryMass = max(energyConsumption / const['batteryEnergyDensity'], takeOffPower/const['batteryPowerDensity'])
     cruiseBattery = cruiseEnergy / const['batteryEnergyDensity']
-    panelMass = collectingArea * solarPanelDensity
+    panelMass = collectingArea * const['solarPanelDensity']
     print(f'Mass of the batteries = {batteryMass} kg')
     print(f'For cruise we need: {cruiseBattery*100/batteryMass}%')
     print(f'Mass of the solar panels = {panelMass} kg')

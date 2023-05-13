@@ -15,7 +15,7 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
 
     b = N_blades
     v_tip = V_tip
-    T_min =M * gm /N_rotors
+    T_min = M * gm /N_rotors
 
     # Initial guesses
     T = 0

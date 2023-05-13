@@ -1,7 +1,7 @@
-import numpy as np
-from constants import const
+from constants import const, aircraftParameters
 from cruise_sizing import area_and_thrust
 from power_sizing import power
+import numpy as np
 
 
 def DragEstimation(R, Swing, t2c, Vcr, visc_cr, AR):
@@ -51,42 +51,24 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
     # Dimensions
 
     Swing, T_wing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr ** 2)
-    b = max(np.sqrt(Swing * AR), 3*R)  # wingspan
-    c = b / AR  # chord
-    bf = c / 2  # Fuselage width
-    lf = c * 2  # Fuselage length
-    if c < 1.78:
-        lf = 1.78 * 2.5
-        bf = 1
-    hf = bf  # Fuselage height
-    # Initial dimensions, T_wing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr**2)
-    b= max(np.sqrt(Swing * AR), 3*R) # Wingspan
-    c = b / AR  # chord
-    bf = c  # Width of the fuselage = chord
-    lf = 1.78 + c * 3  # Length of the fuselage equals 1.78 + 3c
-    if c < 1.78:  # Establish lower bounds
-        lf = 1.78 * 4
-        bf = 1.78
-    hf = bf  # Height of the fuselage
-
-
 
     # Thrust estimations
     T_to = 1.1 * Wto * g_mars
     T_cr = T_wing + \
            DragEstimation(R, Swing, const['t/c'], V_cr, 5.167E-4, AR)
 
-    # Power and energy
-
     # Take-off
-    Power = power(T_to, R)
-    E_TO = Power * (1 / 6)  # Assuming take-off time of 10min
+    Power = 4 * power(T_to / 4, R)
+    E_TO = Power * const['takeOffTime']/3600
     m_TO = max(Power / P_density, E_TO / E_density_TO)
 
     # Cruise
     P_cr = power(T_cr, R)
     E_cr = ((Wto - Wtot - m_TO) * E_density)  # Use all remaining mass for batteries
     m_battery_cr = Wto - Wtot - m_TO
+    if np.min([m_battery_cr]) < 0:
+        raise ValueError('Not enough available weight for batteries')
+
     Endurance = E_cr / P_cr
     Range = Endurance * V_cr * 3.6
 
@@ -105,11 +87,8 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
         lf = 1.78 * 2.5
         bf = 1
     hf = bf  # Fuselage height
-    # Initial dimensions
-
 
     # Wing and tail area
-
     Stail = Swing * c / (1.5 * R)
 
     # Wing Group
@@ -126,17 +105,16 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     S_g = 4/3 * np.pi * hf**3 + 2*np.pi*hf * lf
     Wf = .23 * np.sqrt(Vdive * lt / (bf + hf)) * S_g ** 1.2
 
-
-    #Total Weight
-    Wtot = Wwing2Wto*Wto+Wtail2Wto+Wf+RotorMass+m_payload+m_solar
+    # Total Weight
+    Wtot = Wwing2Wto*Wto + Wtail2Wto + Wf + RotorMass + m_payload + m_solar
     Range, Endurance, m_battery_TO, m_battery_cr = RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO)
 
     if print_results:
         print('Wing weight: ' + str(Wwing2Wto * Wto) + '[kg]')
         print('Tail weight: ' + str(Wtail2Wto) + '[kg]')
         print('Body weight: ' + str(Wf) + '[kg]')
-        #print('Available weight for batteries: ' + str(Wto - Wtot) + '[kg]')
-        #print('Available Endurance: ' + str(Endurance) + '[h]')
-        #print('Available Range: ' + str(Range) + '[km]')
-        #print('Flight Radius: ' + str(Range / 2) + '[km]')
+        # print('Available weight for batteries: ' + str(Wto - Wtot) + '[kg]')
+        # print('Available Endurance: ' + str(Endurance) + '[h]')
+        # print('Available Range: ' + str(Range) + '[km]')
+        # print('Flight Radius: ' + str(Range / 2) + '[km]')
     return Range, Wwing2Wto * Wto, Wtail2Wto, Wf
