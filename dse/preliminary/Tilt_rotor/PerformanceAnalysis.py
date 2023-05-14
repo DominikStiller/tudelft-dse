@@ -6,19 +6,24 @@ from AircraftEstimating import Class2Weight
 #Payload Range Diagram
 
 
-def PayloadRange(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, Mass_solar, minpayload, minRange):
-    payloadmass = np.arange(minpayload, 700)
+def PayloadRange(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, Mass_solar, minpayload, minRange, availableSpace):
+    payloadmass = np.arange(minpayload, minpayload+availableSpace)
     RangeArr = Class2Weight(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, payloadmass, Mass_solar, print_results=False)[0]
 
-    RangeLimity, RangeLimitx = [0, 900], [minRange, minRange]
-    PayloadLimity, PayloadLimitx = [400, 400], [0, 13000]
+    RangeLimity, RangeLimitx = [0, max(payloadmass)], [minRange, minRange]
+    PayloadLimity, PayloadLimitx = [400, 400], [0, RangeArr[0]]
     PayRange, axis = plt.subplots()
 
-    axis.plot(RangeArr, payloadmass)
+    if RangeArr[-1] > 1000:
+        maxRange_x = [1000, RangeArr[-1]]
+        maxRange_y = [minpayload+availableSpace, minpayload+availableSpace]
+        axis.plot(maxRange_x, maxRange_y, 'b-')
+
+    axis.plot(RangeArr, payloadmass, 'b-')
     axis.plot(RangeLimitx, RangeLimity, label='Range requirement')
     axis.plot(PayloadLimitx, PayloadLimity, label='Payload requirement')
     plt.legend(loc='best')
-    plt.ylim(250, 800)
+    plt.ylim(250, RangeLimity[-1]+10)
     plt.savefig('Tiltrotor-PayloadRangeDiagram.pdf')
     plt.show()
 

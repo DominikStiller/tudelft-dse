@@ -51,9 +51,10 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
 
         funCT = InterpolatedUnivariateSpline(r2R, DctDr2R)
         Ct_lossless = funCT.integral(x0, 1)
-        if Ct_lossless<0.006:
+        if Ct_lossless < 0.006:
             B = 1-0.06/b
-        else: B = 1-np.sqrt(2.27*Ct_lossless-0.01)/b
+        else:
+            B = 1-np.sqrt(2.27*Ct_lossless-0.01)/b
 
         Ct = Ct_lossless - funCT.integral(B, 1)
 
@@ -72,8 +73,7 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
 
         pow = power(T, R)
 
-    #Rotor Weight:
-    # TODO: Update to S1223 Airfoil
+    # Rotor Weight:
     x_cord_top = np.flip([1, 0.99838, 0.99417, 0.98825, 0.98075, 0.97111, 0.95884,0.94389,0.92639,0.90641,0.88406,0.85947,0.83277,
                   0.80412,0.77369,0.74166,0.70823,0.6736,0.63798,0.60158,0.56465,0.52744,0.49025,0.4534,0.41721,0.38193,
                   0.34777,0.31488,0.28347,0.2537,0.22541,0.19846,0.17286,0.14863,0.12591,0.10482,0.08545,0.06789,0.05223,
@@ -91,7 +91,7 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
     Area_top = S1223_top.integral(0, 1)
     Area_bot = S1223_bottom.integral(0, 1)
     Area = (Area_top - Area_bot)*c
-    fillfactor = 0.3
+    fillfactor = 0.1
     Rotor_mass = const['bladeDensity']*R*Area*fillfactor
 
     if print_results:

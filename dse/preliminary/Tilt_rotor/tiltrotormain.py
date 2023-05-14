@@ -67,7 +67,7 @@ if __name__ == '__main__':
                      const['ultimateLoad'], aircraftParameters['AR'], aircraftParameters['wingbraced'],
                      const['cruiseSpeed'], const['batteryEnergyDensity'], const['batteryPowerDensity'],
                      const['batteryEnergyDensity'], aircraftParameters['panelMass'], const['payloadMass'],
-                     const['designRange']/1000)
+                     const['designRange']/1000, Mass_design-aircraftParameters['totalMass'])
 
         # Climb Performance
         ROC_cruise = AircraftClimbPerf(aircraftParameters['batteryMass'], const['batteryPowerDensity'], Mass_design,
