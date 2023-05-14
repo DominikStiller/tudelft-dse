@@ -23,7 +23,9 @@ def PayloadRange(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_den
     axis.plot(RangeLimitx, RangeLimity, label='Range requirement')
     axis.plot(PayloadLimitx, PayloadLimity, label='Payload requirement')
     plt.legend(loc='best')
-    plt.ylim(250, RangeLimity[-1]+10)
+    plt.ylim(390, RangeLimity[-1]+10)
+    plt.xlabel('Range [km]')
+    plt.ylabel('Payload [kg]')
     plt.savefig('Tiltrotor-PayloadRangeDiagram.pdf')
     plt.show()
 
