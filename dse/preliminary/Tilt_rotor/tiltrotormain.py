@@ -81,6 +81,7 @@ def design(iterate=False):
                                    aircraftParameters['totalRotors'])
 
         print(f'Total aircraft weight = {aircraftParameters["totalMass"]}kg\n')
+        print(f'Cg location is {1.78 + aircraftParameters["chord"] / 2 - calculate_cg()} in front of the rotors thrust')
         print('-' * 50 + '\n')
 
         # Store results
@@ -92,7 +93,6 @@ def design(iterate=False):
         dimArr = np.array([[aircraftParameters['rotorRadius'], aircraftParameters['wingspan'],
                             aircraftParameters['chord']]]).T
 
-        print(f'Cg location is {1.78 + aircraftParameters["chord"] / 2 - calculate_cg()} in front of the rotors thrust')
 
         if iterate:
             diff = abs((aircraftParameters['totalMass'] - Mass_design) / Mass_design)
