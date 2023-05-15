@@ -30,7 +30,7 @@ def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, t
     intensity = averageIrradiance * np.reshape(np.cos(lat), (lat.size, 1)) * np.ones(lon.size)
 
     # Power calculations
-    takeOffPower = aircraftParameters['totalRotors'] * power(takeOffThrust/aircraftParameters['totalRotors'], rotorRadius)
+    takeOffPower = aircraftParameters['totalRotors'] * power(takeOffThrust, rotorRadius)
     cruisePower = aircraftParameters['totalRotors'] * power(cruiseThrust/aircraftParameters['totalRotors'], rotorRadius)
     takeOffEnergy = takeOffPower * takeOffTime
     cruiseEnergy = cruisePower * cruiseTime
@@ -48,8 +48,9 @@ def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, t
 
     # Size the batteries and the arrays
     energyConsumption = 2 * takeOffEnergy + cruiseEnergy
-    batteryMass = max(energyConsumption / const['batteryEnergyDensity'], takeOffPower/const['batteryPowerDensity'])
+    batteryMass = max(2*takeOffEnergy / const['takeoffBatteryEnergyDensity'], takeOffPower/const['takeoffBatteryPowerDensity'])
     cruiseBattery = cruiseEnergy / const['batteryEnergyDensity']
+    batteryMass+=cruiseBattery
     panelMass = collectingArea * const['solarPanelDensity']
     print(f'Mass of the batteries = {batteryMass} kg')
     print(f'For cruise we need: {cruiseBattery*100/batteryMass}%')

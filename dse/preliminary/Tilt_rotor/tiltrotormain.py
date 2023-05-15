@@ -12,11 +12,12 @@ import numpy as np
 
 def design(iterate=False):
     diff = 100
+    Range = 1000
     aircraftParameters['totalMass'] = const['maxMass']
-    while diff > 0.01:
+    while diff > 0.01 and Range>=1000:
         Mass_design = aircraftParameters['totalMass']
         tipSpeed = -0.88 * const['cruiseSpeed'] + 268.87
-        Mass_thrust = Mass_design * (1 + const['margin'])  # kg
+        Mass_thrust = const['maxMass'] * (1 + const['margin'])  # kg
         aircraftParameters['rotorRadius'], takeOffThrustPerEngine, aircraftParameters['horsepowerPerEngine'], \
         aircraftParameters['totalPower'], aircraftParameters['rotorMass'] = \
             RadiusMassElementMomentum(M=Mass_thrust, N_rotors=aircraftParameters['totalRotors'],
@@ -56,7 +57,7 @@ def design(iterate=False):
 
         # Calculate weights
         Range, aircraftParameters['wingMass'], aircraftParameters['tailMass'], aircraftParameters['bodyMass'] = \
-            Class2Weight(aircraftParameters['rotorRadius'], aircraftParameters['rotorMass'], const['maxMass'],
+            Class2Weight(aircraftParameters['rotorRadius'], aircraftParameters['rotorMass'], Mass_design,
                          const['ultimateLoad'], aircraftParameters['AR'], aircraftParameters['wingbraced'],
                          const['cruiseSpeed'], const['batteryEnergyDensity'], const['batteryPowerDensity'],
                          const['batteryEnergyDensity'], const['payloadMass'], aircraftParameters['panelMass'])

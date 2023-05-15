@@ -8,6 +8,8 @@ const = {
     'solarPanelDensity': 1.76,
     'batteryEnergyDensity': 333.33,
     'batteryPowerDensity': 300,
+    'takeoffBatteryPowerDensity': 480/0.273,
+    'takeoffBatteryEnergyDensity': 42.1 / 0.273,
     'bladeDensity': 1500,
     't/c': 0.012,
     'visc_cr': 5.167E-4,
