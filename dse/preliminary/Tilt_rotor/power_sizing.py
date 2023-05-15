@@ -52,6 +52,10 @@ def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, t
     cruiseBattery = cruiseEnergy / const['batteryEnergyDensity']
     batteryMass+=cruiseBattery
     panelMass = collectingArea * const['solarPanelDensity']
+
+    # Apply safety margins
+    batteryMass *= 1.3/0.95
+
     print(f'Mass of the batteries = {batteryMass} kg')
     print(f'Volume of the batteries = {energyConsumption/const["batteryVolume"]}')
     print(f'For cruise we need: {cruiseBattery*100/batteryMass}%')

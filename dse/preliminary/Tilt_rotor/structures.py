@@ -76,7 +76,7 @@ def assembly_volume():
     cockpitLength = 1.78
     fuselageWidth = 1.5
 
-    fuselageVolume = 2/3*np.pi*cockpitLength**3 + 2*np.pi*fuselageWidth/2 * aircraftParameters['chord']
+    fuselageVolume = 1/3*np.pi*cockpitLength*(fuselageWidth/2)**2 + 2*np.pi*fuselageWidth/2 * aircraftParameters['chord']
 
     x_cord_top = np.flip(
         [1, 0.99838, 0.99417, 0.98825, 0.98075, 0.97111, 0.95884, 0.94389, 0.92639, 0.90641, 0.88406, 0.85947, 0.83277,
@@ -113,4 +113,4 @@ def assembly_volume():
     # Assuming tail and wing have the same density
     tailVolume = aircraftParameters['tailMass'] / aircraftParameters['wingMass'] * wingVolume
 
-    return fuselageVolume + wingVolume + rotorVolume + tailVolume
+    return 1.5*(fuselageVolume + wingVolume + rotorVolume + tailVolume)

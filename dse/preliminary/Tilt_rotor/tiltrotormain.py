@@ -14,6 +14,7 @@ def design(iterate=False):
     Range = 1000
     aircraftParameters['totalMass'] = const['maxMass']
     while diff > 0.01 and Range >= 1000:
+        const['airDensity'] = 0.01
         Mass_design = aircraftParameters['totalMass']
         tipSpeed = -0.88 * const['cruiseSpeed'] + 268.87
         Mass_thrust = const['maxMass'] * (1 + const['margin'])  # kg
@@ -41,6 +42,8 @@ def design(iterate=False):
         print(f'Wingspan = {aircraftParameters["wingspan"]}[m]')
         print(f'Chord = {aircraftParameters["chord"]}[m]')
         print(f'AR = {aircraftParameters["wingspan"] / aircraftParameters["chord"]}')
+
+        const['airDensity'] = 0.01
 
         # Size batteries for cruise and solar panels
         aircraftParameters['cruiseThrust'] += DragEstimation(R=aircraftParameters['rotorRadius'],
