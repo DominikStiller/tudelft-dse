@@ -6,7 +6,7 @@ from RotorEngineSizing import RadiusMassElementMomentum
 from constants import const, aircraftParameters
 from power_sizing import size_power_subsystem
 from cruise_sizing import area_and_thrust
-import xarray as xr
+from structures import calculate_cg
 import numpy as np
 
 
@@ -100,7 +100,6 @@ def design(iterate=False):
     return massArr, dimArr, aircraftParameters
 
 
-
 if __name__ == '__main__':
     global const, aircraftParameters
 
@@ -110,5 +109,6 @@ if __name__ == '__main__':
 
 
     m, dim, acParams = design(iterate=True)
+    print(1.78 + aircraftParameters['chord'] / 2 - calculate_cg())
     plt.legend(loc='best')
     plt.show()

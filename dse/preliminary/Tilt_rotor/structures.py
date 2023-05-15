@@ -11,7 +11,8 @@ def calculate_cg():
                        aircraftParameters['bodyMass'],
                        aircraftParameters['tailMass'],
                        aircraftParameters['batteryMass'],
-                       aircraftParameters['panelMass']
+                       aircraftParameters['panelMass'],
+                       const['gravityMars'] * 400
                        ])
 
     locations = np.array([cockpitLength + aircraftParameters['chord'] / 2,
@@ -19,7 +20,8 @@ def calculate_cg():
                           fuselageLength / 2,
                           cockpitLength + aircraftParameters['chord'] / 2 + 1.25 * aircraftParameters['rotorRadius'],
                           fuselageLength / 2,
-                          cockpitLength + aircraftParameters['chord'] / 2
+                          cockpitLength + aircraftParameters['chord'] / 2,
+                          cockpitLength / 2
                           ])
 
     return np.sum(masses*locations)/np.sum(masses)

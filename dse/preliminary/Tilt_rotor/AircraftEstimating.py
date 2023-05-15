@@ -56,7 +56,7 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
            DragEstimation(R, Swing, const['t/c'], V_cr, 5.167E-4, AR)
 
     # Take-off
-    Power =  aircraftParameters['totalRotors']* power(T_to/aircraftParameters['totalRotors'], R)
+    Power = aircraftParameters['totalRotors']* power(T_to/aircraftParameters['totalRotors'], R)
     E_TO = Power * const['takeOffTime']/3600
     m_TO = max(Power / P_density, E_TO / E_density_TO)
 
