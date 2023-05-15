@@ -8,13 +8,8 @@ def DragEstimation(R, Swing, t2c, Vcr, visc_cr, AR):
     Oswald = 0.9
 
     # Dimensions
-    b = max(np.sqrt(Swing * AR), 3*R)  # wingspan
-    c = b / AR  # chord
-    bf = c / 2  # Fuselage width
-    lf = c * 2  # Fuselage length
-    if c < 1.78:
-        lf = 1.78 * 2.5
-        bf = 1
+    lf = 1.78 * 2.5
+    bf = 1.5
     hf = bf  # Fuselage height
     # Initial dimensions
 
