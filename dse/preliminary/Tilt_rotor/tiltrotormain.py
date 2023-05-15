@@ -32,17 +32,21 @@ if __name__ == '__main__':
         aircraftParameters['wingArea'], aircraftParameters['cruiseThrust'] = \
             area_and_thrust(0, const['cl'], const['cd'], Mass_design, 0.5*const['airDensity']*const['cruiseSpeed']**2)
 
-        aircraftParameters['wingspan'] = max(3 * aircraftParameters['rotorRadius'],
-                                             np.sqrt(aircraftParameters['wingArea']*aircraftParameters['AR']))
-        aircraftParameters['chord'] = aircraftParameters['wingArea'] / aircraftParameters['wingspan']
+        aircraftParameters['wingspan'] = 3 * aircraftParameters['rotorRadius']
+        aircraftParameters['chord'] = aircraftParameters['wingArea']/aircraftParameters['wingspan']
+        aircraftParameters['AR'] = aircraftParameters['wingspan']/aircraftParameters['chord']
+
+        if aircraftParameters['wingArea']/aircraftParameters['wingspan'] < aircraftParameters['ARmin']:
+            aircraftParameters['wingspan'] = np.sqrt(aircraftParameters['wingArea']*aircraftParameters['ARmin'])
+            aircraftParameters['chord'] = aircraftParameters['wingArea']/aircraftParameters['wingspan']
+
 
         print(f'Wing area = {aircraftParameters["wingArea"]}[m2]')
         print(f'Wingspan = {aircraftParameters["wingspan"]}[m]')
         print(f'Chord = {aircraftParameters["chord"]}[m]')
-        print(f'AR = {aircraftParameters["wingspan"] / aircraftParameters["chord"]}')
+        print(f'AR = {aircraftParameters["AR"]}')
 
-        if np.sqrt(aircraftParameters["wingArea"]*aircraftParameters['AR'])<=3*aircraftParameters['rotorRadius']:
-            aircraftParameters["wingArea"] = 3*aircraftParameters['rotorRadius']*(3*aircraftParameters['rotorRadius'])/aircraftParameters['AR']
+
 
         # Size batteries for cruise and solar panels
         aircraftParameters['cruiseThrust'] += DragEstimation(R=aircraftParameters['rotorRadius'],
