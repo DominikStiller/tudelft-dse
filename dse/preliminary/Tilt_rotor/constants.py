@@ -14,6 +14,7 @@ const = {
     'cruiseSpeed': 112,
     'batteryVolume': 450,  # Wh/L
     'ultimateLoad': 4.4,
+    'takeOffLoad': 1.1,
     'designRange': 1e6,
     'takeOffTime': 600,
     'margin': 0.1,
