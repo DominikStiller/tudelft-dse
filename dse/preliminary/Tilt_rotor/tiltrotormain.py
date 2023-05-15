@@ -8,6 +8,91 @@ import xarray as xr
 import numpy as np
 
 
+def design(constants, aircraftParams, iterate=False):
+    diff = 100
+    while diff > 0.01:
+        designMass = aircraftParams['totalMass']
+        tipSpeed = -0.88 * constants['cruiseSpeed'] + 268.87
+        Mass_thrust = Mass_design * (1 + constants['margin'])  # kg
+        aircraftParams['rotorRadius'], takeOffThrustPerEngine, aircraftParams['horsepowerPerEngine'], \
+        aircraftParams['totalPower'], aircraftParams['rotorMass'] = \
+            RadiusMassElementMomentum(M=Mass_thrust, N_rotors=aircraftParams['totalRotors'],
+                                      N_blades=aircraftParams['bladesPerRotor'],
+                                      coaxial=aircraftParams['coaxial'], V_tip=tipSpeed, print_results=True)
+
+        # Calculate wing area
+        aircraftParams['wingArea'], aircraftParams['cruiseThrust'] = \
+            area_and_thrust(0, constants['cl'], const['cd'], Mass_design,
+                            0.5 * constants['airDensity'] * constants['cruiseSpeed'] ** 2)
+
+        aircraftParams['wingspan'] = max(3 * aircraftParams['rotorRadius'],
+                                         np.sqrt(aircraftParams['wingArea'] * aircraftParams['AR']))
+        aircraftParams['chord'] = aircraftParams['wingspan'] / aircraftParams['AR']
+        aircraftParams['wingArea'] = aircraftParams['wingspan'] * aircraftParams['chord']
+
+        print(f'Wing area = {aircraftParams["wingArea"]}[m2]')
+        print(f'Wingspan = {aircraftParams["wingspan"]}[m]')
+        print(f'Chord = {aircraftParams["chord"]}[m]')
+        print(f'AR = {aircraftParams["wingspan"] / aircraftParams["chord"]}')
+
+        # Size batteries for cruise and solar panels
+        aircraftParams['cruiseThrust'] += DragEstimation(R=aircraftParams['rotorRadius'],
+                                                         Swing=aircraftParams['wingArea'], t2c=constants['t/c'],
+                                                         Vcr=constants['cruiseSpeed'], visc_cr=constants['visc_cr'],
+                                                         AR=aircraftParams['AR'])
+
+        aircraftParams['batteryMass'], aircraftParams['panelMass'], powerSurplus = \
+            size_power_subsystem(aircraftParams['rotorRadius'], takeOffThrustPerEngine,
+                                 aircraftParams['cruiseThrust'],
+                                 constants['designRange'] / constants['cruiseSpeed'] + constants['takeOffTime'],
+                                 constants['takeOffTime'], aircraftParams['wingArea'], plot=True)
+
+        # Calculate weights
+        Range, aircraftParams['wingMass'], aircraftParams['tailMass'], aircraftParams['bodyMass'] = \
+            Class2Weight(aircraftParams['rotorRadius'], aircraftParams['rotorMass'], constants['maxMass'],
+                         constants['ultimateLoad'], aircraftParams['AR'], aircraftParams['wingbraced'],
+                         constants['cruiseSpeed'], constants['batteryEnergyDensity'], constants['batteryPowerDensity'],
+                         constants['batteryEnergyDensity'], constants['payloadMass'], aircraftParams['panelMass'])
+
+        aircraftParams['totalMass'] = aircraftParams['rotorMass'] + aircraftParams['panelMass'] + \
+                                      aircraftParams['batteryMass'] + aircraftParams['wingMass'] + \
+                                      aircraftParams['tailMass'] + aircraftParams['bodyMass'] + \
+                                      constants['payloadMass']
+        # Payload-Range
+        PayloadRange(aircraftParams['rotorRadius'], aircraftParams['rotorMass'], Mass_design,
+                     constants['ultimateLoad'], aircraftParams['AR'], aircraftParams['wingbraced'],
+                     constants['cruiseSpeed'], constants['batteryEnergyDensity'], constants['batteryPowerDensity'],
+                     constants['batteryEnergyDensity'], aircraftParams['panelMass'], constants['payloadMass'],
+                     constants['designRange'] / 1000, Mass_design - aircraftParams['totalMass'])
+
+        # Climb Performance
+        ROC_cruise = AircraftClimbPerf(aircraftParams['batteryMass'], constants['batteryPowerDensity'], Mass_design,
+                                       aircraftParams['rotorRadius'], constants['cruiseSpeed'])
+
+        ROC_rotor = RotorClimbPerf(Mass_design, aircraftParams['rotorRadius'],
+                                   aircraftParams['totalRotors'])
+
+        print(f'Total aircraft weight = {aircraftParams["totalMass"]}kg\n')
+        print('-' * 50 + '\n')
+
+        # Store results
+        massArr = np.array([[aircraftParams['totalMass'], aircraftParams['rotorMass'],
+                             aircraftParams['wingMass'], aircraftParams['tailMass'],
+                             aircraftParams['bodyMass'], aircraftParams['batteryMass'],
+                             aircraftParams['panelMass']]]).T
+
+        dimArr = np.array([[aircraftParams['rotorRadius'], aircraftParams['wingspan'],
+                            aircraftParams['chord']]]).T
+
+        if iterate:
+            diff = abs((aircraftParams['totalMass'] - designMass) / designMass)
+        else:
+            diff = 0
+
+    return massArr, dimArr, aircraftParams
+
+
+
 if __name__ == '__main__':
     global const, aircraftParameters
 
@@ -19,158 +104,5 @@ if __name__ == '__main__':
     con = const.copy()
     airc = aircraftParameters.copy()
 
-    # Set up Calculations
-    for v in v_arr:
-        const = con.copy()
-        aircraftParameters = airc.copy()
-        const['cruiseSpeed'] = v
-        tipSpeed = -0.88*const['cruiseSpeed'] + 268.87
-        diff = 100
-        i = 0
-        try:
-            while diff > 0.01:
-                Mass_thrust = Mass_design * (1 + const['margin'])  # kg
-                aircraftParameters['rotorRadius'], takeOffThrustPerEngine, aircraftParameters['horsepowerPerEngine'], \
-                aircraftParameters['totalPower'], aircraftParameters['rotorMass'] = \
-                    RadiusMassElementMomentum(M=Mass_thrust, N_rotors=aircraftParameters['totalRotors'],
-                                              N_blades=aircraftParameters['bladesPerRotor'],
-                                              coaxial=aircraftParameters['coaxial'], V_tip=tipSpeed, print_results=True)
 
-
-                # Calculate wing area
-                aircraftParameters['wingArea'], aircraftParameters['cruiseThrust'] = \
-                    area_and_thrust(0, const['cl'], const['cd'], Mass_design, 0.5*const['airDensity']*const['cruiseSpeed']**2)
-
-                aircraftParameters['wingspan'] = max(3 * aircraftParameters['rotorRadius'],
-                                                     np.sqrt(aircraftParameters['wingArea']*aircraftParameters['AR']))
-                aircraftParameters['chord'] = aircraftParameters['wingspan'] / aircraftParameters['AR']
-                aircraftParameters['wingArea'] = aircraftParameters['wingspan'] * aircraftParameters['chord']
-
-                print(f'Wing area = {aircraftParameters["wingArea"]}[m2]')
-                print(f'Wingspan = {aircraftParameters["wingspan"]}[m]')
-                print(f'Chord = {aircraftParameters["chord"]}[m]')
-                print(f'AR = {aircraftParameters["wingspan"] / aircraftParameters["chord"]}')
-
-                # Size batteries for cruise and solar panels
-                aircraftParameters['cruiseThrust'] += DragEstimation(R=aircraftParameters['rotorRadius'],
-                                                                     Swing=aircraftParameters['wingArea'], t2c=const['t/c'],
-                                                                     Vcr=const['cruiseSpeed'], visc_cr=const['visc_cr'],
-                                                                     AR=aircraftParameters['AR'])
-
-                aircraftParameters['batteryMass'], aircraftParameters['panelMass'], powerSurplus = \
-                    size_power_subsystem(aircraftParameters['rotorRadius'], takeOffThrustPerEngine,
-                                         aircraftParameters['cruiseThrust'],
-                                         const['designRange'] / const['cruiseSpeed'] + const['takeOffTime'],
-                                         const['takeOffTime'], aircraftParameters['wingArea'], plot=True)
-
-                # Calculate weights
-                Range, aircraftParameters['wingMass'], aircraftParameters['tailMass'], aircraftParameters['bodyMass'] = \
-                    Class2Weight(aircraftParameters['rotorRadius'], aircraftParameters['rotorMass'], const['maxMass'],
-                                 const['ultimateLoad'], aircraftParameters['AR'], aircraftParameters['wingbraced'],
-                                 const['cruiseSpeed'], const['batteryEnergyDensity'], const['batteryPowerDensity'],
-                                 const['batteryEnergyDensity'], const['payloadMass'], aircraftParameters['panelMass'])
-
-                aircraftParameters['totalMass'] = aircraftParameters['rotorMass'] + aircraftParameters['panelMass'] + \
-                                                  aircraftParameters['batteryMass'] + aircraftParameters['wingMass'] + \
-                                                  aircraftParameters['tailMass'] + aircraftParameters['bodyMass'] + \
-                                                  const['payloadMass']
-                # Payload-Range
-                PayloadRange(aircraftParameters['rotorRadius'], aircraftParameters['rotorMass'], Mass_design,
-                             const['ultimateLoad'], aircraftParameters['AR'], aircraftParameters['wingbraced'],
-                             const['cruiseSpeed'], const['batteryEnergyDensity'], const['batteryPowerDensity'],
-                             const['batteryEnergyDensity'], aircraftParameters['panelMass'], const['payloadMass'],
-                             const['designRange']/1000, Mass_design-aircraftParameters['totalMass'])
-
-                # Climb Performance
-                ROC_cruise = AircraftClimbPerf(aircraftParameters['batteryMass'], const['batteryPowerDensity'], Mass_design,
-                                               aircraftParameters['rotorRadius'], const['cruiseSpeed'])
-
-                ROC_rotor = RotorClimbPerf(Mass_design, aircraftParameters['rotorRadius'], aircraftParameters['totalRotors'])
-
-                diff = abs((aircraftParameters['totalMass']-Mass_design)/Mass_design)
-                print(f'Total aircraft weight = {aircraftParameters["totalMass"]}kg\n')
-                print('-'*50 + '\n')
-
-                # Store results
-                if i == 0:
-                    massArr = np.array([[aircraftParameters['totalMass'], aircraftParameters['rotorMass'],
-                                         aircraftParameters['wingMass'], aircraftParameters['tailMass'],
-                                         aircraftParameters['bodyMass'], aircraftParameters['batteryMass'],
-                                         aircraftParameters['panelMass']]]).T
-
-                    dimArr = np.array([[aircraftParameters['rotorRadius'], aircraftParameters['wingspan'],
-                                        aircraftParameters['chord']]]).T
-
-
-                else:
-                    massArr = np.hstack((massArr, np.array([[aircraftParameters['totalMass'],
-                                                             aircraftParameters['rotorMass'],
-                                                             aircraftParameters['wingMass'],
-                                                             aircraftParameters['tailMass'],
-                                                             aircraftParameters['bodyMass'],
-                                                             aircraftParameters['batteryMass'],
-                                                             aircraftParameters['panelMass']]]).T))
-
-                    dimArr = np.hstack((dimArr, np.array([[aircraftParameters['rotorRadius'],
-                                                          aircraftParameters['wingspan'],
-                                                          aircraftParameters['chord']]]).T))
-
-
-                Mass_design = aircraftParameters['totalMass']
-                n_iterations.append(i)
-                i += 1
-
-            m = list(v_arr).index(v)
-            if m == 0:
-                massResults = np.empty((np.size(v_arr), np.shape(massArr)[0], np.shape(massArr)[1]))
-                massResults[0] = massArr
-
-                dimResults = np.empty((np.size(v_arr), np.shape(dimArr)[0], np.shape(dimArr)[1]))
-                dimResults[0] = dimArr
-            else:
-                if np.shape(massArr)[1] > np.shape(massResults[0])[1]:
-                    n = np.shape(massArr)[1] - np.shape(massResults[0])[1]
-                    massResults = np.pad(massResults, [(0, 0), (0, 0), (0, n)])
-                    dimResults = np.pad(dimResults, [(0, 0), (0, 0), (0, n)])
-                elif np.shape(massArr)[1] < np.shape(massResults[0])[1]:
-                    n = np.shape(massResults[0])[1] - np.shape(massArr)[1]
-                    massArr = np.pad(massArr, [(0, 0), (0, n)])
-                    dimArr = np.pad(dimArr, [(0, 0), (0, n)])
-
-                massResults[m] = massArr
-                dimResults[m] = dimArr
-        except:
-            break
-
-    n_it = []
-    for i in range(np.shape(massResults)[-1]):
-        n_it.append(f'Iteration {i}')
-
-
-    massDs = xr.Dataset(
-        {
-            'mass': (('cruiseSpeed', 'parameter', 'iteration'), massResults),
-        },
-        coords={
-            'cruiseSpeed': v_arr,
-            'parameter': ['totalMass', 'rotorMass', 'wingMass', 'tailMass', 'bodyMass', 'batteryMass', 'panelMass'],
-            'iteration': n_it,
-        },
-    )
-
-    dimDS = xr.Dataset(
-        {
-            'dimensions': (('cruiseSpeed', 'parameter', 'iteration'), dimResults),
-        },
-        coords={
-            'cruiseSpeed': v_arr,
-            'parameter': ['rotor radius', 'wingspan', 'chord'],
-            'iteration': n_it,
-        },
-    )
-
-    df0 = massDs.to_dataframe()
-    df0.to_excel('mass_iteration_results.xlsx')
-
-    df1 = dimDS.to_dataframe()
-    df1.to_excel('dimension_iteration_results.xlsx')
+    m, dim, acParams = design(con, airc, iterate=True)
