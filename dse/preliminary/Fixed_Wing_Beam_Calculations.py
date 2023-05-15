@@ -2,29 +2,25 @@ import matplotlib.pyplot as plt
 import csv
 
 
-### Reading of XFLR5 Data
-with open('Fying_Wing_Data_AoA=9.csv') as csvfile:
-    data = csv.reader(csvfile, delimiter=',')
+### Cruise conditions
+V_cruise = 400/3.6  # [m/s]
+rho = 0.01  # [kg/m3] air density
+q = 0.5 * rho * (V_cruise ** 2)  # [Pa] Dynamic pressure
+n = 2.5  # [-] Maximum load factor
+
+
+### Airfoil Data
+with open('S1223.csv') as csvfile:
+    data = csv.reader(csvfile, delimiter='\t')
     Data = []
     for row in data:
         Data.append(row)
-
-y_lst = [float(i[0]) for i in Data[1:]]  # [m] Y-step of the applied loads b
-AoA_lst = [float(i[1]) for i in Data[1:]]  # [degrees] induced angle of angle of attack
-CL_lst = [float(i[2]) for i in Data[1:]]  # [-] Lift coefficient of the wing
-PCd_lst = [float(i[3]) for i in Data[1:]]  # [-] Parasite drag coefficient of the wing
-ICd_lst = [float(i[4]) for i in Data[1:]]  # [-] Induced drag coefficient of the wing
-CmGeom_lst = [float(i[5]) for i in Data[1:]]  # [-] Moment coefficient
-CmAirfchord4_lst = [float(i[6]) for i in Data[1:]]  # [-] Moment coefficient at quarter chord
-
-### Wing Planform
-
-
+Airfoilcoordinates = [[float(Data[i][0]), float(Data[i][1])] for i in range(len(Data))]
 
 
 x_coor_lst = [0.05, 0.5, 0.5, 0.05]  # [-] As percentage of unit chord
-y_coor_lst = [0.02292, 0.12486, 0.04953, -0.01123]  # [-] As percentage of unit chord
-t_sheet_lst = [0.001, 0.01, 0.001, 0.01]  # [m] [t12, t23, t34, t41
+y_coor_lst = [0.07, 0.12486, 0.04953, -0.01123]  # [-] As percentage of unit chord
+t_sheet_lst = [0.001, 0.001, 0.001, 0.001]  # [m] [t12, t23, t34, t41
 b_lst = []  # [-] The length of each sheet for the unit chord: [b12, b23, b34, b41]
 for i in range(len(x_coor_lst)-1):
     b_lst.append(((x_coor_lst[i]-x_coor_lst[i+1])**2+(y_coor_lst[i]-y_coor_lst[i+1])**2)**0.5)
@@ -35,51 +31,13 @@ ycg_lst = []
 for i in range(len(x_coor_lst)-1):
     xcg_lst.append(x_coor_lst[i] + (x_coor_lst[i + 1] - x_coor_lst[i]) / 2)
     ycg_lst.append(y_coor_lst[i] + (y_coor_lst[i + 1] - y_coor_lst[i]) / 2)
-xcg_lst.append(x_coor_lst[-1] + (x_coor_lst[-1] - x_coor_lst[0]) / 2)
-ycg_lst.append(y_coor_lst[-1] + (y_coor_lst[-1] - y_coor_lst[0]) / 2)
-
-with open('Fying_Wing_Data_AoA=9.csv') as csvfile:
-    data = csv.reader(csvfile, delimiter=',')
-    Data = []
-    for row in data:
-        Data.append(row)
-
-y_lst = [float(i[0]) for i in Data[1:]]  # [m] Y-step of the applied loads b
-AoA_lst = [float(i[1]) for i in Data[1:]]  # [degrees] induced angle of angle of attack
-CL_lst = [float(i[2]) for i in Data[1:]]  # [-] Lift coefficient of the wing
-PCd_lst = [float(i[3]) for i in Data[1:]]  # [-] Parasite drag coefficient of the wing
-ICd_lst = [float(i[4]) for i in Data[1:]]  # [-] Induced drag coefficient of the wing
-CmGeom_lst = [float(i[5]) for i in Data[1:]]  # [-] Moment coefficient
-CmAirfchord4_lst = [float(i[6]) for i in Data[1:]]  # [-] Moment coefficient at quarter chord
-
-
-#### Wing geometry Flying Wing
-cr = 5.6167  # [m]
-ct = 1.123345  # [m]
-b = 67.4  # [m]
-
-
-def chord(y):
-    c = cr - (((cr-ct)*2)/b) * y
-    return c
-
-def AppliedLoads():
-    with open('Fying_Wing_Data_AoA=9.csv') as csvfile:
-        data = csv.reader(csvfile, delimiter=';')
-        Data = []
-        for row in data:
-            Data.append(row)
-    print
-    return Mx_lst, My_lst, Mz_lst
-
-
-
+xcg_lst.append(x_coor_lst[-1] + (x_coor_lst[0] - x_coor_lst[-1]) / 2)
+ycg_lst.append(y_coor_lst[-1] + (y_coor_lst[0] - y_coor_lst[-1]) / 2)
 
 def NeutralAxisUnit():
     xbar = sum(b_lst[i]*t_sheet_lst[i]*xcg_lst[i] for i in range(len(b_lst)))/sum(b_lst[i]*t_sheet_lst[i] for i in range(len(b_lst)))
     ybar = sum(b_lst[i]*t_sheet_lst[i]*ycg_lst[i] for i in range(len(b_lst)))/sum(b_lst[i]*t_sheet_lst[i] for i in range(len(b_lst)))
     return xbar, ybar
-
 
 def IxxCalcUnit():  # Multiply by c^4 to gain the moment of inertia at said location
     ybar = NeutralAxisUnit()[1]
@@ -113,25 +71,334 @@ def IxyCalcUnit():  # Multiply by c^4 to gain the moment of inertia at said loca
     Ixy = sum(IxyPart[i] + t_sheet_lst[i] * b_lst[i] * (ycg_lst[i] - ybar) * (xcg_lst[i] - xbar) for i in range(len(IxyPart)))
     return Ixy
 
-def InternalStress():
-    Mx_lst, My_lst = AppliedLoads()[0:1]
-    Ixx = IxxCalcUnit()
-    Iyy = IyyCalcUnit()
-    Ixy = IxyCalcUnit()
-
-    sigmaz_1_lst = [((Mx_lst[i]*Iyy-My_lst[i]*Ixy)*y_coor_lst[0]+(My_lst[i]*Ixx-Mx_lst*Ixy)*x_coor_lst[0])/((Ixx*Iyy-Ixy**2)*chord(y_lst[i])**2) for i in range(len(y_lst))]
-    sigmaz_2_lst = [((Mx_lst[i]*Iyy-My_lst[i]*Ixy)*y_coor_lst[1]+(My_lst[i]*Ixx-Mx_lst*Ixy)*x_coor_lst[1])/((Ixx*Iyy-Ixy**2)*chord(y_lst[i])**2) for i in range(len(y_lst))]
-    sigmaz_3_lst = [
-        ((Mx_lst[i] * Iyy - My_lst[i] * Ixy) * y_coor_lst[2] + (My_lst[i] * Ixx - Mx_lst * Ixy) * x_coor_lst[2]) / (
-                    (Ixx * Iyy - Ixy ** 2) * chord(y_lst[i]) ** 2) for i in range(len(y_lst))]
-    sigmaz_4_lst = [
-        ((Mx_lst[i] * Iyy - My_lst[i] * Ixy) * y_coor_lst[3] + (My_lst[i] * Ixx - Mx_lst * Ixy) * x_coor_lst[3]) / (
-                    (Ixx * Iyy - Ixy ** 2) * chord(y_lst[i]) ** 2) for i in range(len(y_lst))]
-    return sigmaz_1_lst, sigmaz_2_lst, sigmaz_3_lst, sigmaz_4_lst
 
 
 
+def FlyingWing():
+    ### Reading of XFLR5 Data
+    with open('Flying_Wing_Data_AoA=9_3.csv') as csvfile:
+        data = csv.reader(csvfile, delimiter=',')
+        Data = []
+        for row in data:
+            Data.append(row)
 
-plt.plot(x_coor_lst, y_coor_lst)
-plt.plot([x_coor_lst[0], x_coor_lst[-1]], [y_coor_lst[0], y_coor_lst[-1]])
-plt.show()
+    y_lst = [float(i[0]) for i in Data[1:]]  # [m] Y-step of the applied loads b
+    c_lst = [float(i[1]) for i in Data[1:]]  # [m] Y-step of the applied loads b
+    AoA_lst = [float(i[2]) for i in Data[1:]]  # [degrees] induced angle of angle of attack
+    CL_lst = [float(i[3]) for i in Data[1:]]  # [-] Lift coefficient of the wing
+    PCd_lst = [float(i[4]) for i in Data[1:]]  # [-] Parasite drag coefficient of the wing
+    ICd_lst = [float(i[5]) for i in Data[1:]]  # [-] Induced drag coefficient of the wing
+    CmGeom_lst = [float(i[6]) for i in Data[1:]]  # [-] Moment coefficient
+    CmAirfchord4_lst = [float(i[7]) for i in Data[1:]]  # [-] Moment coefficient at quarter chord
+
+    def AppliedLoads():
+        Mx_lst = [0]
+        My_lst = [0]
+        Mz_lst = [0]
+        L_lst = [0]
+        D_lst = [0]
+        S_lst = []
+        for i in range(len(y_lst) - 1):
+            dy = y_lst[i + 1] - y_lst[i]
+            c_avg = (c_lst[i + 1] + c_lst[i]) / 2
+            L = q * CL_lst[i] * c_avg * dy
+            D = q * (ICd_lst[i] + PCd_lst[i]) * c_avg * dy
+            S_lst.append(dy * c_avg)
+            L_lst.append(L)
+            D_lst.append(D)
+            Mx_lst.append(Mx_lst[i] + L * dy / 2)
+            My_lst.append(My_lst[i] + D * dy / 2)
+        return Mx_lst, My_lst, Mz_lst, L_lst, D_lst, S_lst
+
+    def InternalStress():
+        Mx_lst, My_lst = AppliedLoads()[0:2]
+        Ixx = IxxCalcUnit()
+        Iyy = IyyCalcUnit()
+        Ixy = IxyCalcUnit()
+        xbar, ybar = NeutralAxisUnit()
+        sigmaz_1_lst = [10 ** -6 * ((Mx_lst[i] * Iyy - My_lst[i] * Ixy) * (-y_coor_lst[0] + ybar) + (
+                    My_lst[i] * Ixx - Mx_lst[i] * Ixy) * (-x_coor_lst[0] + xbar)) / (
+                                    (Ixx * Iyy - Ixy ** 2) * c_lst[i] ** 2) for i in range(len(y_lst))]
+        sigmaz_2_lst = [10 ** -6 * ((Mx_lst[i] * Iyy - My_lst[i] * Ixy) * (-y_coor_lst[1] + ybar) + (
+                    My_lst[i] * Ixx - Mx_lst[i] * Ixy) * (x_coor_lst[1] - xbar)) / (
+                                    (Ixx * Iyy - Ixy ** 2) * c_lst[i] ** 2) for i in range(len(y_lst))]
+        sigmaz_3_lst = [10 ** -6 *
+                        ((Mx_lst[i] * Iyy - My_lst[i] * Ixy) * (-y_coor_lst[2] + ybar) + (
+                                    My_lst[i] * Ixx - Mx_lst[i] * Ixy) * (-x_coor_lst[2] + xbar)) / (
+                                (Ixx * Iyy - Ixy ** 2) * c_lst[i] ** 2) for i in range(len(y_lst))]
+        sigmaz_4_lst = [10 ** -6 *
+                        ((Mx_lst[i] * Iyy - My_lst[i] * Ixy) * (-y_coor_lst[3] + ybar) + (
+                                    My_lst[i] * Ixx - Mx_lst[i] * Ixy) * (x_coor_lst[3] - xbar)) / (
+                                (Ixx * Iyy - Ixy ** 2) * c_lst[i] ** 2) for i in range(len(y_lst))]
+        return sigmaz_1_lst, sigmaz_2_lst, sigmaz_3_lst, sigmaz_4_lst
+
+    ### Making the plots
+    # Making the applied loads plots
+    Mx_lst, My_lst, Mz_lst, L_lst, D_lst, S_lst = AppliedLoads()
+
+    fig, ax1 = plt.subplots()
+
+    color = 'tab:red'
+    ax1.set_xlabel('Span [m]')
+    ax1.set_ylabel('Lift [N]', color=color)
+    ax1.plot(y_lst, L_lst, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()
+
+    color = 'tab:blue'
+    ax2.set_ylabel('Drag [N]', color=color)  # we already handled the x-label with ax1
+    ax2.plot(y_lst, D_lst, color=color, linestyle='--')
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.show()
+
+    # Making the internal loads plots
+
+    fig, ax1 = plt.subplots()
+
+    color = 'tab:red'
+    ax1.set_xlabel('Span [m]')
+    ax1.set_ylabel('Mx [Nm]', color=color)
+    ax1.plot(y_lst, Mx_lst, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()
+
+    color = 'tab:blue'
+    ax2.set_ylabel('My [Nm]', color=color)  # we already handled the x-label with ax1
+    ax2.plot(y_lst, My_lst, color=color, linestyle='--')
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.show()
+
+    # Internal stress diagram
+    sigmaz_1_lst, sigmaz_2_lst, sigmaz_3_lst, sigmaz_4_lst = InternalStress()
+    plt.plot(y_lst, sigmaz_1_lst, label='Stress distribution in point 1')
+    plt.plot(y_lst, sigmaz_2_lst, label='Stress distribution in point 2')
+    plt.plot(y_lst, sigmaz_3_lst, label='Stress distribution in point 3')
+    plt.plot(y_lst, sigmaz_4_lst, label='Stress distribution in point 4')
+    plt.legend()
+    plt.ylabel('Stress [Mpa]')
+    plt.xlabel('Span [m]')
+    plt.show()
+
+    # Plot the wingbox structure
+    fig, ax = plt.subplots()
+    xbar, ybar = NeutralAxisUnit()
+
+    ax.axhline(ybar, linestyle='--', color='darkgrey', zorder=1)
+    ax.axvline(xbar, linestyle='--', color='darkgrey', zorder=2)
+    ax.plot(*list(zip(*Airfoilcoordinates)), color='lightgrey', zorder=3)
+    ax.plot(x_coor_lst, y_coor_lst, color='black', zorder=4)
+    ax.plot([x_coor_lst[0], x_coor_lst[-1]], [y_coor_lst[0], y_coor_lst[-1]], color='black', zorder=4)
+    n = [1, 2, 3, 4]
+
+    ax.scatter(x_coor_lst, y_coor_lst, color='orange', zorder=5)
+    for i, txt in enumerate(n):
+        ax.annotate(txt, (x_coor_lst[i], y_coor_lst[i]), zorder=6)
+    plt.gca().axis("equal")
+    plt.ylabel('z/MAC [-]')
+    plt.xlabel('x/MAC [-]')
+    plt.show()
+
+def BiWing():
+    ### Reading of XFLR5 Data
+    y_lst = []
+    c_lst = []
+    CL_lst = []
+    PCd_lst = []
+    ICd_lst = []
+    with open('Bi_Wing_1_a=14.00_v=111.00ms.csv') as csvfile:
+        data = csv.reader(csvfile, delimiter=',')
+        Data = []
+        for row in data:
+            Data.append(row)
+
+    y_lst.append([float(i[0]) for i in Data[1:]]) # [m] Y-step of the applied loads b
+    c_lst.append([float(i[1]) for i in Data[1:]])  # [m] Y-step of the applied loads b
+    AoA_lst = [float(i[2]) for i in Data[1:]]  # [degrees] induced angle of angle of attack
+    CL_lst.append([float(i[3]) for i in Data[1:]])  # [-] Lift coefficient of the wing
+    PCd_lst.append([float(i[4]) for i in Data[1:]])  # [-] Parasite drag coefficient of the wing
+    ICd_lst.append([float(i[5]) for i in Data[1:]])  # [-] Induced drag coefficient of the wing
+    CmGeom_lst = [float(i[6]) for i in Data[1:]]  # [-] Moment coefficient
+    CmAirfchord4_lst = [float(i[7]) for i in Data[1:]]  # [-] Moment coefficient at quarter chord
+
+    with open('Bi_Wing_2_a=14.00_v=111.00ms.csv') as csvfile:
+        data = csv.reader(csvfile, delimiter=',')
+        Data = []
+        for row in data:
+            Data.append(row)
+
+    y_lst.append([float(i[0]) for i in Data[1:]])  # [m] Y-step of the applied loads b
+    c_lst.append([float(i[1]) for i in Data[1:]])  # [m] Y-step of the applied loads b
+    AoA_lst = [float(i[2]) for i in Data[1:]]  # [degrees] induced angle of angle of attack
+    CL_lst.append([float(i[3]) for i in Data[1:]])  # [-] Lift coefficient of the wing
+    PCd_lst.append([float(i[4]) for i in Data[1:]])  # [-] Parasite drag coefficient of the wing
+    ICd_lst.append([float(i[5]) for i in Data[1:]])  # [-] Induced drag coefficient of the wing
+    CmGeom_lst = [float(i[6]) for i in Data[1:]]  # [-] Moment coefficient
+    CmAirfchord4_lst = [float(i[7]) for i in Data[1:]]  # [-] Moment coefficient at quarter chord
+
+    def AppliedLoads():
+        Mx_lst = []
+        My_lst = []
+        Mz_lst = []
+        L_lst = []
+        D_lst = []
+        S_lst = []
+        for j in range(len(y_lst)):
+            Mxi_lst = [0]
+            Myi_lst = [0]
+            Mzi_lst = [0]
+            Li_lst = [0]
+            Di_lst = [0]
+            Si_lst = []
+            for i in range(len(y_lst[j]) - 1):
+                dy = y_lst[j][i + 1] - y_lst[j][i]
+                c_avg = (c_lst[j][i + 1] + c_lst[j][i]) / 2
+                L = q * CL_lst[j][i] * c_avg * dy
+                D = q * (ICd_lst[j][i] + PCd_lst[j][i]) * c_avg * dy
+                Si_lst.append(dy * c_avg)
+                Li_lst.append(L)
+                Di_lst.append(D)
+                Mxi_lst.append(Mxi_lst[i] + L * dy / 2)
+                Myi_lst.append(Myi_lst[i] + D * dy / 2)
+            L_lst.append(Li_lst)
+            D_lst.append(Di_lst)
+            Mx_lst.append(Mxi_lst)
+            My_lst.append(Myi_lst)
+        return Mx_lst, My_lst, Mz_lst, L_lst, D_lst, S_lst
+
+    def InternalStress():
+        Mx_lst, My_lst = AppliedLoads()[0:2]
+        Ixx = IxxCalcUnit()
+        Iyy = IyyCalcUnit()
+        Ixy = IxyCalcUnit()
+        xbar, ybar = NeutralAxisUnit()
+        sigmaz_1_lst = []
+        sigmaz_2_lst = []
+        sigmaz_3_lst =[]
+        sigmaz_4_lst = []
+        for j in range(len(y_lst)):
+            sigmazi_1_lst = [10 ** -6 * ((Mx_lst[j][i] * Iyy - My_lst[j][i] * Ixy) * (-y_coor_lst[0] + ybar) + (
+                    My_lst[j][i] * Ixx - Mx_lst[j][i] * Ixy) * (-x_coor_lst[0] + xbar)) / (
+                                    (Ixx * Iyy - Ixy ** 2) * c_lst[j][i] ** 2) for i in range(len(y_lst[j]))]
+            sigmazi_2_lst = [10 ** -6 * ((Mx_lst[j][i] * Iyy - My_lst[j][i] * Ixy) * (-y_coor_lst[1] + ybar) + (
+                    My_lst[j][i] * Ixx - Mx_lst[j][i] * Ixy) * (x_coor_lst[1] - xbar)) / (
+                                    (Ixx * Iyy - Ixy ** 2) * c_lst[j][i] ** 2) for i in range(len(y_lst[j]))]
+            sigmazi_3_lst = [10 ** -6 *
+                            ((Mx_lst[j][i] * Iyy - My_lst[j][i] * Ixy) * (-y_coor_lst[2] + ybar) + (
+                                    My_lst[j][i] * Ixx - Mx_lst[j][i] * Ixy) * (-x_coor_lst[2] + xbar)) / (
+                                    (Ixx * Iyy - Ixy ** 2) * c_lst[j][i] ** 2) for i in range(len(y_lst[j]))]
+            sigmazi_4_lst = [10 ** -6 *
+                            ((Mx_lst[j][i] * Iyy - My_lst[j][i] * Ixy) * (-y_coor_lst[3] + ybar) + (
+                                    My_lst[j][i] * Ixx - Mx_lst[j][i] * Ixy) * (x_coor_lst[3] - xbar)) / (
+                                    (Ixx * Iyy - Ixy ** 2) * c_lst[j][i] ** 2) for i in range(len(y_lst[j]))]
+            sigmaz_1_lst.append(sigmazi_1_lst)
+            sigmaz_2_lst.append(sigmazi_2_lst)
+            sigmaz_3_lst.append(sigmazi_3_lst)
+            sigmaz_4_lst.append(sigmazi_4_lst)
+        return sigmaz_1_lst, sigmaz_2_lst, sigmaz_3_lst, sigmaz_4_lst
+
+    ### Making the plots
+    # Making the applied loads plots
+    Mx_lst, My_lst, Mz_lst, L_lst, D_lst, S_lst = AppliedLoads()
+
+
+    fig, ax1 = plt.subplots()
+
+    color = 'tab:red'
+    ax1.set_xlabel('Span [m]')
+    ax1.set_ylabel('Lift [N]', color=color)
+    ax1.plot(y_lst[0], L_lst[0], color=color,linestyle='dotted', label='Lift lower wing')
+    ax1.plot(y_lst[1], L_lst[1], color=color, label='Lift upper wing')
+    ax1.tick_params(axis='y', labelcolor=color)
+    plt.legend()
+    ax2 = ax1.twinx()
+
+    color = 'tab:blue'
+    ax2.set_ylabel('Drag [N]', color=color)  # we already handled the x-label with ax1
+    ax2.plot(y_lst[0], D_lst[0], color=color, linestyle='--', label='Drag lower wing')
+    ax2.plot(y_lst[1], D_lst[1], color=color, linestyle='-.', label='Drag upper wing')
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.legend()
+    plt.show()
+
+    # Making the internal loads plots
+
+    fig, ax1 = plt.subplots()
+
+    color = 'tab:red'
+    ax1.set_xlabel('Span [m]')
+    ax1.set_ylabel('Mx [Nm]', color=color)
+    ax1.plot(y_lst[0], Mx_lst[0], color=color, linestyle='dotted', label='Lift lower wing')
+    ax1.plot(y_lst[1], Mx_lst[1], color=color, label='Lift upper wing')
+    ax1.tick_params(axis='y', labelcolor=color)
+    plt.legend()
+    ax2 = ax1.twinx()
+
+    color = 'tab:blue'
+    ax2.set_ylabel('My [Nm]', color=color)  # we already handled the x-label with ax1
+    ax2.plot(y_lst[0], My_lst[0], color=color, linestyle='--', label='Drag lower wing')
+    ax2.plot(y_lst[1], My_lst[1], color=color, linestyle='-.', label='Drag upper wing')
+    ax2.tick_params(axis='y', labelcolor=color)
+
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.show()
+
+    # Internal stress diagram
+    sigmaz_1_lst, sigmaz_2_lst, sigmaz_3_lst, sigmaz_4_lst = InternalStress()
+    print(sigmaz_1_lst)
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    ax1.plot(y_lst[0], sigmaz_1_lst[0], label='Stress distribution in point 1')
+    ax1.plot(y_lst[0], sigmaz_2_lst[0], label='Stress distribution in point 2')
+    ax1.plot(y_lst[0], sigmaz_3_lst[0], label='Stress distribution in point 3')
+    ax1.plot(y_lst[0], sigmaz_4_lst[0], label='Stress distribution in point 4')
+    ax1.legend()
+    plt.ylabel('Stress [Mpa]')
+    plt.xlabel('Span [m]')
+    ax2.plot(y_lst[1], sigmaz_1_lst[1], label='Stress distribution in point 1')
+    ax2.plot(y_lst[1], sigmaz_2_lst[1], label='Stress distribution in point 2')
+    ax2.plot(y_lst[1], sigmaz_3_lst[1], label='Stress distribution in point 3')
+    ax2.plot(y_lst[1], sigmaz_4_lst[1], label='Stress distribution in point 4')
+    ax2.legend()
+    plt.ylabel('Stress [Mpa]')
+    plt.xlabel('Span [m]')
+    plt.show()
+
+
+    # Plot the wingbox structure
+    fig, ax = plt.subplots()
+    xbar, ybar = NeutralAxisUnit()
+
+    ax.axhline(ybar, linestyle='--', color='darkgrey', zorder=1)
+    ax.axvline(xbar, linestyle='--', color='darkgrey', zorder=2)
+    ax.plot(*list(zip(*Airfoilcoordinates)), color='lightgrey', zorder=3)
+    ax.plot(x_coor_lst, y_coor_lst, color='black', zorder=4)
+    ax.plot([x_coor_lst[0], x_coor_lst[-1]], [y_coor_lst[0], y_coor_lst[-1]], color='black', zorder=4)
+    n = [1, 2, 3, 4]
+
+    ax.scatter(x_coor_lst, y_coor_lst, color='orange', zorder=5)
+    for i, txt in enumerate(n):
+        ax.annotate(txt, (x_coor_lst[i], y_coor_lst[i]), zorder=6)
+    plt.gca().axis("equal")
+    plt.ylabel('z/MAC [-]')
+    plt.xlabel('x/MAC [-]')
+    plt.show()
+
+    #
+
+# 0 for flying wing, 1 for conventional fixed wing aircraft
+i = 0
+if i == 1:
+    BiWing()
+else:
+    FlyingWing()
+
+
+
