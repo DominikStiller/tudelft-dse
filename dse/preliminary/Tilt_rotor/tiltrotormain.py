@@ -114,4 +114,5 @@ if __name__ == '__main__':
     m, dim, acParams = design(iterate=True)
 
     plt.legend(loc='best')
+    plt.savefig('../Figures/Payload-Range.pdf')
     plt.show()

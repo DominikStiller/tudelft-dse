@@ -23,7 +23,7 @@ def PayloadRange(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_den
     if Mass_design==3000:
         plt.plot(RangeLimitx, RangeLimity, label='Range requirement')
         plt.plot(PayloadLimitx, PayloadLimity, label='Payload requirement')
-    plt.plot(RangeArr, payloadmass, label=f'Start mass: {Mass_design}')
+    plt.plot(RangeArr, payloadmass, label=f'Start mass: {np.round(Mass_design)}')
     #plt.legend(loc='best')
     #plt.title(f'Payload-Range Diagram for a design mass of {Mass_design}[kg]')
     plt.ylim(bottom=390)
