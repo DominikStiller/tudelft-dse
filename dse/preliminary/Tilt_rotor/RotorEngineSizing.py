@@ -28,7 +28,7 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
         x0 = c/R  # Distance from the blade's base to the centre of rotation
         omega = v_tip/R  # Angular velocity
 
-        n_elements = 10
+        n_elements = 15
         a0 = 6
         alpha0 = np.radians(2)
         A = np.pi*R**2

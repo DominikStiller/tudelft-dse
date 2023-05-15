@@ -95,11 +95,11 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
         Swing = 3 * R * (3 * R) / AR
     b = max(np.sqrt(Swing * AR), 3*R)  # wingspan
     c = b / AR  # chord
-    bf = c / 2  # Fuselage width
+    bf = c / 1.5  # Fuselage width
     lf = c * 2  # Fuselage length
     if c < 1.78:
         lf = 1.78 * 2.5
-        bf = 1
+        bf = 1.5
     hf = bf  # Fuselage height
 
     # Wing and tail area
