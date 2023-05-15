@@ -70,5 +70,5 @@ if __name__ == "__main__":
     ax_weights.set_xticklabels(ax_weights.get_xticklabels(), rotation=15, ha="right")
 
     format_plot()
-    save_plot(".", "tradeoff_sensitivity_analysis", type="png")
+    save_plot(".", "tradeoff_sensitivity_analysis")
     plt.show()

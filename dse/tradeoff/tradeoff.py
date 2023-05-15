@@ -54,5 +54,5 @@ if __name__ == "__main__":
     ax.legend()
 
     format_plot()
-    save_plot(".", "tradeoff_results", type="png")
+    save_plot(".", "tradeoff_results")
     plt.show()
