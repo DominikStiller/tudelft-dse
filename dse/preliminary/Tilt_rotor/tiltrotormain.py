@@ -1,3 +1,5 @@
+from matplotlib import pyplot as plt
+
 from PerformanceAnalysis import PayloadRange, AircraftClimbPerf, RotorClimbPerf
 from AircraftEstimating import Class2Weight, DragEstimation
 from RotorEngineSizing import RadiusMassElementMomentum
@@ -31,6 +33,7 @@ def design(iterate=False):
         aircraftParameters['AR'] = aircraftParameters['wingspan'] / aircraftParameters['chord']
 
         if aircraftParameters['wingArea'] / aircraftParameters['wingspan'] < aircraftParameters['ARmin']:
+            print(f'Wing span is too large for the required AR')
             aircraftParameters['wingspan'] = np.sqrt(aircraftParameters['wingArea'] * aircraftParameters['ARmin'])
             aircraftParameters['chord'] = aircraftParameters['wingArea'] / aircraftParameters['wingspan']
 
@@ -44,12 +47,12 @@ def design(iterate=False):
                                                          Swing=aircraftParameters['wingArea'], t2c=const['t/c'],
                                                          Vcr=const['cruiseSpeed'], visc_cr=const['visc_cr'],
                                                          AR=aircraftParameters['AR'])
-
+        print(f'Total Drag on the aircraft: {aircraftParameters["cruiseThrust"]}[N]')
         aircraftParameters['batteryMass'], aircraftParameters['panelMass'], powerSurplus = \
             size_power_subsystem(aircraftParameters['rotorRadius'], takeOffThrustPerEngine,
                                  aircraftParameters['cruiseThrust'],
                                  const['designRange'] / const['cruiseSpeed'] + const['takeOffTime'],
-                                 const['takeOffTime'], aircraftParameters['wingArea'], plot=True)
+                                 const['takeOffTime'], aircraftParameters['wingArea'], plot=False)
 
         # Calculate weights
         Range, aircraftParameters['wingMass'], aircraftParameters['tailMass'], aircraftParameters['bodyMass'] = \
@@ -57,6 +60,8 @@ def design(iterate=False):
                          const['ultimateLoad'], aircraftParameters['AR'], aircraftParameters['wingbraced'],
                          const['cruiseSpeed'], const['batteryEnergyDensity'], const['batteryPowerDensity'],
                          const['batteryEnergyDensity'], const['payloadMass'], aircraftParameters['panelMass'])
+
+        print(f'Maximum Range available: {Range}[km]')
 
         aircraftParameters['totalMass'] = aircraftParameters['rotorMass'] + aircraftParameters['panelMass'] + \
                                       aircraftParameters['batteryMass'] + aircraftParameters['wingMass'] + \
@@ -68,7 +73,6 @@ def design(iterate=False):
                      const['cruiseSpeed'], const['batteryEnergyDensity'], const['batteryPowerDensity'],
                      const['batteryEnergyDensity'], aircraftParameters['panelMass'], const['payloadMass'],
                      const['designRange'] / 1000, Mass_design - aircraftParameters['totalMass'])
-
         # Climb Performance
         ROC_cruise = AircraftClimbPerf(aircraftParameters['batteryMass'], const['batteryPowerDensity'], Mass_design,
                                        aircraftParameters['rotorRadius'], const['cruiseSpeed'])
@@ -106,3 +110,5 @@ if __name__ == '__main__':
 
 
     m, dim, acParams = design(iterate=True)
+    plt.legend(loc='best')
+    plt.show()

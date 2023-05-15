@@ -12,23 +12,26 @@ def PayloadRange(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_den
 
     RangeLimity, RangeLimitx = [0, max(payloadmass)], [minRange, minRange]
     PayloadLimity, PayloadLimitx = [400, 400], [0, RangeArr[0]]
-    PayRange, axis = plt.subplots()
+    #PayRange, axis = plt.subplots()
 
     if RangeArr[-1] > 1000:
         maxRange_x = [1000, RangeArr[-1]]
         maxRange_y = [minpayload+availableSpace, minpayload+availableSpace]
-        axis.plot(maxRange_x, maxRange_y, 'b-')
+        plt.plot(maxRange_x, maxRange_y, 'b-')
 
-    axis.plot(RangeArr, payloadmass, 'b-')
-    axis.plot(RangeLimitx, RangeLimity, label='Range requirement')
-    axis.plot(PayloadLimitx, PayloadLimity, label='Payload requirement')
-    plt.legend(loc='best')
-    plt.ylim(390, RangeLimity[-1]+10)
-    plt.xlim(left=750)
+
+    if Mass_design==3000:
+        plt.plot(RangeLimitx, RangeLimity, label='Range requirement')
+        plt.plot(PayloadLimitx, PayloadLimity, label='Payload requirement')
+    plt.plot(RangeArr, payloadmass, label=f'Start mass: {Mass_design}')
+    #plt.legend(loc='best')
+    #plt.title(f'Payload-Range Diagram for a design mass of {Mass_design}[kg]')
+    plt.ylim(bottom=390)
+    plt.xlim(left=700)
     plt.xlabel('Range [km]')
     plt.ylabel('Payload [kg]')
-    plt.savefig('Tiltrotor-PayloadRangeDiagram.pdf')
-    plt.show()
+    #plt.savefig(f'Tiltrotor-PayloadRangeDiagram{np.round(Mass_design, 1)}.pdf')
+    #plt.show()
 
 
 #Climb Performance
