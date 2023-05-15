@@ -1,13 +1,15 @@
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
-from constants import const
+from constants import const, aircraftParameters
 from PIL import Image
 import numpy as np
 
 
+
 def v_i(thrust, radius):
     rho = const['airDensity']
-    return np.sqrt(thrust/(2*rho*np.pi*radius**2))
+    #N_rotor = const['RotorNumber']
+    return np.sqrt(thrust/(rho*np.pi*radius**2))
 
 
 def power(thrust, radius):
@@ -29,7 +31,7 @@ def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, t
 
     # Power calculations
     takeOffPower = 4 * power(takeOffThrust, rotorRadius)
-    cruisePower = 4 * power(cruiseThrust, rotorRadius)
+    cruisePower = 4 * power(cruiseThrust/aircraftParameters['totalRotors'], rotorRadius)
     takeOffEnergy = takeOffPower * takeOffTime
     cruiseEnergy = cruisePower * cruiseTime
 

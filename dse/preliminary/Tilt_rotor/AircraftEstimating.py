@@ -51,6 +51,16 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
     # Dimensions
 
     Swing, T_wing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr ** 2)
+    if np.sqrt(Swing * AR) <= 3 * R:
+        Swing = 3 * R * (3 * R) / AR
+    b = max(np.sqrt(Swing * AR), 3*R)  # wingspan
+    c = b / AR  # chord
+    bf = c / 2  # Fuselage width
+    lf = c * 2  # Fuselage length
+    if c < 1.78:
+        lf = 1.78 * 2.5
+        bf = 1
+    hf = bf  # Fuselage height
 
     # Thrust estimations
     T_to = 1.1 * Wto * g_mars
@@ -58,7 +68,7 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
            DragEstimation(R, Swing, const['t/c'], V_cr, 5.167E-4, AR)
 
     # Take-off
-    Power = 4 * power(T_to / 4, R)
+    Power =  4* power(T_to/4, R)
     E_TO = Power * const['takeOffTime']/3600
     m_TO = max(Power / P_density, E_TO / E_density_TO)
 
@@ -79,6 +89,8 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
 def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_density, E_density_TO, m_payload,
                  m_solar, print_results=True):
     Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr ** 2)[0]
+    if np.sqrt(Swing * AR) <= 3 * R:
+        Swing = 3 * R * (3 * R) / AR
     b = max(np.sqrt(Swing * AR), 3*R)  # wingspan
     c = b / AR  # chord
     bf = c / 2  # Fuselage width

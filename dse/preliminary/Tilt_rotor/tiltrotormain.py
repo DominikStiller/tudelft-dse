@@ -1,3 +1,5 @@
+import numpy as np
+
 from PerformanceAnalysis import PayloadRange, AircraftClimbPerf, RotorClimbPerf
 from AircraftEstimating import Class2Weight, DragEstimation
 from RotorEngineSizing import RadiusMassElementMomentum
@@ -38,6 +40,9 @@ if __name__ == '__main__':
         print(f'Wingspan = {aircraftParameters["wingspan"]}[m]')
         print(f'Chord = {aircraftParameters["chord"]}[m]')
         print(f'AR = {aircraftParameters["wingspan"] / aircraftParameters["chord"]}')
+
+        if np.sqrt(aircraftParameters["wingArea"]*aircraftParameters['AR'])<=3*aircraftParameters['rotorRadius']:
+            aircraftParameters["wingArea"] = 3*aircraftParameters['rotorRadius']*(3*aircraftParameters['rotorRadius'])/aircraftParameters['AR']
 
         # Size batteries for cruise and solar panels
         aircraftParameters['cruiseThrust'] += DragEstimation(R=aircraftParameters['rotorRadius'],
