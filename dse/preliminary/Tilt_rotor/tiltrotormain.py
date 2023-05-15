@@ -10,8 +10,9 @@ import numpy as np
 
 def design(iterate=False):
     diff = 100
+    aircraftParameters['totalMass'] = const['maxMass']
     while diff > 0.01:
-        designMass = aircraftParameters['totalMass']+0.00000001
+        Mass_design = aircraftParameters['totalMass']
         tipSpeed = -0.88 * const['cruiseSpeed'] + 268.87
         Mass_thrust = Mass_design * (1 + const['margin'])  # kg
         aircraftParameters['rotorRadius'], takeOffThrustPerEngine, aircraftParameters['horsepowerPerEngine'], \
@@ -88,7 +89,7 @@ def design(iterate=False):
                             aircraftParameters['chord']]]).T
 
         if iterate:
-            diff = abs((aircraftParameters['totalMass'] - designMass) / designMass)
+            diff = abs((aircraftParameters['totalMass'] - Mass_design) / Mass_design)
         else:
             diff = 0
 
@@ -100,10 +101,6 @@ if __name__ == '__main__':
     global const, aircraftParameters
 
     # Sizing of Rotor:
-    Mass_design = const['maxMass']  # kg
-    v_arr = np.linspace(const['cruiseSpeed'], 130, 10)
-    n_iterations = []
-
     con = const.copy()
     airc = aircraftParameters.copy()
 
