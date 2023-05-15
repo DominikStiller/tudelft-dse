@@ -8,7 +8,7 @@ def DragEstimation(R, Swing, t2c, Vcr, visc_cr, AR):
     Oswald = 0.9
 
     # Dimensions
-    lf = 1.78 * 2.5
+    lf = 1.78 + aircraftParameters['chord']
     bf = 1.5
     hf = bf  # Fuselage height
     # Initial dimensions
@@ -46,7 +46,7 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
     # Dimensions
 
     Swing, T_wing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr ** 2)
-    lf = 1.78 * 2.5
+    lf = 1.78 + aircraftParameters['chord']
     bf = 1.5
     hf = bf  # Fuselage height
 
@@ -81,7 +81,7 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr ** 2)[0]
     b = aircraftParameters['wingspan']  # wingspan
     c = aircraftParameters['chord']  # chord
-    lf = 1.78 * 2.5
+    lf = 1.78 + c
     bf = 1.5  # Fuselage width
 
     hf = bf  # Fuselage height
