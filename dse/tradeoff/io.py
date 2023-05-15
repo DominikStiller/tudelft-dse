@@ -5,8 +5,10 @@ def load_sheets(file, design_names):
     # Load weights
     df_weights = pd.read_excel(file, sheet_name="Criteria")
     df_weights = df_weights.rename(
-        columns={"Criterion": "criterion", "Weight": "weight"}
-    ).set_index("criterion", drop=True)[["weight"]]
+        columns={"Criterion": "criterion", "Weight": "weight", "Selected": "selected"}
+    ).set_index("criterion", drop=True)[["weight", "selected"]]
+    selected_criteria = df_weights[df_weights["selected"] == "x"].index
+    df_weights = df_weights.loc[selected_criteria]
 
     # Load scores
     df_scoring = pd.read_excel(file, sheet_name="Scoring")
@@ -26,10 +28,11 @@ def load_sheets(file, design_names):
                 "Score for Expected": "expected_score",
                 "Worst": "worst",
                 "Score for Worst": "worst_score",
-                "Best": "expected",
+                "Best": "best",
                 "Score for Best": "best_score",
             }
         ).set_index("criterion", drop=True)
+        df = df.loc[selected_criteria]
 
         df["expected_score"] = df["expected_score"].apply(lambda s: df_scoring.loc[s]["score"])
         df["worst_score"] = df["worst_score"].apply(lambda s: df_scoring.loc[s]["score"])
@@ -37,4 +40,4 @@ def load_sheets(file, design_names):
 
         dfs.append(df)
 
-    return dfs, df_weights, df_scoring
+    return dfs, df_weights
