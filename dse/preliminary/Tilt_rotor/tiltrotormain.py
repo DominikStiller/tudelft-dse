@@ -1,12 +1,11 @@
-from matplotlib import pyplot as plt
-
 from PerformanceAnalysis import PayloadRange, AircraftClimbPerf, RotorClimbPerf
 from AircraftEstimating import Class2Weight, DragEstimation
 from RotorEngineSizing import RadiusMassElementMomentum
+from structures import calculate_cg, assembly_volume
 from constants import const, aircraftParameters
 from power_sizing import size_power_subsystem
 from cruise_sizing import area_and_thrust
-from structures import calculate_cg
+from matplotlib import pyplot as plt
 import numpy as np
 
 
@@ -14,7 +13,7 @@ def design(iterate=False):
     diff = 100
     Range = 1000
     aircraftParameters['totalMass'] = const['maxMass']
-    while diff > 0.01 and Range>=1000:
+    while diff > 0.01 and Range >= 1000:
         Mass_design = aircraftParameters['totalMass']
         tipSpeed = -0.88 * const['cruiseSpeed'] + 268.87
         Mass_thrust = const['maxMass'] * (1 + const['margin'])  # kg
@@ -68,6 +67,11 @@ def design(iterate=False):
                                       aircraftParameters['batteryMass'] + aircraftParameters['wingMass'] + \
                                       aircraftParameters['tailMass'] + aircraftParameters['bodyMass'] + \
                                       const['payloadMass']
+
+        if aircraftParameters['totalMass'] > Mass_design:
+            print('Total mass was higher than the design mass')
+            return 0, 0, 0
+
         # Payload-Range
         PayloadRange(aircraftParameters['rotorRadius'], aircraftParameters['rotorMass'], Mass_design,
                      const['ultimateLoad'], aircraftParameters['AR'], aircraftParameters['wingbraced'],
@@ -81,8 +85,10 @@ def design(iterate=False):
         ROC_rotor = RotorClimbPerf(Mass_design, aircraftParameters['rotorRadius'],
                                    aircraftParameters['totalRotors'])
 
+        aircraftParameters['aircraftVolume'] = assembly_volume()
         print(f'Total aircraft weight = {aircraftParameters["totalMass"]}kg\n')
         print(f'Cg location is {1.78 + aircraftParameters["chord"] / 2 - calculate_cg()} in front of the rotors thrust')
+        print(f'Aircraft volume = {aircraftParameters["aircraftVolume"]}')
         print('-' * 50 + '\n')
 
         # Store results
