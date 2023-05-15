@@ -91,8 +91,8 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
     Area_top = S1223_top.integral(0, 1)
     Area_bot = S1223_bottom.integral(0, 1)
     Area = (Area_top - Area_bot)*c
-    fillfactor = 0.1
-    Rotor_mass = const['bladeDensity']*R*Area*fillfactor
+    fillfactor = 0.05
+    Rotor_mass = b*const['bladeDensity']*R*Area*fillfactor
 
     if print_results:
         print('Given the mass of '+str(M)+'kg, the following applied: \n')

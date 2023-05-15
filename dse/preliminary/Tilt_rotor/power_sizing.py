@@ -30,8 +30,8 @@ def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, t
     intensity = averageIrradiance * np.reshape(np.cos(lat), (lat.size, 1)) * np.ones(lon.size)
 
     # Power calculations
-    takeOffPower = 4 * power(takeOffThrust, rotorRadius)
-    cruisePower = 4 * power(cruiseThrust/aircraftParameters['totalRotors'], rotorRadius)
+    takeOffPower = aircraftParameters['totalRotors'] * power(takeOffThrust/aircraftParameters['totalRotors'], rotorRadius)
+    cruisePower = aircraftParameters['totalRotors'] * power(cruiseThrust/aircraftParameters['totalRotors'], rotorRadius)
     takeOffEnergy = takeOffPower * takeOffTime
     cruiseEnergy = cruisePower * cruiseTime
 

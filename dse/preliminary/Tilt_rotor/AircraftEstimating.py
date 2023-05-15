@@ -63,21 +63,23 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
     hf = bf  # Fuselage height
 
     # Thrust estimations
-    T_to = 1.1 * Wto * g_mars
+    T_to = Wto * g_mars
     T_cr = T_wing + \
            DragEstimation(R, Swing, const['t/c'], V_cr, 5.167E-4, AR)
 
     # Take-off
-    Power =  4* power(T_to/4, R)
+    Power =  aircraftParameters['totalRotors']* power(T_to/aircraftParameters['totalRotors'], R)
     E_TO = Power * const['takeOffTime']/3600
     m_TO = max(Power / P_density, E_TO / E_density_TO)
 
     # Cruise
-    P_cr = power(T_cr, R)
-    E_cr = ((Wto - Wtot - m_TO) * E_density)  # Use all remaining mass for batteries
+    P_cr = aircraftParameters['totalRotors']*power(T_cr/aircraftParameters['totalRotors'], R)
+    E_cr = (Wto - Wtot) * E_density - E_TO*2 # Use all remaining mass for batteries
+    E_cr = E_cr*(E_cr>0)
     m_battery_cr = Wto - Wtot - m_TO
-    if np.min([m_battery_cr]) < 0:
-        raise ValueError('Not enough available weight for batteries')
+    m_battery_cr = m_battery_cr*(m_battery_cr>0)
+    #if np.min([m_battery_cr]) < 0:
+    #    raise ValueError('Not enough available weight for batteries')
 
     Endurance = E_cr / P_cr
     Range = Endurance * V_cr * 3.6
