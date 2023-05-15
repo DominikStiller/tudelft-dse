@@ -23,7 +23,8 @@ const = {
 
 aircraftParameters = {
     'wingArea': 0,
-    'AR': 20,
+    'AR': 15,
+    'ARmin': 10,
     'cruiseThrust': 0,
     'rotorRadius': 0,
     'wingspan': 0,
