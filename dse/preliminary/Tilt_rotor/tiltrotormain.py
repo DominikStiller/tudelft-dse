@@ -92,6 +92,8 @@ def design(iterate=False):
         dimArr = np.array([[aircraftParameters['rotorRadius'], aircraftParameters['wingspan'],
                             aircraftParameters['chord']]]).T
 
+        print(f'Cg location is {1.78 + aircraftParameters["chord"] / 2 - calculate_cg()} in front of the rotors thrust')
+
         if iterate:
             diff = abs((aircraftParameters['totalMass'] - Mass_design) / Mass_design)
         else:
@@ -109,6 +111,6 @@ if __name__ == '__main__':
 
 
     m, dim, acParams = design(iterate=True)
-    print(1.78 + aircraftParameters['chord'] / 2 - calculate_cg())
+
     plt.legend(loc='best')
     plt.show()
