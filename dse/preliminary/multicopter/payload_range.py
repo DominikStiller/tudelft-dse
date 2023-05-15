@@ -17,6 +17,11 @@ if __name__ == "__main__":
     max_range_at_no_payload = max_fuel_at_no_payload * km_per_kg
     print(max_range_at_no_payload)
 
+    # # For flying wing
+    # max_payload = 350
+    # max_range_at_max_payload = 1000
+    # max_range_at_no_payload = 6241.043
+
     fig, ax = plt.subplots(figsize=(10, 3))
 
     ax.plot(
