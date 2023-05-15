@@ -44,5 +44,6 @@ aircraftParameters = {
     'horsepowerPerEngine': 0,
     'totalPower': 0,
     'wingbraced': True,
-    'totalMass': 0
+    'totalMass': 0,
+    'aircraftVolume': 0
 }
