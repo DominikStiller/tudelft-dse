@@ -312,7 +312,7 @@ def BiWing():
     color = 'tab:red'
     ax1.set_xlabel('Span [m]')
     ax1.set_ylabel('Lift [N]', color=color)
-    ax1.plot(y_lst[0], L_lst[0], color=color,linestyle='dotted', label='Lift lower wing')
+    ax1.plot(y_lst[0], L_lst[0], color=color,linestyle='--', label='Lift lower wing')
     ax1.plot(y_lst[1], L_lst[1], color=color, label='Lift upper wing')
     ax1.tick_params(axis='y', labelcolor=color)
     plt.legend()
@@ -321,7 +321,7 @@ def BiWing():
     color = 'tab:blue'
     ax2.set_ylabel('Drag [N]', color=color)  # we already handled the x-label with ax1
     ax2.plot(y_lst[0], D_lst[0], color=color, linestyle='--', label='Drag lower wing')
-    ax2.plot(y_lst[1], D_lst[1], color=color, linestyle='-.', label='Drag upper wing')
+    ax2.plot(y_lst[1], D_lst[1], color=color, label='Drag upper wing')
     ax2.tick_params(axis='y', labelcolor=color)
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
@@ -335,7 +335,7 @@ def BiWing():
     color = 'tab:red'
     ax1.set_xlabel('Span [m]')
     ax1.set_ylabel('Mx [Nm]', color=color)
-    ax1.plot(y_lst[0], Mx_lst[0], color=color, linestyle='dotted', label='Lift lower wing')
+    ax1.plot(y_lst[0], Mx_lst[0], color=color, linestyle='--', label='Lift lower wing')
     ax1.plot(y_lst[1], Mx_lst[1], color=color, label='Lift upper wing')
     ax1.tick_params(axis='y', labelcolor=color)
     plt.legend()
@@ -344,7 +344,7 @@ def BiWing():
     color = 'tab:blue'
     ax2.set_ylabel('My [Nm]', color=color)  # we already handled the x-label with ax1
     ax2.plot(y_lst[0], My_lst[0], color=color, linestyle='--', label='Drag lower wing')
-    ax2.plot(y_lst[1], My_lst[1], color=color, linestyle='-.', label='Drag upper wing')
+    ax2.plot(y_lst[1], My_lst[1], color=color, label='Drag upper wing')
     ax2.tick_params(axis='y', labelcolor=color)
 
 
@@ -394,7 +394,7 @@ def BiWing():
     #
 
 # 0 for flying wing, 1 for conventional fixed wing aircraft
-i = 0
+i = 1
 if i == 1:
     BiWing()
 else:
