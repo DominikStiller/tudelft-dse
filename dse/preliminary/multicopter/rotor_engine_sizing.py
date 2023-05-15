@@ -256,30 +256,25 @@ def plot_radius_rpm_range():
     save_plot("..", "multicopter_radius_rpm")
 
     plt.show()
-    return R_maxs, T_max, rpms * (2 * np.pi / 60)
+    #return R_maxs, T_max, rpms * (2 * np.pi / 60)
 
 
 def thrust_and_force_for_optimum_Tip_Mach(speed, angle_of_attack, climb_speed):
-    rmax, tmaxhower, omegas = plot_radius_rpm_range()
-    tmaxclimb = []
-    tmaxcruise = []
-    torquehower = []
-    torqueclimb = []
-    torquecruise = []
-    for i in range(len(omegas)):
-        tmaxclimb.append(solve_thrust_vertical_climb(climb_speed, rmax[i], omegas[i]))
-        tmaxcruise.append(solve_thrust_forward_flight(speed, angle_of_attack, rmax[i], omegas[i]))
-        torquehower.append(solve_rotor_torque_hover(rmax[i], omegas[i]))
-        torqueclimb.append(solve_rotor_torque_vertical_climb(climb_speed, rmax[i], omegas[i]))
-        torquecruise.append(
-            solve_rotor_torque_forward_flight(speed, angle_of_attack, rmax[i], omegas[i])
-        )
+    omega = speed_of_sound * M_max / R
+    omegacruise = (speed_of_sound * M_max - speed) / R
 
-    return tmaxhower, tmaxclimb, tmaxcruise, torquehower, torqueclimb, torquecruise
+    tmaxhower = (solve_thrust_hover(R, omega))
+    tmaxclimb = (solve_thrust_vertical_climb(climb_speed, R, omega))
+    tmaxcruise = (solve_thrust_forward_flight(speed, angle_of_attack, R, omegacruise))
+    torquehower = (solve_rotor_torque_hover(R, omega))
+    torqueclimb = (solve_rotor_torque_vertical_climb(climb_speed, R, omega))
+    torquecruise = (solve_rotor_torque_forward_flight(speed, angle_of_attack, R, omegacruise))
+    return tmaxhower, tmaxclimb, tmaxcruise, torquehower, torqueclimb, torquecruise, omega, omegacruise
 
 
 def engine_and_fuel_mass(torque, omega):
     power = torque * omega
+    # print(power)
     hp = power / 745.7
     kwh = power * 60 / 1000
     fc = (kwh * 0.025 / 0.568044) * 2  # *2 added as safety factor
@@ -349,21 +344,20 @@ def dragandliftofbody(V):
 if __name__ == "__main__":
     ct = thrust_coefficient(solve_thrust_hover(R, omega) / (2 * n_rotors), R, omega)
     sigma = solidity_ratio(R * c_to_R_ratio, R)
-    print(ct / sigma)
 
     speed = 111
     angle_of_attack = np.radians(10)
     climb_speed = 10
 
+    dragandliftofbody(speed)
     plot_radius_rpm_range()
 
-    # rmax, tmaxhower, omegas = plot_radius_rpm_range()
-    # tmaxhower, tmaxclimb, tmaxcruise, torquehower, torqueclimb, torquecruise = thrust_and_force_for_optimum_Tip_Mach(speed, angle_of_attack, climb_speed)
+    tmaxhower, tmaxclimb, tmaxcruise, torquehower, torqueclimb, torquecruise, omega, omegacruise = thrust_and_force_for_optimum_Tip_Mach(speed, angle_of_attack, climb_speed)
     #
-    # engine_and_fuel_mass(torquehower[0], omegas[0])
+    engine_and_fuel_mass(torquehower, omega)
     #
-    # dragandliftofbody(speed)
-    #
+    print(f"The thrust during hower is: {tmaxhower}, the thrust during climb is: {tmaxclimb}, the thrust during cruise is: {tmaxcruise}")
+    print(f"The torque during hower is: {torquehower}, the torque during climb is: {torqueclimb}, the torque during cruise is: {torquecruise}")
     # print('thrusts')
     # print(tmaxhower)
     # print(tmaxclimb)
