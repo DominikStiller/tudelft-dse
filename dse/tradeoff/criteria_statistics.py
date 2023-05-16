@@ -22,12 +22,20 @@ if __name__ == "__main__":
     df = df.iloc[:-3]
     criteria_names = criteria_names[:-3]
 
+    df["std_pct"] = df.std(axis=1) / df.mean(axis=1) * 100
+
     fig, ax = plt.subplots(figsize=(10, 5), tight_layout=True)
     im = ax.imshow(df.to_numpy().T / df.to_numpy().mean(axis=1)[:, None].T, cmap="Reds")
     fig.colorbar(im)
 
     ax.set_yticks(np.arange(len(design_names)), labels=design_names)
-    ax.set_xticks(np.arange(len(criteria_names)), labels=criteria_names)
+    ax.set_xticks(
+        np.arange(len(criteria_names)),
+        labels=[
+            f"{criterion_name} ($\sigma$ = {df['std_pct'].iloc[j]:.0f} %)"
+            for j, criterion_name in enumerate(criteria_names)
+        ],
+    )
     ax.set_xticklabels(ax.get_xticklabels(), rotation=20, ha="right")
 
     for i in range(len(design_names)):
@@ -43,8 +51,6 @@ if __name__ == "__main__":
 
     save_plot(".", "tradeoff_values", type="png")
     plt.show()
-
-    df["std_pct"] = df.std(axis=1) / df.mean(axis=1) * 100
 
     with pd.option_context(
         "display.max_rows", None, "display.max_columns", None, "display.width", None

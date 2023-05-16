@@ -14,9 +14,6 @@ def load_sheets(file, design_names, selected_only=True, convert_score=True):
     ).set_index("criterion", drop=True)[["weight", "selected"]]
     selected_criteria = df_weights[df_weights["selected"] == "x"].index
 
-    if selected_only:
-        df_weights = df_weights.loc[selected_criteria]
-
     # Load scores
     df_scoring = pd.read_excel(file, sheet_name="Scoring")
     df_scoring = df_scoring.rename(
@@ -50,5 +47,8 @@ def load_sheets(file, design_names, selected_only=True, convert_score=True):
             df["best_score"] = df["best_score"].apply(lambda s: df_scoring.loc[s]["score"])
 
         dfs.append(df)
+
+    if selected_only:
+        df_weights = df_weights.loc[selected_criteria]
 
     return dfs, df_weights
