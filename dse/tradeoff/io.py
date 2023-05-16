@@ -1,7 +1,14 @@
+import numpy as np
 import pandas as pd
 
 
-def load_sheets(file, design_names, selected_only=True, convert_score=True):
+def load_sheets(file, design_names, selected_only=True):
+    # Load scores
+    df_scoring = pd.read_excel(file, sheet_name="Scoring")
+    df_scoring = df_scoring.rename(
+        columns={"Category": "category", "Numerical score": "score"}
+    ).set_index("category", drop=True)[["score"]]
+
     # Load weights
     df_weights = pd.read_excel(file, sheet_name="Criteria")
 
@@ -11,14 +18,24 @@ def load_sheets(file, design_names, selected_only=True, convert_score=True):
 
     df_weights = df_weights.rename(
         columns={"Criterion": "criterion", "Weight": "weight", "Selected": "selected"}
-    ).set_index("criterion", drop=True)[["weight", "selected"]]
+    ).set_index("criterion", drop=True)
     selected_criteria = df_weights[df_weights["selected"] == "x"].index
 
-    # Load scores
-    df_scoring = pd.read_excel(file, sheet_name="Scoring")
-    df_scoring = df_scoring.rename(
-        columns={"Category": "category", "Numerical score": "score"}
-    ).set_index("category", drop=True)
+    # Extract score ranges per criterion
+    score_categories = {
+        criterion: {category: [None, None] for category in df_scoring.index}
+        for criterion in selected_criteria
+    }
+    for criterion, categories in score_categories.items():
+        for category in list(categories.keys())[:-1]:
+            row = df_weights.loc[criterion]
+            boundary = row.iloc[np.where(df_weights.columns == category)[0][0] - 1]
+            score_categories[criterion][category][0] = boundary
+
+        for left, right in zip(list(categories.keys())[1:], list(categories.keys())[:-1]):
+            score_categories[criterion][left][1] = score_categories[criterion][right][0]
+
+    df_weights = df_weights[["weight", "selected"]]
 
     # Load criteria values for each design
     dfs = []
@@ -30,25 +47,17 @@ def load_sheets(file, design_names, selected_only=True, convert_score=True):
             columns={
                 "Criterion": "criterion",
                 "Expected": "expected",
-                "Score for Expected": "expected_score",
                 "Worst": "worst",
-                "Score for Worst": "worst_score",
                 "Best": "best",
-                "Score for Best": "best_score",
             }
         ).set_index("criterion", drop=True)
 
         if selected_only:
             df = df.loc[selected_criteria]
 
-        if convert_score:
-            df["expected_score"] = df["expected_score"].apply(lambda s: df_scoring.loc[s]["score"])
-            df["worst_score"] = df["worst_score"].apply(lambda s: df_scoring.loc[s]["score"])
-            df["best_score"] = df["best_score"].apply(lambda s: df_scoring.loc[s]["score"])
-
         dfs.append(df)
 
     if selected_only:
         df_weights = df_weights.loc[selected_criteria]
 
-    return dfs, df_weights
+    return dfs, df_weights, df_scoring, score_categories
