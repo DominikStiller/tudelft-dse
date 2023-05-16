@@ -29,29 +29,24 @@ def DragEstimation(Swing, Vcr, visc_cr):
     return Cd_0
 
 
-def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
+def RangeCalc(Wto, Wtot, R, V_cr):
     g_mars = const['gravityMars']
-
-    # Dimensions
-
-    Swing, T_wing = aircraftParameters['wingArea'], aircraftParameters['cruiseThrust']
-    lf = 1.78 + aircraftParameters['chord']
-    bf = 1.5
-    hf = bf  # Fuselage height
 
     # Thrust estimations
     T_to = Wto * g_mars
     T_cr = aircraftParameters['cruiseThrust']
 
     # Take-off
-    Power = aircraftParameters['totalRotors']* power(T_to/aircraftParameters['totalRotors'], R)
-    E_TO = Power * const['takeOffTime']/3600
+    Power = aircraftParameters['totalRotors'] * power(T_to/aircraftParameters['totalRotors'], R)
+    E_TO = Power * const['takeOffTime'] / 3600
     m_TO = max(Power / const['takeoffBatteryPowerDensity'], E_TO / const['takeoffBatteryEnergyDensity'])
 
     # Cruise
-    P_cr = aircraftParameters['totalRotors']*power(T_cr/aircraftParameters['totalRotors'], R)
-    E_cr = (Wto - Wtot) * E_density - E_TO*2 # Use all remaining mass for batteries
-    E_cr = E_cr*(E_cr>0)
+    # P_cr = aircraftParameters['totalRotors']*power(T_cr/aircraftParameters['totalRotors'], R)
+
+    P_cr = aircraftParameters['cruiseThrust'] * const['cruiseSpeed']
+    E_cr = (Wto - Wtot) * const['takeoffBatteryEnergyDensity'] - E_TO * 2  # Use all remaining mass for batteries
+
     m_battery_cr = Wto - Wtot - m_TO
     m_battery_cr = m_battery_cr*(m_battery_cr>0)
     #if np.min([m_battery_cr]) < 0:
@@ -93,7 +88,7 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
 
     # Total Weight
     Wtot = Wwing2Wto*Wto + Wtail2Wto + Wf + RotorMass + m_payload + m_solar
-    Range, Endurance, m_battery_TO, m_battery_cr = RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO)
+    Range, Endurance, m_battery_TO, m_battery_cr = RangeCalc(Wto, Wtot, R, V_cr)
 
     if print_results:
         print('Wing weight: ' + str(Wwing2Wto * Wto) + '[kg]')

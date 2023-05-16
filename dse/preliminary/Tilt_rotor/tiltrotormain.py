@@ -40,7 +40,7 @@ def design(iterate=False):
         aircraftParameters['batteryMass'], aircraftParameters['panelMass'], powerSurplus = \
             size_power_subsystem(aircraftParameters['rotorRadius'], takeOffThrustPerEngine,
                                  aircraftParameters['cruiseThrust'],
-                                 const['designRange'] / const['cruiseSpeed'] + const['takeOffTime'],
+                                 const['designRange'] / const['cruiseSpeed'],
                                  const['takeOffTime'], aircraftParameters['wingArea'], plot=False)
 
         # Calculate weights
@@ -107,7 +107,7 @@ if __name__ == '__main__':
 
 
     m, dim, acParams = design(iterate=False)
-    max_rotor_loads()
+    # max_rotor_loads()
 
     plt.legend(loc='best')
     plt.savefig('../Figures/Payload-Range.pdf')

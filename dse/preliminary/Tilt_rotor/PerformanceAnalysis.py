@@ -11,7 +11,7 @@ def PayloadRange(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_den
     RangeArr = Class2Weight(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_density, P_density_TO, E_density_TO, payloadmass, Mass_solar, print_results=False)[0]
 
     RangeLimity, RangeLimitx = [0, max(payloadmass)], [minRange, minRange]
-    PayloadLimity, PayloadLimitx = [400, 400], [0, RangeArr[0]]
+    PayloadLimity, PayloadLimitx = [const['payloadMass'], const['payloadMass']], [0, RangeArr[0]]
     #PayRange, axis = plt.subplots()
 
     if RangeArr[-1] > 1000:
@@ -26,8 +26,8 @@ def PayloadRange(R, mass_rotors, Mass_design, N_ult, AR, wingbraced, V_cr, E_den
     plt.plot(RangeArr, payloadmass, label=f'Start mass: {np.round(Mass_design)}')
     #plt.legend(loc='best')
     #plt.title(f'Payload-Range Diagram for a design mass of {Mass_design}[kg]')
-    plt.ylim(bottom=390)
-    plt.xlim(left=700)
+    plt.ylim(bottom=340)
+    plt.xlim(left=900)
     plt.xlabel('Range [km]')
     plt.ylabel('Payload [kg]')
     #plt.savefig(f'Tiltrotor-PayloadRangeDiagram{np.round(Mass_design, 1)}.pdf')

@@ -30,7 +30,8 @@ def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, t
 
     # Power calculations
     takeOffPower = aircraftParameters['totalRotors'] * power(takeOffThrust, rotorRadius)
-    cruisePower = aircraftParameters['totalRotors'] * power(cruiseThrust/aircraftParameters['totalRotors'], rotorRadius)
+    # cruisePower = aircraftParameters['totalRotors'] * power(cruiseThrust/aircraftParameters['totalRotors'], rotorRadius)
+    cruisePower = cruiseThrust * const['cruiseSpeed']
     takeOffEnergy = takeOffPower * takeOffTime
     cruiseEnergy = cruisePower * cruiseTime
 
@@ -39,25 +40,32 @@ def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, t
     rechargeCapability[np.where(rechargeCapability < 0)] = np.nan
 
     # Calculate in-flight recharge parameters
-    rechargeTime = takeOffEnergy / rechargeCapability
-    percentRechargeable = np.count_nonzero(~np.isnan(rechargeCapability)) / np.size(rechargeCapability)
+    try:
+        percentRechargeable = np.count_nonzero(~np.isnan(rechargeCapability)) / np.size(rechargeCapability)
+    except:
+        rechargeTime = (2 * takeOffEnergy + cruiseEnergy) / (intensity * collectingArea)
+        print(f'We cannot recharge in flight - average recharge time landed is {np.mean(rechargeTime)}')
+
+    rechargeTime = (2 * takeOffEnergy + cruiseEnergy) / (intensity * collectingArea) / 3600
     print(f'Cruise power = {cruisePower} W')
     print(f'Cruise energy = {cruiseEnergy} Wh')
     print(f'Take off power = {takeOffPower} W')
     print(f'Take off energy = {takeOffEnergy} Wh')
     print(f'The minimum in-flight recharge time is {np.nanmin(rechargeTime)} hours')
     print(f'The average in-flight recharge time is {np.nanmean(rechargeTime)} hours')
-    print(f'Recharge is possible in {100 * percentRechargeable}% of the planet\n')
+    print(f'Average recharge time landed is {np.mean(rechargeTime[1, -2])}')
+    print(f'Recharge is possible in {100 * percentRechargeable}% of the planet while in cruise\n')
 
     # Size the batteries and the arrays
     energyConsumption = 2 * takeOffEnergy + cruiseEnergy
     batteryMass = max(2*takeOffEnergy / const['takeoffBatteryEnergyDensity'], takeOffPower/const['takeoffBatteryPowerDensity'])
-    cruiseBattery = cruiseEnergy / const['batteryEnergyDensity']
-    batteryMass+=cruiseBattery
+    # cruiseBattery = cruiseEnergy / const['batteryEnergyDensity']
+    cruiseBattery = cruiseEnergy / const['takeoffBatteryEnergyDensity']
+    batteryMass += cruiseBattery
     panelMass = collectingArea * const['solarPanelDensity']
 
     # Apply safety margins
-    batteryMass *= 1.3/0.95
+    # batteryMass *= 1.3/0.95
 
     print(f'Mass of the batteries = {batteryMass} kg')
     print(f'Volume of the batteries = {energyConsumption/const["batteryVolume"]}')

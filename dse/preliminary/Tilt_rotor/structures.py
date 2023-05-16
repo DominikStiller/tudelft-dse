@@ -43,7 +43,7 @@ def max_wing_loads():
     return Fa, Fb, M
 
 
-def max_rotor_loads():
+def max_rotor_loads(airfoil_shape):
     c = aircraftParameters['rotorRadius'] / 20
     s_rotor = c * aircraftParameters['rotorRadius']
     tipSpeed = -0.88 * const['cruiseSpeed'] + 268.87
@@ -56,22 +56,30 @@ def max_rotor_loads():
     F_y = (aircraftParameters['rotorMass']/24) * aircraftParameters['rotorRadius'] * omega**2 / 2
     F_z = (aircraftParameters['rotorMass'] - const['takeOffLoad'] * const['gravityMars'] * aircraftParameters['totalMass'] ) / 24
 
-    M_x = aircraftParameters['rotorRadius']/2 * F_z
-    M_z = -F_x * aircraftParameters['rotorRadius']/2
-    max_stress = 10e10
-    allowed_stress = const['allowedStress']
-    fill=0
-    Ixz=0
+    Mx = aircraftParameters['rotorRadius']/2 * F_z
+    Mz = -F_x * aircraftParameters['rotorRadius']/2
 
-    while max_stress > allowed_stress:
-        fill+=0.001
-        x_max,y_max, Ixx, Iyy, Izz = MOI(fill, aircraftParameters['rotorRadius'])
+    n = aircraftParameters['totalRotors'] * aircraftParameters['bladesPerRotor']
+    x_av, z_av = np.mean(airfoil_shape)
+    Ixx = (aircraftParameters['rotorMass'] / n) * np.sum((airfoil_shape[0] - x_av)**2)
+    Izz = (aircraftParameters['rotorMass'] / n) * np.sum((airfoil_shape[1] - z_av)**2)
+    Ixz = (aircraftParameters['rotorMass'] / n) * np.sum((airfoil_shape[0] - x_av) * (airfoil_shape[1] - z_av))
 
-        max_stress = (abs((M_x*Izz-M_z*Ixz)*y_max) + abs((M_z*Ixx-M_x*Ixz)*x_max))/(abs(Ixx*Izz))
-    print(f'Required Fill Factor: {fill}')
-    print(max_stress)
+    max_stress = ((Mx*Izz - Mz*Ixz)*airfoil_shape[1] + (Mz*Ixx - Mx*Ixz)*airfoil_shape[0]) / (Ixx*Izz - Ixz**2)
+    fill_factor = 0.1
+    while max_stress > const['allowedStress']:
+        aircraftParameters['rotorMass'] *= (fill_factor + 0.01)/fill_factor
+        fill_factor += 0.01
 
-    return np.array([F_x, F_y, F_z]), np.array([M_x, 0, M_z])
+        Ixx = (aircraftParameters['rotorMass'] / n) * np.sum((airfoil_shape[0] - x_av) ** 2)
+        Izz = (aircraftParameters['rotorMass'] / n) * np.sum((airfoil_shape[1] - z_av) ** 2)
+        Ixz = (aircraftParameters['rotorMass'] / n) * np.sum((airfoil_shape[0] - x_av) * (airfoil_shape[1] - z_av))
+
+        max_stress = ((Mx * Izz - Mz * Ixz) * airfoil_shape[1] + (Mz * Ixx - Mx * Ixz) * airfoil_shape[0]) / (
+                    Ixx * Izz - Ixz ** 2)
+
+
+    return np.array([F_x, F_y, F_z]), np.array([Mx, 0, Mz]), max_stress
 
 
 def tail_pole_loads(tailLift):
