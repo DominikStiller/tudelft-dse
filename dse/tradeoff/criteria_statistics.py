@@ -8,8 +8,8 @@ from dse.tradeoff.io import load_sheets
 
 if __name__ == "__main__":
     design_names = ["Blended wing", "Conventional aircraft", "Tilt-rotor", "Multicopter", "Airship"]
-    dfs, df_weights = load_sheets(
-        "data/tradeoff.xlsx", design_names, selected_only=False, convert_score=False
+    dfs, df_weights, df_scoring, score_categories = load_sheets(
+        "data/tradeoff.xlsx", design_names, selected_only=False
     )
     selected_criteria = df_weights[df_weights["selected"] == "x"].index
     criteria_names = list(dfs[0].index)
