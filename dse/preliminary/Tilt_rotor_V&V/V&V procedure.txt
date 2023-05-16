@@ -1,0 +1,21 @@
+Verification procedure:
+
+Unit tests:
+    - Functions to be tested:
+        - Tip speed calculation
+        - RadiusMassElementMomentum
+        - area_and_thrust
+        - Wingspan and chord correction for AR and wing area
+        - DragEstimation
+        - size_power_subsystem
+        - Class2Weight
+        - PayloadRange
+        - AircraftClimbPerf
+        - RotorClimbPerf
+    -
+
+
+
+
+
+Validation procedure
