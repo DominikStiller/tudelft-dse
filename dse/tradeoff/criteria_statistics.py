@@ -8,15 +8,19 @@ from dse.tradeoff.io import load_sheets
 
 if __name__ == "__main__":
     design_names = ["Blended wing", "Conventional aircraft", "Tilt-rotor", "Multicopter", "Airship"]
-    dfs, _ = load_sheets(
+    dfs, df_weights = load_sheets(
         "data/tradeoff.xlsx", design_names, selected_only=False, convert_score=False
     )
+    selected_criteria = df_weights[df_weights["selected"] == "x"].index
     criteria_names = list(dfs[0].index)
 
     df = pd.DataFrame(
         {design_name: dfs[i]["expected"].to_numpy() for i, design_name in enumerate(design_names)},
         index=dfs[0].index,
-    )
+    ).astype("float")
+    # Remove qualitative criteria
+    df = df.iloc[:-3]
+    criteria_names = criteria_names[:-3]
 
     fig, ax = plt.subplots(figsize=(10, 5), tight_layout=True)
     im = ax.imshow(df.to_numpy().T / df.to_numpy().mean(axis=1)[:, None].T, cmap="Reds")
@@ -29,10 +33,15 @@ if __name__ == "__main__":
     for i in range(len(design_names)):
         for j, criterion_name in enumerate(criteria_names):
             text = ax.text(
-                j, i, f"{dfs[i].loc[criterion_name]['expected']:.1f}", ha="center", va="center"
+                j,
+                i,
+                f"{dfs[i].loc[criterion_name]['expected']:.1f}",
+                ha="center",
+                va="center",
+                weight="bold" if criterion_name in selected_criteria else "normal",
             )
 
-    save_plot(".", "tradeoff_values")
+    save_plot(".", "tradeoff_values", type="png")
     plt.show()
 
     df["std_pct"] = df.std(axis=1) / df.mean(axis=1) * 100

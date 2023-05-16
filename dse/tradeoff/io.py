@@ -4,6 +4,11 @@ import pandas as pd
 def load_sheets(file, design_names, selected_only=True, convert_score=True):
     # Load weights
     df_weights = pd.read_excel(file, sheet_name="Criteria")
+
+    # Remove rows that are not criteria
+    first_empty_row_idx = df_weights["Criterion"].isnull().idxmax()
+    df_weights = df_weights.iloc[:first_empty_row_idx]
+
     df_weights = df_weights.rename(
         columns={"Criterion": "criterion", "Weight": "weight", "Selected": "selected"}
     ).set_index("criterion", drop=True)[["weight", "selected"]]
@@ -23,6 +28,7 @@ def load_sheets(file, design_names, selected_only=True, convert_score=True):
     for design_name in design_names:
         df = pd.read_excel(file, sheet_name=design_name)
         df = df.drop("Notes", axis=1)
+        df = df.iloc[: len(df_weights.index)]
         df = df.rename(
             columns={
                 "Criterion": "criterion",
