@@ -4,18 +4,66 @@ Unit tests:
     - Functions to be tested:
         - Tip speed calculation
         - RadiusMassElementMomentum
-        - area_and_thrust
-        - Wingspan and chord correction for AR and wing area
+        - area
         - DragEstimation
         - size_power_subsystem
         - Class2Weight
         - PayloadRange
         - AircraftClimbPerf
         - RotorClimbPerf
-    -
 
+    - Tip speed calculation:
+        - Inputs: cruise speed
+        - Outputs: maximum allowable cruise speed
 
+        Tests:
+        - Check that increasing airspeed leads to smaller tip velocity
+        - Compare the results with hand calculations
 
+    - RadiusMassElementMomentum
+        - Inputs: take-off mass, n_rotors, n_blades, coaxial, V_tip
+        - Outputs: radius, thrust, power, rotor mass
+
+        Correlations:
+        - Check for positive mass-thrust correlation
+        - Check for positive mass-radius correlation
+        - Check for positive mass-rotor mass correlation
+        - Check for negative n_rotors-thrust correlation
+        - Check for negative density-radius correlation
+        - Check for positive gravity-thrust correlation
+
+        Extreme value tests:
+        - What happens when take-off mass = 0?
+        - What happens when n_rotors/n_blades = 0?
+        - What happens if the values are negative?
+
+    - area_and_thrust
+        - Inputs: cl, MTOM, dynamic pressure
+        - Outputs: wing area, wingspan, chord AR
+
+        Correlations
+        - Negative cl-area
+        - Positive MTOM-wing area
+        - Negative dynamic pressure-wing area
+        - Positive gravity-wing area
+
+        Extreme value tests
+        - 0 Cl leads to inf S
+        - 0 MTOM = 0 S
+
+        Hand calculation checks
+        - Check wing area for a certain condition
+
+    - DragEstimation
+        - Inputs: wing area, cruise speed, viscosity at cruise, fuselage dimensions
+        - Outputs: cd0
+
+        Correlations
+        - Positive fuselage size
+
+    - size_power_subsystem
+        - Inputs: rotor radius, take off thrust, cruise thrust, cruise time, take-off time, surface area
+        - Outputs: battery mass, panel mass, power surplus
 
 
 Validation procedure
