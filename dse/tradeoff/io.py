@@ -19,6 +19,7 @@ def load_sheets(file, design_names, selected_only=True):
     df_weights = df_weights.rename(
         columns={"Criterion": "criterion", "Weight": "weight", "Selected": "selected"}
     ).set_index("criterion", drop=True)
+    df_weights["weight"] = df_weights["weight"].round(1)
     selected_criteria = df_weights[df_weights["selected"] == "x"].index
 
     # Extract score ranges per criterion

@@ -41,7 +41,9 @@ def get_score(criterion, criterion_value, score_categories, df_scoring):
     return score
 
 
-def calculate_total_score(df, df_weights, score_categories, df_scoring, column="expected"):
+def calculate_total_score(
+    df, df_weights, score_categories, df_scoring, maximum_score, column="expected"
+):
     total_score = 0
 
     for criterion, criterion_value in df[column].items():
@@ -49,14 +51,32 @@ def calculate_total_score(df, df_weights, score_categories, df_scoring, column="
         weight = df_weights.loc[criterion].iloc[0]
         total_score += weight * criterion_score
 
-    return total_score
+    return 100 * total_score / maximum_score
+
+
+def calculate_score_regions(df_scoring, df_weights):
+    regions = []
+
+    total_weight = df_weights["weight"].sum()
+
+    for score in df_scoring["score"].iloc[:-1].values:
+        regions.append([None, total_weight * score])
+
+    for i, upper in enumerate(regions[1:]):
+        regions[i][0] = regions[i + 1][1]
+
+    regions[-1][0] = 0
+
+    return regions, regions[0][1]
 
 
 if __name__ == "__main__":
     design_names = ["Blended wing", "Conventional aircraft", "Tilt-rotor", "Multicopter", "Airship"]
     dfs, df_weights, df_scoring, score_categories = load_sheets("data/tradeoff.xlsx", design_names)
+    score_regions, maximum_score = calculate_score_regions(df_scoring, df_weights)
     total_scores = [
-        calculate_total_score(df, df_weights, score_categories, df_scoring) for df in dfs
+        calculate_total_score(df, df_weights, score_categories, df_scoring, maximum_score)
+        for df in dfs
     ]
 
     # print("Scores:")
@@ -72,6 +92,13 @@ if __name__ == "__main__":
     ax.scatter(design_names, total_scores, marker="_", s=700, label="Expected")
     # ax.scatter(design_names, worst_scores, marker="_", s=700, label="Worst case")
     # ax.scatter(design_names, best_scores, marker="_", s=700, label="Best case")
+
+    for (lower, upper), color in zip(score_regions, ["375623", "70AD47", "FFC000", "ED7D31"]):
+        lower = 100 * lower / maximum_score
+        upper = 100 * upper / maximum_score
+        ax.axhspan(lower, upper, color=f"#{color}", alpha=0.15)
+
+    ax.set_ylim([0, 100])
 
     ax.legend()
 
