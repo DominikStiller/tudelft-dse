@@ -42,6 +42,10 @@ def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, t
     # Calculate in-flight recharge parameters
     rechargeTime = takeOffEnergy / rechargeCapability
     percentRechargeable = np.count_nonzero(~np.isnan(rechargeCapability)) / np.size(rechargeCapability)
+    print(f'Cruise power = {cruisePower} W')
+    print(f'Cruise energy = {cruiseEnergy} Wh')
+    print(f'Take off power = {takeOffPower} W')
+    print(f'Take off energy = {takeOffEnergy} Wh')
     print(f'The minimum in-flight recharge time is {np.nanmin(rechargeTime)} hours')
     print(f'The average in-flight recharge time is {np.nanmean(rechargeTime)} hours')
     print(f'Recharge is possible in {100 * percentRechargeable}% of the planet\n')
@@ -70,10 +74,10 @@ def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, t
         divNorm = mcolors.TwoSlopeNorm(vmin=np.min(powerSurplus)/1000, vcenter=0, vmax=np.max(powerSurplus)/1000)
         plt.pcolormesh(powerSurplus / 1000, alpha=0.6, cmap='RdYlGn', norm=divNorm)
         # plt.pcolormesh(powerSurplus / 1000, alpha=0.6, cmap='RdYlGn')
-        plt.colorbar(fraction=0.025, pad=0.04, label='Energy surplus during cruise [kW]')
+        plt.colorbar(fraction=0.025, pad=0.04, label='Power surplus during cruise [kW]')
         plt.axis('off')
         plt.tight_layout()
-        plt.savefig('../Figures/EnergySurplusCruise.png')
+        plt.savefig('../Figures/PowerSurplusCruise.png')
         plt.show()
 
     return batteryMass, panelMass, powerSurplus

@@ -49,13 +49,17 @@ def max_rotor_loads():
     tipSpeed = -0.88 * const['cruiseSpeed'] + 268.87
     blade_drag = aircraftParameters['cd'] * 1/2 * const['airDensity'] * tipSpeed**2 * s_rotor
 
+    tipSpeed = -0.88 * const['cruiseSpeed'] + 268.87
+    omega = tipSpeed / aircraftParameters['rotorRadius']
+
     F_x = blade_drag
+    F_y = (aircraftParameters['rotorMass']/24) * aircraftParameters['rotorRadius'] * omega**2 / 2
     F_z = (aircraftParameters['rotorMass'] - const['takeOffLoad'] * const['gravityMars'] * aircraftParameters['totalMass'] ) / 24
 
     M_x = aircraftParameters['rotorRadius']/2 * F_z
     M_z = -F_x * aircraftParameters['rotorRadius']/2
 
-    return np.array([F_x, 0, F_z]), np.array([M_x, 0, M_z])
+    return np.array([F_x, F_y, F_z]), np.array([M_x, 0, M_z])
 
 
 def tail_pole_loads(tailLift):
@@ -76,7 +80,7 @@ def assembly_volume():
     cockpitLength = 1.78
     fuselageWidth = 1.5
 
-    fuselageVolume = 1/3*np.pi*cockpitLength*(fuselageWidth/2)**2 + 2*np.pi*fuselageWidth/2 * aircraftParameters['chord']
+    fuselageVolume = 1/3*cockpitLength*np.pi*(fuselageWidth/2)**2 + 2*np.pi*fuselageWidth/2 * aircraftParameters['chord']
 
     x_cord_top = np.flip(
         [1, 0.99838, 0.99417, 0.98825, 0.98075, 0.97111, 0.95884, 0.94389, 0.92639, 0.90641, 0.88406, 0.85947, 0.83277,
@@ -113,4 +117,4 @@ def assembly_volume():
     # Assuming tail and wing have the same density
     tailVolume = aircraftParameters['tailMass'] / aircraftParameters['wingMass'] * wingVolume
 
-    return 1.5*(fuselageVolume + wingVolume + rotorVolume + tailVolume)
+    return fuselageVolume + wingVolume + rotorVolume + tailVolume
