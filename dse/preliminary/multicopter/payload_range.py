@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from dse.plotting import format_plot, save_plot
 
 if __name__ == "__main__":
-    kg_per_h = 47
+    kg_per_h = 80.2
     km_per_kg = (400 / kg_per_h) / 1.3
     mtom = 2700  # kg
     oem = 1747  # kg
