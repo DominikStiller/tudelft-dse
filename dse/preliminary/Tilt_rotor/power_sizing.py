@@ -8,8 +8,7 @@ import numpy as np
 
 def v_i(thrust, radius):
     rho = const['airDensity']
-    #N_rotor = const['RotorNumber']
-    return np.sqrt(thrust/(rho*np.pi*radius**2))
+    return np.sqrt(thrust/(2*rho*np.pi*radius**2))
 
 
 def power(thrust, radius):

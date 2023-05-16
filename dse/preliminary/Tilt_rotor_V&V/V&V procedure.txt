@@ -37,7 +37,7 @@ Unit tests:
         - What happens when n_rotors/n_blades = 0?
         - What happens if the values are negative?
 
-    - area_and_thrust
+    - area
         - Inputs: cl, MTOM, dynamic pressure
         - Outputs: wing area, wingspan, chord AR
 
@@ -59,11 +59,20 @@ Unit tests:
         - Outputs: cd0
 
         Correlations
-        - Positive fuselage size
+        - Positive fuselage size-cd0
 
     - size_power_subsystem
         - Inputs: rotor radius, take off thrust, cruise thrust, cruise time, take-off time, surface area
         - Outputs: battery mass, panel mass, power surplus
+
+        Correlations
+        - Positive TOthrust-battery mass
+        - Positive time-battery mass
+
+        Checks:
+        - Compare power and energy calculations with hand calculations
+        - Power surplus decreases at higher latitudes the
+
 
 
 Validation procedure
