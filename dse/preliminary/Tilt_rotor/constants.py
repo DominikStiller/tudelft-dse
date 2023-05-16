@@ -22,7 +22,8 @@ const = {
     'takeOffTime': 600,
     'margin': 0.1,
     'payloadMass': 400,
-    'maxMass': 3000
+    'maxMass': 3000,
+    'oswald': 0.8
 }
 
 aircraftParameters = {

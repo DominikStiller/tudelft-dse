@@ -1,12 +1,9 @@
 from constants import const, aircraftParameters
-from cruise_sizing import area_and_thrust
 from power_sizing import power
 import numpy as np
 
 
-def DragEstimation(R, Swing, t2c, Vcr, visc_cr, AR):
-    Oswald = 0.9
-
+def DragEstimation(Swing, Vcr, visc_cr):
     # Dimensions
     lf = 1.78 + aircraftParameters['chord']
     bf = 1.5
@@ -15,9 +12,6 @@ def DragEstimation(R, Swing, t2c, Vcr, visc_cr, AR):
 
     # Fuselage
     Cd_fusS = 0.0031 * lf * (bf + hf)
-
-    # Wing
-    Cd_wingS = 0.0054 * (1 + 3 * t2c * np.cos(0) ** 2) * Swing  # Sweep is 0
 
     # Engines
     Cd_engineS = 2 * 0.07 * 0.08
@@ -32,12 +26,7 @@ def DragEstimation(R, Swing, t2c, Vcr, visc_cr, AR):
     r_t = 1.24
 
     Cd_0 = r_Re * r_uc * (r_t * (Cd_fusS + Cd_engineS)) / Swing
-
-    Cd = Cd_0 + const['cl'] ** 2 / (np.pi * AR * Oswald)
-    D = Cd * const['airDensity'] * 0.5 * Vcr ** 2 * Swing
-
-    print('Drag of the aircraft without wing will be of ' + str(D) + '[N] \n')
-    return D
+    return Cd_0
 
 
 def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
@@ -45,15 +34,14 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
 
     # Dimensions
 
-    Swing, T_wing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr ** 2)
+    Swing, T_wing = aircraftParameters['wingArea'], aircraftParameters['cruiseThrust']
     lf = 1.78 + aircraftParameters['chord']
     bf = 1.5
     hf = bf  # Fuselage height
 
     # Thrust estimations
     T_to = Wto * g_mars
-    T_cr = T_wing + \
-           DragEstimation(R, Swing, const['t/c'], V_cr, 5.167E-4, AR)
+    T_cr = aircraftParameters['cruiseThrust']
 
     # Take-off
     Power = aircraftParameters['totalRotors']* power(T_to/aircraftParameters['totalRotors'], R)
@@ -78,7 +66,7 @@ def RangeCalc(Wto, Wtot, R, AR, V_cr, E_density, P_density, E_density_TO):
 # Weight Prediction:
 def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_density, E_density_TO, m_payload,
                  m_solar, print_results=True):
-    Swing = area_and_thrust(0, const['cl'], const['cd'], Wto, 0.5 * const['airDensity'] * V_cr ** 2)[0]
+    Swing = aircraftParameters['wingArea']
     b = aircraftParameters['wingspan']  # wingspan
     c = aircraftParameters['chord']  # chord
     lf = 1.78 + c

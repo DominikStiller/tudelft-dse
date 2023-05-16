@@ -1,70 +1,44 @@
-import numpy as np
-import scipy.stats as sstats
+from constants import const, aircraftParameters
 import matplotlib.pyplot as plt
-from constants import const
+import scipy.stats as sstats
+import numpy as np
 
 
-def area_and_thrust(thrust_deflection, cl, cd, MTOM, q):
+def update_wingspan():
+    global aircraftParameters
+    aircraftParameters['wingspan'] = 3 * aircraftParameters['rotorRadius']
+    aircraftParameters['chord'] = aircraftParameters['wingArea'] / aircraftParameters['wingspan']
+    aircraftParameters['AR'] = aircraftParameters['wingspan'] / aircraftParameters['chord']
+
+    if aircraftParameters['AR'] < aircraftParameters['ARmin']:
+        # Try to decrease wingspan
+        print(f'Chord is too large for the required AR')
+        aircraftParameters['wingspan'] = np.sqrt(aircraftParameters['wingArea'] * aircraftParameters['ARmin'])
+        aircraftParameters['chord'] = aircraftParameters['wingArea'] / aircraftParameters['wingspan']
+        if aircraftParameters['wingspan'] < 2 * aircraftParameters['rotorRadius']:
+            # Didn't work, increase wingspan
+            aircraftParameters['wingspan'] = 2 * aircraftParameters['rotorRadius']
+            aircraftParameters['chord'] = aircraftParameters['wingArea'] / aircraftParameters['wingspan']
+            aircraftParameters['AR'] = aircraftParameters['wingspan'] / aircraftParameters['chord']
+            while aircraftParameters['AR'] < aircraftParameters['ARmin']:
+                aircraftParameters['wingspan'] += 0.1
+                aircraftParameters['chord'] = aircraftParameters['wingArea'] / aircraftParameters['wingspan']
+                aircraftParameters['AR'] = aircraftParameters['wingspan'] / aircraftParameters['chord']
+
+    print(f'Wing area = {aircraftParameters["wingArea"]}[m2]')
+    print(f'Wingspan = {aircraftParameters["wingspan"]}[m]')
+    print(f'Chord = {aircraftParameters["chord"]}[m]')
+    print(f'AR = {aircraftParameters["wingspan"] / aircraftParameters["chord"]}')
+
+
+def area(cl, MTOM, q):
     g_mars = const['gravityMars']
-    A = np.array([[cl * q, np.sin(np.radians(thrust_deflection))],
-                  [-cd * q, np.cos(np.radians(thrust_deflection))]])
-    B = np.array([MTOM * g_mars, 0])
-    S, T = np.linalg.solve(A, B)
-    return S, T
+
+    aircraftParameters['wingArea'] = MTOM * g_mars / (cl * q)
+    update_wingspan()
 
 
 def max_tipSpeed(cruiseVelocity):
     maxTipSpeed = np.sqrt((0.92 * 220) ** 2 - cruiseVelocity ** 2)
     tipSpeedVsCruiseSpeed = sstats.linregress(cruiseVelocity, maxTipSpeed)
     return tipSpeedVsCruiseSpeed.slope, tipSpeedVsCruiseSpeed.intercept
-
-
-if __name__ == '__main__':
-    MTOM = 3000
-    g_mars = 3.71
-    max_thrust = 1.1 * MTOM * g_mars
-
-    # Assumptions
-    # 2D wing
-    # Fly at AoA for Cl_max
-    # Thrust is constant
-
-
-    # Airfoil data
-    cl = 1.6
-    cd = 0.05
-
-    # Obtain data for S and gamma_e
-    fig, (ax1, ax2) = plt.subplots(2, 1, sharex='all')
-    fig.subplots_adjust(hspace=0)
-
-    rho = 0.01
-    velocityArray = np.linspace(112, 154, 25)
-    for i in range(len(velocityArray)):
-        V = velocityArray[i]
-        q = 0.5*rho*V**2
-        results_list = list()
-        for y in range(0, 91):
-            S, T = area_and_thrust(y, cl, cd, MTOM, q)
-            results_list.append([y, S, T])
-
-        results_arr = np.array(results_list).T
-
-        if i % 5 == 0:
-            ax1.plot(results_arr[0], results_arr[1], label=f'V = {round(V, 1)}')
-            ax2.plot(results_arr[0], results_arr[2])
-
-
-    ax1.set(ylabel=r'Wing area [m$^2$]')
-    ax1.legend()
-    ax1.grid()
-    ax2.plot([results_arr[0][0], results_arr[0][-1]], [max_thrust, max_thrust])
-    ax2.set(xlabel='Thrust deflection [deg]', ylabel='Thrust [N]')
-    ax2.grid()
-    #plt.savefig('S&T-vs-gamma.png')
-    plt.show()
-
-    # Calculate tip velocity
-    a, b = max_tipSpeed(velocityArray)
-    print(f'Tip speed = {np.round(a, 2)}cruiseSpeed + {np.round(b, 2)}')
-
