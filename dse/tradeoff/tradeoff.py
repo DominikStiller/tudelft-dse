@@ -5,9 +5,6 @@ from dse.plotting import format_plot, save_plot
 from dse.tradeoff.io import load_sheets
 
 
-# df["expected_score"].apply(lambda s: df_scoring.loc[s]["score"])
-
-
 def get_score(criterion, criterion_value, score_categories, df_scoring):
     score_categories = score_categories[criterion]
 
