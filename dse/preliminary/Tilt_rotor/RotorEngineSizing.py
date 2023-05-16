@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
 from cruise_sizing import max_tipSpeed
+from dse.preliminary.Tilt_rotor.structures import max_rotor_loads
 from power_sizing import power
 from constants import const
 
@@ -15,7 +16,7 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
 
     b = N_blades
     v_tip = V_tip
-    T_min = M * gm /N_rotors
+    T_min = M * gm /N_rotors #Thrust to be produced per rotor
 
     # Initial guesses
     T = 0
@@ -28,15 +29,15 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
         x0 = c/R  # Distance from the blade's base to the centre of rotation
         omega = v_tip/R  # Angular velocity
 
-        n_elements = 15
+        n_elements = 15 #Split up blade into set of elements
         a0 = 6
-        alpha0 = np.radians(2)
+        alpha0 = -np.radians(5)
         A = np.pi*R**2
 
-        r2R = np.arange(1, n_elements+1)/n_elements
+        r2R = np.arange(1, n_elements+1)/n_elements #Local radius to total rotor
         c2R = c/R
         M_local = (r2R)*(omega*R/V_m)  # Local Mach number (omega*R = V_tip which is constant)
-        a = a0/(np.sqrt(1-M_local**2))
+        a = a0/(np.sqrt(1-M_local**2)) # Lift curve slope corrected for mach number
         Dtheta = theta_tip/r2R
         theta0 = -min(Dtheta-np.ones(n_elements,)*alpha0)+theta_tip
         theta = theta0+Dtheta-alpha0
@@ -48,9 +49,10 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
         cl = const['cl']
         cd = const['cd']
         DctDr2R = b*r2R**2*c2R*cl/(2*np.pi)
-
+        #Create spline of data points in order
         funCT = InterpolatedUnivariateSpline(r2R, DctDr2R)
         Ct_lossless = funCT.integral(x0, 1)
+        #Loss of lift from the tip of the rotor
         if Ct_lossless < 0.006:
             B = 1-0.06/b
         else:
@@ -67,11 +69,14 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
 
         DCQ_I = 0.01*CQ_induced
 
+        Cq = (CQ_profile+CQ_induced+DCQ_I)/0.95
+
         T = rho*A*(omega*R)**2*Ct
         if coaxial:
             T *= 0.88
-
+        pow = rho*A*V_tip**3 *Cq / 550 / 1.341 * 1000
         pow = power(T, R)
+
 
     # Rotor Weight:
     x_cord_top = np.flip([1, 0.99838, 0.99417, 0.98825, 0.98075, 0.97111, 0.95884,0.94389,0.92639,0.90641,0.88406,0.85947,0.83277,
@@ -93,6 +98,10 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
     Area = (Area_top - Area_bot)*c
     fillfactor = 0.05
     Rotor_mass = b*const['bladeDensity']*R*Area*fillfactor
+    for fillfactor in np.linspace(0, 1, 500):
+        loads=0
+
+
 
     if print_results:
         print('Given the mass of '+str(M)+'kg, the following applied: \n')
@@ -103,6 +112,17 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
         print(f'Total Rotor mass for entire aircraft: {Rotor_mass*N_rotors}[kg]')
 
     return R, T, pow / 745.7, pow * N_rotors, Rotor_mass * N_rotors
+
+def RotorInCruise(V_cr, omega, R):
+    r= np.linspace(0, R, 100)
+    V_total = np.sqrt((V_cr)**2+omega**2*r**2)
+    phi = np.arctan(V_cr/(omega*r))
+
+    #Forward component of lift:
+
+    plt.plot(r, np.cos(phi))
+    plt.show()
+
 
 
 if __name__ == '__main__':

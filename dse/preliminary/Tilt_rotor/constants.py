@@ -11,6 +11,7 @@ const = {
     'takeoffBatteryPowerDensity': 1317,
     'takeoffBatteryEnergyDensity': 437,
     'bladeDensity': 1500,
+    'allowedStress':3.5e9*0.3,
     't/c': 0.012,
     'visc_cr': 5.167E-4,
     'cruiseSpeed': 112,

@@ -1,7 +1,7 @@
 from PerformanceAnalysis import PayloadRange, AircraftClimbPerf, RotorClimbPerf
 from AircraftEstimating import Class2Weight, DragEstimation
 from RotorEngineSizing import RadiusMassElementMomentum
-from structures import calculate_cg, assembly_volume
+from structures import calculate_cg, assembly_volume, max_rotor_loads
 from constants import const, aircraftParameters
 from power_sizing import size_power_subsystem
 from cruise_sizing import area_and_thrust
@@ -120,7 +120,8 @@ if __name__ == '__main__':
     airc = aircraftParameters.copy()
 
 
-    m, dim, acParams = design(iterate=True)
+    m, dim, acParams = design(iterate=False)
+    max_rotor_loads()
 
     # plt.legend(loc='best')
     # plt.savefig('../Figures/Payload-Range.pdf')
