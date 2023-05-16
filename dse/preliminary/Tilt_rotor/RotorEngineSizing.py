@@ -76,7 +76,8 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
             T *= 0.88
         pow = rho*A*V_tip**3 *Cq / 550 / 1.341 * 1000
         pow = power(T, R)
-
+    sigma = b*c/(np.pi*R)
+    #print(Ct/sigma)
 
     # Rotor Weight:
     x_cord_top = np.flip([1, 0.99838, 0.99417, 0.98825, 0.98075, 0.97111, 0.95884,0.94389,0.92639,0.90641,0.88406,0.85947,0.83277,
@@ -96,15 +97,15 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
     Area_top = S1223_top.integral(0, 1)
     Area_bot = S1223_bottom.integral(0, 1)
     Area = (Area_top - Area_bot)*c
+
     fillfactor = 0.05
-    Rotor_mass = b*const['bladeDensity']*R*Area*fillfactor
-    for fillfactor in np.linspace(0, 1, 500):
-        loads=0
+    Rotor_mass = b * const['bladeDensity'] * R * Area * fillfactor
 
 
 
     if print_results:
         print('Given the mass of '+str(M)+'kg, the following applied: \n')
+        print(f'Rotor Thrust: {T}[N]')
         print('Rotor Radius: '+str(R)+'[m]')
         print('Rotor Power: ' + str(pow) + '[W]')
         print('Total Aircraft power: ' + str(pow * N_rotors) + '[W]')
