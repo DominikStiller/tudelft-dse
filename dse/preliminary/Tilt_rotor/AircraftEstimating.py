@@ -6,7 +6,7 @@ import numpy as np
 def DragEstimation(Swing, Vcr, visc_cr):
     # Dimensions
     lf = 1.78 + aircraftParameters['chord']
-    bf = 1.5
+    bf = 1
     hf = bf  # Fuselage height
     # Initial dimensions
 
@@ -65,7 +65,7 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     b = aircraftParameters['wingspan']  # wingspan
     c = aircraftParameters['chord']  # chord
     lf = 1.78 + c
-    bf = 1.5  # Fuselage width
+    bf = 1  # Fuselage width
 
     hf = bf  # Fuselage height
 

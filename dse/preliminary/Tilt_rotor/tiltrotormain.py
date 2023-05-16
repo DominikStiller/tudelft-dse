@@ -106,7 +106,7 @@ if __name__ == '__main__':
     airc = aircraftParameters.copy()
 
 
-    m, dim, acParams = design(iterate=False)
+    m, dim, acParams = design(iterate=True)
     # max_rotor_loads()
 
     plt.legend(loc='best')
