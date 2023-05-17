@@ -7,6 +7,8 @@ from dse.preliminary.Tilt_rotor.cruise_sizing import area
 from dse.preliminary.Tilt_rotor.constants import const,aircraftParameters
 from dse.preliminary.Tilt_rotor.RotorEngineSizing import RadiusMassElementMomentum
 from dse.preliminary.Tilt_rotor.AircraftEstimating import DragEstimation
+from dse.preliminary.Tilt_rotor.power_sizing import size_power_subsystem
+from dse.preliminary.Tilt_rotor.AircraftEstimating import Class2Weight
 
 class RadiusMassElementMomentum_Unittest(unittest.TestCase):
     def test_correlation_mass_thrust(self):
@@ -187,6 +189,143 @@ class DragEstimation_Unittest(unittest.TestCase):
         correlation_lf = pearsonr(lf_size_lst,cd01_lst)
         correlation_bf = pearsonr(bf_size_lst,cd02_lst)
         self.assertTrue(correlation_lf[0] > 0 and correlation_bf[0] > 0)
+
+class size_power_subsystem_Unittest(unittest.TestCase):
+    def test_correlation_T0thrust_battery_mass(self):
+        T0thrust_lst = list(np.arange(2000,3000,100))
+        battery_mass_lst = []
+
+        takeOffTipSpeed = 0.92 * const['soundSpeed']
+        Mass_thrust = const['maxMass'] * (1 + const['margin'])  # kg
+        aircraftParameters['rotorRadius'], takeOffThrustPerEngine, aircraftParameters['horsepowerPerEngine'], \
+        aircraftParameters['totalPower'], aircraftParameters['rotorMass'] = \
+            RadiusMassElementMomentum(M=Mass_thrust, N_rotors=aircraftParameters['totalRotors'],
+                                      N_blades=aircraftParameters['bladesPerRotor'],
+                                      coaxial=aircraftParameters['coaxial'], V_tip=takeOffTipSpeed, print_results=False)
+
+        aircraftParameters['totalMass'] = const['maxMass']
+        Mass_design = aircraftParameters['totalMass']
+        area(const['cl'], Mass_design, 0.5 * const['airDensity'] * const['cruiseSpeed'] ** 2, Print=False)
+
+        cd0 = DragEstimation(aircraftParameters['wingArea'], const['cruiseSpeed'], const['visc_cr'])
+        aircraftParameters['cruiseThrust'] = (cd0 + const['cl'] ** 2 / (
+                np.pi * aircraftParameters['AR'] * const['oswald'])) * \
+                                             0.5 * const['airDensity'] * const['cruiseSpeed'] ** 2 * aircraftParameters[
+                                                 'wingArea']
+        const['airDensity'] = 0.01
+
+        for item in T0thrust_lst:
+            battery_mass = size_power_subsystem(aircraftParameters['rotorRadius'], item,
+                                 aircraftParameters['cruiseThrust'],
+                                 const['designRange'] / const['cruiseSpeed'],
+                                 const['takeOffTime'], aircraftParameters['wingArea'], plot=False, Print=False)[0]
+            battery_mass_lst.append(battery_mass)
+        correlation = pearsonr(T0thrust_lst,battery_mass_lst)
+        self.assertTrue(correlation[0] > 0)
+
+    def test_correlation_time_battery_mass(self):
+        cruise_time_lst = list(np.arange(1000,10000,200))
+        takeoff_time_lst = list(np.arange(100,1000,100))
+        battery_mass1_lst = []
+        battery_mass2_lst = []
+
+        takeOffTipSpeed = 0.92 * const['soundSpeed']
+        Mass_thrust = const['maxMass'] * (1 + const['margin'])  # kg
+        aircraftParameters['rotorRadius'], takeOffThrustPerEngine, aircraftParameters['horsepowerPerEngine'], \
+        aircraftParameters['totalPower'], aircraftParameters['rotorMass'] = \
+            RadiusMassElementMomentum(M=Mass_thrust, N_rotors=aircraftParameters['totalRotors'],
+                                      N_blades=aircraftParameters['bladesPerRotor'],
+                                      coaxial=aircraftParameters['coaxial'], V_tip=takeOffTipSpeed, print_results=False)
+
+        aircraftParameters['totalMass'] = const['maxMass']
+        Mass_design = aircraftParameters['totalMass']
+        area(const['cl'], Mass_design, 0.5 * const['airDensity'] * const['cruiseSpeed'] ** 2, Print=False)
+
+        cd0 = DragEstimation(aircraftParameters['wingArea'], const['cruiseSpeed'], const['visc_cr'])
+        aircraftParameters['cruiseThrust'] = (cd0 + const['cl'] ** 2 / (
+                    np.pi * aircraftParameters['AR'] * const['oswald'])) * \
+                                             0.5 * const['airDensity'] * const['cruiseSpeed'] ** 2 * aircraftParameters[
+                                                 'wingArea']
+        const['airDensity'] = 0.01
+
+        for item in cruise_time_lst:
+            battery_mass = size_power_subsystem(aircraftParameters['rotorRadius'], takeOffThrustPerEngine,
+                                 aircraftParameters['cruiseThrust'], item,
+                                 const['takeOffTime'], aircraftParameters['wingArea'], plot=False, Print=False)[0]
+            battery_mass1_lst.append(battery_mass)
+        for item in takeoff_time_lst:
+            battery_mass = size_power_subsystem(aircraftParameters['rotorRadius'], takeOffThrustPerEngine,
+                                 aircraftParameters['cruiseThrust'],
+                                 const['designRange'] / const['cruiseSpeed'],
+                                 item, aircraftParameters['wingArea'], plot=False, Print=False)[0]
+            battery_mass2_lst.append(battery_mass)
+        correlation1 = pearsonr(cruise_time_lst,battery_mass1_lst)
+        correlation2 = pearsonr(takeoff_time_lst,battery_mass2_lst)
+        self.assertTrue(correlation1[0] > 0 and correlation2[0] > 0)
+
+    def test_power_surplus_high_latitudes(self):
+        takeOffTipSpeed = 0.92 * const['soundSpeed']
+        Mass_thrust = const['maxMass'] * (1 + const['margin'])  # kg
+        aircraftParameters['rotorRadius'], takeOffThrustPerEngine, aircraftParameters['horsepowerPerEngine'], \
+        aircraftParameters['totalPower'], aircraftParameters['rotorMass'] = \
+            RadiusMassElementMomentum(M=Mass_thrust, N_rotors=aircraftParameters['totalRotors'],
+                                      N_blades=aircraftParameters['bladesPerRotor'],
+                                      coaxial=aircraftParameters['coaxial'], V_tip=takeOffTipSpeed, print_results=False)
+
+        aircraftParameters['totalMass'] = const['maxMass']
+        Mass_design = aircraftParameters['totalMass']
+        area(const['cl'], Mass_design, 0.5 * const['airDensity'] * const['cruiseSpeed'] ** 2, Print=False)
+
+        cd0 = DragEstimation(aircraftParameters['wingArea'], const['cruiseSpeed'], const['visc_cr'])
+        aircraftParameters['cruiseThrust'] = (cd0 + const['cl'] ** 2 / (
+                np.pi * aircraftParameters['AR'] * const['oswald'])) * \
+                                             0.5 * const['airDensity'] * const['cruiseSpeed'] ** 2 * aircraftParameters[
+                                                 'wingArea']
+        const['airDensity'] = 0.01
+
+        powerSurplus = size_power_subsystem(aircraftParameters['rotorRadius'], takeOffThrustPerEngine,
+                                 aircraftParameters['cruiseThrust'],
+                                 const['designRange'] / const['cruiseSpeed'],
+                                 const['takeOffTime'], aircraftParameters['wingArea'], plot=False, Print=False)[2]
+        self.assertTrue(np.average(powerSurplus[60]) < np.average(powerSurplus[120]))
+
+class Class2weight_Unittest(unittest.TestCase):
+    def test_correlation_rotor_radius_tail_area(self):
+        rotor_radius_lst = list(np.arange(1,25,1))
+        tail_area_lst = []
+
+        takeOffTipSpeed = 0.92 * const['soundSpeed']
+        Mass_thrust = const['maxMass'] * (1 + const['margin'])  # kg
+        aircraftParameters['rotorRadius'], takeOffThrustPerEngine, aircraftParameters['horsepowerPerEngine'], \
+        aircraftParameters['totalPower'], aircraftParameters['rotorMass'] = \
+            RadiusMassElementMomentum(M=Mass_thrust, N_rotors=aircraftParameters['totalRotors'],
+                                      N_blades=aircraftParameters['bladesPerRotor'],
+                                      coaxial=aircraftParameters['coaxial'], V_tip=takeOffTipSpeed, print_results=False)
+        aircraftParameters['totalMass'] = const['maxMass']
+        Mass_design = aircraftParameters['totalMass']
+        area(const['cl'], Mass_design, 0.5 * const['airDensity'] * const['cruiseSpeed'] ** 2, Print=False)
+        cd0 = DragEstimation(aircraftParameters['wingArea'], const['cruiseSpeed'], const['visc_cr'])
+        aircraftParameters['cruiseThrust'] = (cd0 + const['cl'] ** 2 / (
+                    np.pi * aircraftParameters['AR'] * const['oswald'])) * \
+                                             0.5 * const['airDensity'] * const['cruiseSpeed'] ** 2 * aircraftParameters[
+                                                 'wingArea']
+        const['airDensity'] = 0.01
+        aircraftParameters['batteryMass'], aircraftParameters['panelMass'], powerSurplus = \
+            size_power_subsystem(aircraftParameters['rotorRadius'], takeOffThrustPerEngine,
+                                 aircraftParameters['cruiseThrust'],
+                                 const['designRange'] / const['cruiseSpeed'],
+                                 const['takeOffTime'], aircraftParameters['wingArea'], plot=False, Print=False)
+
+        for item in rotor_radius_lst:
+            tail_area = Class2Weight(item, aircraftParameters['rotorMass'], Mass_design,
+                         const['ultimateLoad'], aircraftParameters['AR'], aircraftParameters['wingbraced'],
+                         const['cruiseSpeed'], const['takeoffBatteryEnergyDensity'], const['takeoffBatteryEnergyDensity'],
+                         const['takeoffBatteryPowerDensity'], const['payloadMass'], aircraftParameters['panelMass'], print_results=False)[2]
+            tail_area_lst.append(tail_area)
+
+        correlation = pearsonr(rotor_radius_lst,tail_area_lst)
+        self.assertTrue(correlation[0] < 0)
+
 
 if __name__ == '__main__':
     unittest.main()

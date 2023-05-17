@@ -64,12 +64,13 @@ def RangeCalc(Wto, Wtot, R, V_cr):
 
 # Weight Prediction:
 def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_density, E_density_TO, m_payload,
-                 m_solar, print_results=True):
+                 m_solar, print_results=True, changeDimensions=None):
     Swing = aircraftParameters['wingArea']
     b = aircraftParameters['wingspan']  # wingspan
     c = aircraftParameters['chord']  # chord
     lf = 1.78 + c
     bf = 1  # Fuselage width
+
 
     hf = bf  # Fuselage height
 

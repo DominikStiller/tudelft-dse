@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from RotorEngineSizing import RadiusMassElementMomentum
+from .RotorEngineSizing import RadiusMassElementMomentum
 
 rho=0.01
 def MTOM_estimate(L2D):

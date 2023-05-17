@@ -1,7 +1,7 @@
 import numpy as np
-from constants import const
+from .constants import const
 from matplotlib import pyplot as plt
-from AircraftEstimating import Class2Weight
+from .AircraftEstimating import Class2Weight
 
 #Payload Range Diagram
 

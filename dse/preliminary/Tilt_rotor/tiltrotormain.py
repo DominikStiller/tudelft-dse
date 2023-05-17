@@ -1,10 +1,10 @@
-from PerformanceAnalysis import PayloadRange, AircraftClimbPerf, RotorClimbPerf
-from AircraftEstimating import Class2Weight, DragEstimation
-from RotorEngineSizing import RadiusMassElementMomentum
-from structures import calculate_cg, assembly_volume, max_rotor_loads
-from constants import const, aircraftParameters
-from power_sizing import size_power_subsystem
-from cruise_sizing import area
+from .PerformanceAnalysis import PayloadRange, AircraftClimbPerf, RotorClimbPerf
+from .AircraftEstimating import Class2Weight, DragEstimation
+from .RotorEngineSizing import RadiusMassElementMomentum
+from .structures import calculate_cg, assembly_volume, max_rotor_loads
+from .constants import const, aircraftParameters
+from .power_sizing import size_power_subsystem
+from .cruise_sizing import area
 from matplotlib import pyplot as plt
 import numpy as np
 

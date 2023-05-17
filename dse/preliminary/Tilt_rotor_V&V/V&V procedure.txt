@@ -76,7 +76,7 @@ Unit tests:
         - Outputs: range, wing weight, tail weight, fuselage weight
 
         Correlations
-        - Negative rotor radius-tail area
+        - Negative rotor radius-tail weight
         - Positive fuselage width-body weight
         - Negatieve wingbraced-wing weight
         - Positive ultimate load-tail weight

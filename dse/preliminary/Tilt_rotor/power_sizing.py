@@ -15,7 +15,7 @@ def power(thrust, radius):
     return thrust * v_i(thrust, radius)
 
 
-def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, takeOffTime, surfaceArea, plot=False):
+def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, takeOffTime, surfaceArea, plot=False, Print=True):
     # Define constants
     averageIrradiance = 2 / np.pi * const['irradiance']  # average intensity during the day
     cruiseTime /= 3600
@@ -44,17 +44,19 @@ def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, t
         percentRechargeable = np.count_nonzero(~np.isnan(rechargeCapability)) / np.size(rechargeCapability)
     except:
         rechargeTime = (2 * takeOffEnergy + cruiseEnergy) / (intensity * collectingArea)
-        print(f'We cannot recharge in flight - average recharge time landed is {np.mean(rechargeTime)}')
+        if Print:
+            print(f'We cannot recharge in flight - average recharge time landed is {np.mean(rechargeTime)}')
 
     rechargeTime = (2 * takeOffEnergy + cruiseEnergy) / (intensity * collectingArea) / 3600
-    print(f'Cruise power = {cruisePower} W')
-    print(f'Cruise energy = {cruiseEnergy} Wh')
-    print(f'Take off power = {takeOffPower} W')
-    print(f'Take off energy = {takeOffEnergy} Wh')
-    print(f'The minimum in-flight recharge time is {np.nanmin(rechargeTime)} hours')
-    print(f'The average in-flight recharge time is {np.nanmean(rechargeTime)} hours')
-    print(f'Average recharge time landed is {np.mean(rechargeTime[1, -2])}')
-    print(f'Recharge is possible in {100 * percentRechargeable}% of the planet while in cruise\n')
+    if Print:
+        print(f'Cruise power = {cruisePower} W')
+        print(f'Cruise energy = {cruiseEnergy} Wh')
+        print(f'Take off power = {takeOffPower} W')
+        print(f'Take off energy = {takeOffEnergy} Wh')
+        print(f'The minimum in-flight recharge time is {np.nanmin(rechargeTime)} hours')
+        print(f'The average in-flight recharge time is {np.nanmean(rechargeTime)} hours')
+        print(f'Average recharge time landed is {np.mean(rechargeTime[1, -2])}')
+        print(f'Recharge is possible in {100 * percentRechargeable}% of the planet while in cruise\n')
 
     # Size the batteries and the arrays
     energyConsumption = 2 * takeOffEnergy + cruiseEnergy
@@ -66,11 +68,11 @@ def size_power_subsystem(rotorRadius, takeOffThrust, cruiseThrust, cruiseTime, t
 
     # Apply safety margins
     batteryMass *= 1.3/0.95
-
-    print(f'Mass of the batteries = {batteryMass} kg')
-    print(f'Volume of the batteries = {energyConsumption/const["batteryVolume"]}')
-    print(f'For cruise we need: {cruiseBattery*100/batteryMass}%')
-    print(f'Mass of the solar panels = {panelMass} kg')
+    if Print:
+        print(f'Mass of the batteries = {batteryMass} kg')
+        print(f'Volume of the batteries = {energyConsumption/const["batteryVolume"]}')
+        print(f'For cruise we need: {cruiseBattery*100/batteryMass}%')
+        print(f'Mass of the solar panels = {panelMass} kg')
 
     if plot:
         # Plot the map of Mars
