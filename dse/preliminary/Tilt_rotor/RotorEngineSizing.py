@@ -112,7 +112,7 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
     Area_bot = S1223_bottom.integral(0, 1)
     Area = (Area_top - Area_bot)*c
 
-    fillfactor = 0.05
+    fillfactor = 0.084
     Rotor_mass = b * const['bladeDensity'] * R * Area * fillfactor
 
 

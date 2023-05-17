@@ -13,7 +13,7 @@ def design(iterate=False):
     diff = 100
     Range = 1000
     aircraftParameters['totalMass'] = const['maxMass']
-    while diff > 0.01 and Range >= 1000:
+    while diff > 0.005 and Range >= 1000:
         const['airDensity'] = 0.01
         Mass_design = aircraftParameters['totalMass']
 
@@ -46,14 +46,14 @@ def design(iterate=False):
             size_power_subsystem(aircraftParameters['rotorRadius'], takeOffThrustPerEngine,
                                  aircraftParameters['cruiseThrust'],
                                  const['designRange'] / const['cruiseSpeed'],
-                                 const['takeOffTime'], aircraftParameters['wingArea'], plot=True)
+                                 const['takeOffTime'], aircraftParameters['wingArea'], plot=False)
 
         # Calculate weights
         Range, aircraftParameters['wingMass'], aircraftParameters['tailMass'], aircraftParameters['bodyMass'] = \
             Class2Weight(aircraftParameters['rotorRadius'], aircraftParameters['rotorMass'], Mass_design,
                          const['ultimateLoad'], aircraftParameters['AR'], aircraftParameters['wingbraced'],
-                         const['cruiseSpeed'], const['batteryEnergyDensity'], const['batteryPowerDensity'],
-                         const['batteryEnergyDensity'], const['payloadMass'], aircraftParameters['panelMass'])
+                         const['cruiseSpeed'], const['takeoffBatteryEnergyDensity'], const['takeoffBatteryEnergyDensity'],
+                         const['takeoffBatteryPowerDensity'], const['payloadMass'], aircraftParameters['panelMass'])
 
         print(f'Maximum Range available: {Range}[km]')
 
@@ -126,6 +126,7 @@ if __name__ == '__main__':
               0.04088,0.03387,0.02624,0.01822,0.0106,0.00468,0.00115,0]])
     max_rotor_loads(aircraftParameters['rotorRadius']/20 *s1223)
 
-    plt.legend(loc='best')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1),
+          ncol=3, fancybox=True, shadow=True)
     plt.savefig('../Figures/Payload-Range.pdf')
     plt.show()

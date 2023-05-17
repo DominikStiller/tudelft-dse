@@ -11,19 +11,19 @@ const = {
     'takeoffBatteryPowerDensity': 1317,
     'takeoffBatteryEnergyDensity': 437,
     'bladeDensity': 1500,
-    'allowedStress': 0.3*3.5*10**9,
+    'allowedStress': 1.2*10**9,
     't/c': 0.012,
     'visc_cr': 5.167E-4,
     'cruiseSpeed': 400/3.6,
     'batteryVolume': 450,  # Wh/L
-    'ultimateLoad': 2,
+    'ultimateLoad': 1.5,
     'takeOffLoad': 1.1,
     'designRange': 1e6,
-    'takeOffTime': 600,
-    'margin': 0.1,
+    'takeOffTime': 300,
+    'margin': 0.0,
     'payloadMass': 350,
     'maxMass': 3000,
-    'oswald': 0.8
+    'oswald': 0.9
 }
 
 aircraftParameters = {
