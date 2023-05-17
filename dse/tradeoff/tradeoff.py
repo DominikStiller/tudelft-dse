@@ -19,15 +19,15 @@ def get_score(criterion, criterion_value, score_categories, df_scoring):
             upper, lower = bounds
 
         if lower is None:
-            if criterion_value < upper:
+            if criterion_value <= upper:
                 criterion_category = category
                 break
         elif upper is None:
-            if lower <= criterion_value:
+            if lower < criterion_value:
                 criterion_category = category
                 break
         else:
-            if lower <= criterion_value < upper:
+            if lower < criterion_value <= upper:
                 criterion_category = category
                 break
 
@@ -71,24 +71,33 @@ if __name__ == "__main__":
     design_names = ["Blended wing", "Conventional aircraft", "Tilt-rotor", "Multicopter", "Airship"]
     dfs, df_weights, df_scoring, score_categories = load_sheets("data/tradeoff.xlsx", design_names)
     score_regions, maximum_score = calculate_score_regions(df_scoring, df_weights)
-    total_scores = [
+
+    expected_scores = [
         calculate_total_score(df, df_weights, score_categories, df_scoring, maximum_score)
         for df in dfs
     ]
+    best_scores = [
+        calculate_total_score(df, df_weights, score_categories, df_scoring, maximum_score, "best")
+        for df in dfs
+    ]
+    worst_scores = [
+        calculate_total_score(df, df_weights, score_categories, df_scoring, maximum_score, "worst")
+        for df in dfs
+    ]
 
-    # print("Scores:")
-    # for design_name, expected, worst, best in zip(
-    #     design_names, expected_scores, worst_scores, best_scores
-    # ):
-    #     print(f"  - {design_name}: {expected:.1f} ({worst:.1f} – {best:.1f})")
-    #
-    # print(f"Best design is {design_names[np.argmax(expected_scores)]}")
+    print("Scores:")
+    for design_name, expected, worst, best in zip(
+        design_names, expected_scores, worst_scores, best_scores
+    ):
+        print(f"  - {design_name}: {expected:.1f} ({worst:.1f} – {best:.1f})")
+
+    print(f"Best design is {design_names[np.argmax(expected_scores)]}")
 
     fig, ax = plt.subplots(figsize=(7, 4))
 
-    ax.scatter(design_names, total_scores, marker="_", s=700, label="Expected")
-    # ax.scatter(design_names, worst_scores, marker="_", s=700, label="Worst case")
-    # ax.scatter(design_names, best_scores, marker="_", s=700, label="Best case")
+    ax.scatter(design_names, worst_scores, marker="_", s=700, label="Worst case", color="#C00000")
+    ax.scatter(design_names, best_scores, marker="_", s=700, label="Best case", color="#70AD47")
+    ax.scatter(design_names, expected_scores, marker="_", s=700, label="Expected", color="black")
 
     for (lower, upper), color in zip(score_regions, ["375623", "70AD47", "FFC000", "ED7D31"]):
         lower = 100 * lower / maximum_score

@@ -17,7 +17,12 @@ def load_sheets(file, design_names, selected_only=True):
     df_weights = df_weights.iloc[:first_empty_row_idx]
 
     df_weights = df_weights.rename(
-        columns={"Criterion": "criterion", "Weight": "weight", "Selected": "selected"}
+        columns={
+            "Criterion": "criterion",
+            "Weight": "weight",
+            "Unit": "unit",
+            "Selected": "selected",
+        }
     ).set_index("criterion", drop=True)
     df_weights["weight"] = df_weights["weight"].round(1)
     selected_criteria = df_weights[df_weights["selected"] == "x"].index
@@ -36,7 +41,7 @@ def load_sheets(file, design_names, selected_only=True):
         for left, right in zip(list(categories.keys())[1:], list(categories.keys())[:-1]):
             score_categories[criterion][left][1] = score_categories[criterion][right][0]
 
-    df_weights = df_weights[["weight", "selected"]]
+    df_weights = df_weights[["weight", "selected", "unit"]]
 
     # Load criteria values for each design
     dfs = []

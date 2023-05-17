@@ -22,9 +22,9 @@ def disturb_weights(dfs, df_weights, df_scoring, score_categories, maximum_score
 
         for i, df in enumerate(dfs):
             scores_per_design[i].append(
-                calculate_total_score(df, df_weights_disturbed, score_categories, df_scoring)
-                * 100
-                / maximum_score
+                calculate_total_score(
+                    df, df_weights_disturbed, score_categories, df_scoring, maximum_score
+                )
             )
 
     return scores_per_design
@@ -45,9 +45,9 @@ def disturb_scoring(dfs, df_weights, df_scoring, score_categories, maximum_score
 
         for i, df in enumerate(dfs):
             scores_per_design[i].append(
-                calculate_total_score(df, df_weights, score_categories, df_scoring_disturbed)
-                * 100
-                / maximum_score
+                calculate_total_score(
+                    df, df_weights, score_categories, df_scoring_disturbed, maximum_score
+                )
             )
 
     return scores_per_design
