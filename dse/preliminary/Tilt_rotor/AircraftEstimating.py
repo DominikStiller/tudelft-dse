@@ -1,5 +1,5 @@
-from constants import const, aircraftParameters
-from power_sizing import power
+from .constants import const, aircraftParameters
+from .power_sizing import power
 import numpy as np
 
 
