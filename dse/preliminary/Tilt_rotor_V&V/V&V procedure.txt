@@ -1,24 +1,25 @@
 Verification procedure:
 
-Unit tests:
-    - Functions to be tested:
-        - Tip speed calculation
-        - RadiusMassElementMomentum
-        - area
-        - DragEstimation
-        - size_power_subsystem
-        - Class2Weight
-        - PayloadRange
-        - AircraftClimbPerf
-        - RotorClimbPerf
 
+- Functions to be tested:
+    - Tip speed calculation
+    - RadiusMassElementMomentum
+    - area
+    - DragEstimation
+    - size_power_subsystem
+    - Class2Weight
+    - PayloadRange
+    - AircraftClimbPerf
+    - RotorClimbPerf
+
+
+Unit tests:
     - Tip speed calculation:
         - Inputs: cruise speed
         - Outputs: maximum allowable cruise speed
 
         Tests:
         - Check that increasing airspeed leads to smaller tip velocity
-        - Compare the results with hand calculations
 
     - RadiusMassElementMomentum
         - Inputs: take-off mass, n_rotors, n_blades, coaxial, V_tip
@@ -50,9 +51,6 @@ Unit tests:
         Extreme value tests
         - 0 Cl leads to inf S
         - 0 MTOM = 0 S
-
-        Hand calculation checks
-        - Check wing area for a certain condition
 
     - DragEstimation
         - Inputs: wing area, cruise speed, viscosity at cruise, fuselage dimensions
@@ -124,4 +122,43 @@ Unit tests:
         - What if inputs are negative?
 
 
+System tests:
+    - Input sensitivity analysis
+        - Inputs: cl, cd, air density, cruise speed, battery energy/power density, blade fill factor, takeOffTime, payload mass, oswald efficiency factor
+
+        Procedure
+        - Change inputs by +-10% and see the effect on the final design
+
+    - Function sensitivity analysis
+        Procedure
+        - Change the outputs of the functions upstream by 10% and see how affected are the values downstream
+
+
 Validation procedure
+    - Tip speed calculation
+        - Compare the results with hand calculations
+
+    - RadiusMassElementMomentum
+        - Compare results with a set of helicopters/tilt-rotor aircraft with well known data
+
+    - area
+        - Compare results against hand calculations
+
+    - DragEstimation
+        - Compare results against data for aircraft with well known data
+
+    - size_power_subsystem
+        - Compare results against hand calculations
+        - Compare results against electrical aircraft data?
+
+    - Class2Weight
+        - Compare results against aircraft with well known data
+
+    - PayloadRange
+        - Compare results against hand calculations
+
+    - AircraftClimbPerf
+        - Compare results against hand calculations
+
+    - RotorClimbPerf
+        - Compare results against hand calculations
