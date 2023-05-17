@@ -4,16 +4,16 @@ from dse.plotting import format_plot, save_plot
 
 if __name__ == "__main__":
     # Expected
-    kg_per_h = 62.4
-    takeoff_plus_land = 98.1
+    kg_per_h = 130.16
+    takeoff_plus_land = 130.16 / 2
 
     # # Best
     # kg_per_h = 44.1
     # takeoff_plus_land = 67.8
 
     # # Worst
-    # kg_per_h = 80.2
-    # takeoff_plus_land = 123.1
+    # kg_per_h = 145.78
+    # takeoff_plus_land = 145.78 / 2
 
     km_per_kg = (400 / kg_per_h) / 1.3
     mtom = 2700  # kg
