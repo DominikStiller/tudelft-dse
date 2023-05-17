@@ -47,8 +47,8 @@ def design(iterate=False):
         Range, aircraftParameters['wingMass'], aircraftParameters['tailMass'], aircraftParameters['bodyMass'] = \
             Class2Weight(aircraftParameters['rotorRadius'], aircraftParameters['rotorMass'], Mass_design,
                          const['ultimateLoad'], aircraftParameters['AR'], aircraftParameters['wingbraced'],
-                         const['cruiseSpeed'], const['batteryEnergyDensity'], const['batteryPowerDensity'],
-                         const['batteryEnergyDensity'], const['payloadMass'], aircraftParameters['panelMass'])
+                         const['cruiseSpeed'], const['takeoffBatteryEnergyDensity'], const['takeoffBatteryEnergyDensity'],
+                         const['takeoffBatteryPowerDensity'], const['payloadMass'], aircraftParameters['panelMass'])
 
         print(f'Maximum Range available: {Range}[km]')
 
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     airc = aircraftParameters.copy()
 
 
-    m, dim, acParams = design(iterate=True)
+    m, dim, acParams = design(iterate=False)
     s1223 = np.array([[1, 0.99838, 0.99417, 0.98825, 0.98075, 0.97111, 0.95884,0.94389,0.92639,0.90641,0.88406,0.85947,0.83277,
                   0.80412,0.77369,0.74166,0.70823,0.6736,0.63798,0.60158,0.56465,0.52744,0.49025,0.4534,0.41721,0.38193,
                   0.34777,0.31488,0.28347,0.2537,0.22541,0.19846,0.17286,0.14863,0.12591,0.10482,0.08545,0.06789,0.05223,
