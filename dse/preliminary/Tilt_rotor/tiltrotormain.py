@@ -126,7 +126,7 @@ if __name__ == '__main__':
               0.04088,0.03387,0.02624,0.01822,0.0106,0.00468,0.00115,0]])
     max_rotor_loads(aircraftParameters['rotorRadius']/20 *s1223)
 
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1),
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
           ncol=3, fancybox=True, shadow=True)
-    plt.savefig('../Figures/Payload-Range.pdf')
+    #plt.savefig('../Figures/Payload-Range.pdf')
     plt.show()
