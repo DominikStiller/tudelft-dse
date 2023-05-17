@@ -71,8 +71,20 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     lf = 1.78 + c
     bf = 1  # Fuselage width
 
+    if changeDimensions is not None:
+        lf = changeDimensions[0]
+        bf = changeDimensions[1]
 
     hf = bf  # Fuselage height
+
+    if R <= 0:
+        return "Rotor radius has to be greater than zero.",0,0,0
+    if RotorMass <= 0:
+        return "Rotor mass has to be greater than zero.",0,0,0
+    if Wto <= 0:
+        return "Take-off mass has to be greater than zero.",0,0,0
+    if V_cr <= 0:
+        return "Cruise speed has to be greater than zero.",0,0,0
 
     # Wing and tail area
     Stail = Swing * c / (1.5 * R)
@@ -95,10 +107,10 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     Wtot = Wwing2Wto*Wto + Wtail2Wto + Wf + RotorMass + m_payload + m_solar
     Range, Endurance, m_battery_TO, m_battery_cr = RangeCalc(Wto, Wtot, R, V_cr)
 
-    if print_results:
-        print('Wing weight: ' + str(Wwing2Wto * Wto) + '[kg]')
-        print('Tail weight: ' + str(Wtail2Wto) + '[kg]')
-        print('Body weight: ' + str(Wf) + '[kg]')
+    # if print_results:
+        # print('Wing weight: ' + str(Wwing2Wto * Wto) + '[kg]')
+        # print('Tail weight: ' + str(Wtail2Wto) + '[kg]')
+        # print('Body weight: ' + str(Wf) + '[kg]')
         # print('Available weight for batteries: ' + str(Wto - Wtot) + '[kg]')
         # print('Available Endurance: ' + str(Endurance) + '[h]')
         # print('Available Range: ' + str(Range) + '[km]')

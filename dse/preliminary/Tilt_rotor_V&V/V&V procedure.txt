@@ -1,6 +1,5 @@
 Verification procedure:
 
-
 - Functions to be tested:
     - Tip speed calculation
     - RadiusMassElementMomentum
@@ -11,7 +10,6 @@ Verification procedure:
     - PayloadRange
     - AircraftClimbPerf
     - RotorClimbPerf
-
 
 Unit tests:
     - Tip speed calculation:
@@ -78,7 +76,7 @@ Unit tests:
         Correlations
         - Negative rotor radius-tail weight
         - Positive fuselage width-body weight
-        - Negatieve wingbraced-wing weight
+        - Negative wingbraced-wing weight
         - Positive ultimate load-tail weight
 
         Extreme value
