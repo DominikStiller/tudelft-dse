@@ -41,7 +41,7 @@ def design(iterate=False):
             size_power_subsystem(aircraftParameters['rotorRadius'], takeOffThrustPerEngine,
                                  aircraftParameters['cruiseThrust'],
                                  const['designRange'] / const['cruiseSpeed'],
-                                 const['takeOffTime'], aircraftParameters['wingArea'], plot=False)
+                                 const['takeOffTime'], aircraftParameters['wingArea'], plot=True)
 
         # Calculate weights
         Range, aircraftParameters['wingMass'], aircraftParameters['tailMass'], aircraftParameters['bodyMass'] = \

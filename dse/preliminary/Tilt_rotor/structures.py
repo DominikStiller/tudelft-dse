@@ -98,28 +98,16 @@ def max_rotor_loads(airfoil_shape):
     Mx = Mx_init = aircraftParameters['rotorRadius']/2 * F_z_init
     Mz = Mz_init = -F_x_init * aircraftParameters['rotorRadius']/2
 
-    n = aircraftParameters['totalRotors'] * aircraftParameters['bladesPerRotor']
     x_av, z_av = np.mean(airfoil_shape[0]), np.mean(airfoil_shape[1])
-    #TODO: Fix these such that they produce the AREA moment of inertia [m^4]
-    Ixx = (aircraftParameters['rotorMass'] / n) * np.sum((airfoil_shape[0] - x_av)**2)
-    Izz = (aircraftParameters['rotorMass'] / n) * np.sum((airfoil_shape[1] - z_av)**2)
-    Ixz = (aircraftParameters['rotorMass'] / n) * np.sum((airfoil_shape[0] - x_av) * (airfoil_shape[1] - z_av))
 
-    #max_stress = ((Mx*Izz - Mz*Ixz)*airfoil_shape[1] + (Mz*Ixx - Mx*Ixz)*airfoil_shape[0]) / (Ixx*Izz - Ixz**2)
-
-    max_stress = ((Mx_init * Izz - Mz_init * Ixz) * (airfoil_shape[1] - z_av) + (Mz_init * Ixx - Mx_init * Ixz) * (
-    airfoil_shape[0]) - x_av) / (
-                         Ixx * Izz - Ixz ** 2) + F_y_init / initial_area
     ite = 0
     fill_factor = 0
     max_stress = 10e1000
     while np.max(np.abs(max_stress)) > const['allowedStress']:
-        #aircraftParameters['rotorMass'] *= (fill_factor + 0.001)/fill_factor
-        #length *= (fill_factor + 0.001)/fill_factor
         fill_factor += 0.0001
         guess_Rotor_mass = const['bladeDensity'] * aircraftParameters['rotorRadius'] * initial_area * fill_factor
         area = fill_factor*initial_area
-        ite+=1
+        ite += 1
         F_x = blade_drag
         F_y = (guess_Rotor_mass) * aircraftParameters['rotorRadius'] * omega ** 2 / 2
         F_z = guess_Rotor_mass*const['gravityMars'] -( const['takeOffLoad'] * const['gravityMars'] * const['maxMass']/0.88) / 24
@@ -127,12 +115,12 @@ def max_rotor_loads(airfoil_shape):
         Mx = aircraftParameters['rotorRadius'] / 2 * F_z
         Mz = -F_x * aircraftParameters['rotorRadius'] / 2
         # TODO: Fix these such that they produce the AREA moment of inertia [m^4]
-        Ixx = (guess_Rotor_mass / n) * np.sum((airfoil_shape[0] - x_av) ** 2)
-        Izz = (guess_Rotor_mass / n) * np.sum((airfoil_shape[1] - z_av) ** 2)
-        Ixz = (guess_Rotor_mass / n) * np.sum((airfoil_shape[0] - x_av) * (airfoil_shape[1] - z_av))
+        Ixx = (area / np.size(airfoil_shape[0])) * np.sum((airfoil_shape[0] - x_av) ** 2)
+        Izz = (area / np.size(airfoil_shape[0])) * np.sum((airfoil_shape[1] - z_av) ** 2)
+        Ixz = (area / np.size(airfoil_shape[0])) * np.sum((airfoil_shape[0] - x_av) * (airfoil_shape[1] - z_av))
 
         max_stress = ((Mx * Izz - Mz * Ixz) * (airfoil_shape[1]-z_av) + (Mz * Ixx - Mx * Ixz) * (airfoil_shape[0])-x_av) / (
-                    Ixx * Izz - Ixz ** 2)+ F_y/area
+                    Ixx * Izz - Ixz ** 2) + F_y/area
 
     print(f'Fill factor: {fill_factor}')
     print(f'Final Rotor Mass possible: {const["bladeDensity"] * aircraftParameters["rotorRadius"] * initial_area * (fill_factor)}')
