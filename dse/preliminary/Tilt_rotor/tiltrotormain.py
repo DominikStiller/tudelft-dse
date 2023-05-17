@@ -23,7 +23,7 @@ def design(iterate=False):
         aircraftParameters['totalPower'], aircraftParameters['rotorMass'] = \
             RadiusMassElementMomentum(M=Mass_thrust, N_rotors=aircraftParameters['totalRotors'],
                                       N_blades=aircraftParameters['bladesPerRotor'],
-                                      coaxial=aircraftParameters['coaxial'], V_tip=takeOffTipSpeed, print_results=False)
+                                      coaxial=aircraftParameters['coaxial'], V_tip=takeOffTipSpeed, print_results=True)
 
         # Calculate wing area
         area(const['cl'], Mass_design, 0.5 * const['airDensity'] * const['cruiseSpeed'] ** 2)

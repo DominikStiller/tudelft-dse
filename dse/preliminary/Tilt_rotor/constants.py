@@ -20,7 +20,7 @@ const = {
     'takeOffLoad': 1.1,
     'designRange': 1e6,
     'takeOffTime': 300,
-    'margin': 0.1,
+    'margin': 0.0,
     'payloadMass': 350,
     'maxMass': 3000,
     'oswald': 0.9
