@@ -69,10 +69,59 @@ Unit tests:
         - Positive TOthrust-battery mass
         - Positive time-battery mass
 
-        Checks:
+        Checks
         - Compare power and energy calculations with hand calculations
         - Power surplus decreases at higher latitudes the
 
+    - Class2Weight
+        - Inputs: rotor radius, rotor mass, take-off mass, ultimate load, wingbraced, cruise speed, battery energy density, paylaod mass, solar panel mass, aircraft dimensions
+        - Outputs: range, wing weight, tail weight, fuselage weight
+
+        Correlations
+        - Negative rotor radius-tail area
+        - Positive fuselage width-body weight
+        - Negatieve wingbraced-wing weight
+        - Positive ultimate load-tail weight
+
+        Extreme value
+        - What if inputs = 0?
+        - What if inputs are negative?
+
+    - PayloadRange
+        - Inputs: rotor radius, rotor mass, design mass, ultimate load, aspect ratio, wingbraced, cruise speed, battery properties, panel mass, minimum payload, minimum range, available space
+        - Outputs: payload-range diagram
+
+        Extreme values
+        - What if inputs = 0?
+        - What if inputs are negative?
+
+
+    - AircraftClimbPerf
+        - Inputs: cruise battery mass, power density, design mass, rotor radius, cruise speed
+        - Outputs: cruise rate of climb
+
+        Correlations
+        - Positive battery mass-ROC
+        - Positive power density-ROC
+        - Negative design mass-ROC
+
+        Extreme values
+        - What if inputs = 0?
+        - What if inputs are negative?
+
+
+    - RotorClimbPerf
+        - Inputs: MTOM, rotor radius, number of rotors
+        - Outputs: ROC in rotorcraft mode
+
+        Correlations
+        - Positive MTOM-ROC
+        - Positive rotor radius-ROC
+        - Positive n_rotors-ROC
+
+        Extreme values
+        - What if inputs = 0?
+        - What if inputs are negative?
 
 
 Validation procedure
