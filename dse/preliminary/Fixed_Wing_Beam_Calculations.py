@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import csv
+import numpy as np
 
 
 ### Cruise conditions
@@ -457,18 +458,39 @@ def BiWing():
 
 def CantileverBeam():
     ### Reading of XFLR5 Data
-    with open('Cantilever_Beam_More_Points.csv') as csvfile:
+    with open('Cantilever_Beam.csv') as csvfile:
         data = csv.reader(csvfile, delimiter=';')
         Data = []
         for row in data:
             Data.append(row)
 
-    y_lst = [float(i[0]) for i in Data[1:]]  # [m] Y-step of the applied loads b
-    c_lst = [float(i[1]) for i in Data[1:]]  # [m] Y-step of the applied loads b
-    AoA_lst = [float(i[2]) for i in Data[1:]]  # [degrees] induced angle of angle of attack
-    CL_lst = [float(i[3]) for i in Data[1:]]  # [-] Lift coefficient of the wing
-    PCd_lst = [float(i[4]) for i in Data[1:]]  # [-] Parasite drag coefficient of the wing
-    ICd_lst = [float(i[5]) for i in Data[1:]]  # [-] Induced drag coefficient of the wing
+    n = 10000
+    y_lst = np.linspace(-19.025, -0.4982, n)
+    c = 1
+    c_lst = np.ones(len(y_lst))*c
+    PCd_lst = np.ones(len(y_lst))
+    ICd_lst = np.ones(len(y_lst))
+
+    # y_lst = [float(i[0]) for i in Data[1:]]  # [m] Y-step of the applied loads b
+    # c_lst = [float(i[1]) for i in Data[1:]]  # [m] Y-step of the applied loads b
+    # AoA_lst = [float(i[2]) for i in Data[1:]]  # [degrees] induced angle of angle of attack
+    # CL_lst = [float(i[3]) for i in Data[1:]]  # [-] Lift coefficient of the wing
+    # PCd_lst = [float(i[4]) for i in Data[1:]]  # [-] Parasite drag coefficient of the wing
+    # ICd_lst = [float(i[5]) for i in Data[1:]]  # [-] Induced drag coefficient of the wing
+
+    def AnalyticalModel():
+        L = 18.5268  # [m]
+        w = 300  # [N/m]
+        b = 1
+        t = 0.001
+        z_max = b/2
+        z_min = -b/2
+        Ixx = ((b+t)**4-(b-t)**4)/(12)
+        MA_lst = [((y_lst[i]+L)**2/2*w) for i in range(len(y_lst))]
+        sigma_max_lst = [10**-6 * (y_lst[i]+L)**2/2*w*z_max/Ixx for i in range(len(y_lst))]
+        sigma_min_lst = [10**-6 * (y_lst[i]+L) ** 2 / 2 * w * z_min / Ixx for i in range(len(y_lst))]
+        print('Ma = ', MA_lst[0])
+        return w, MA_lst, sigma_min_lst, sigma_max_lst
 
     def AppliedLoads():
         Mx_lst = [0]
@@ -515,7 +537,7 @@ def CantileverBeam():
                         ((Mx_lst[i] * Iyy - My_lst[i] * Ixy) * (-y_coor_lst[3] + ybar) + (
                                 My_lst[i] * Ixx - Mx_lst[i] * Ixy) * (x_coor_lst[3] - xbar)) / (
                                 (Ixx * Iyy - Ixy ** 2) * c_lst[i] ** 2) for i in range(len(y_lst))]
-        print(max(sigmaz_4_lst))
+        print((sigmaz_4_lst))
         return sigmaz_1_lst, sigmaz_2_lst, sigmaz_3_lst, sigmaz_4_lst
 
 
@@ -523,20 +545,21 @@ def CantileverBeam():
     ### Making the plots
     # Making the applied loads plots
     Mx_lst, My_lst, Mz_lst, L_lst, D_lst, S_lst = AppliedLoads()
-
+    w, MA_lst, sigma_min_lst, sigma_max_lst = AnalyticalModel()
+    print(y_lst)
     fig, ax1 = plt.subplots()
 
     color = 'tab:red'
     ax1.set_xlabel('Span [m]')
-    ax1.set_ylabel('Lift [N]', color=color)
+    ax1.set_ylabel('Lift Distribution [N/m]', color=color)
     ax1.plot(y_lst, L_lst, color=color)
     ax1.tick_params(axis='y', labelcolor=color)
 
     ax2 = ax1.twinx()
 
     # color = 'tab:blue'
-    # ax2.set_ylabel('Drag [N]', color=color)  # we already handled the x-label with ax1
-    # ax2.plot(y_lst, D_lst, color=color, linestyle='--')
+    # ax2.set_ylabel('Lift [N/m]', color=color)  # we already handled the x-label with ax1
+    # ax2.plot(y_lst, w, color=color, linestyle='--')
     # ax2.tick_params(axis='y', labelcolor=color)
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
@@ -544,30 +567,38 @@ def CantileverBeam():
 
     # Making the internal loads plots
 
-    fig, ax1 = plt.subplots()
-
-    color = 'tab:red'
-    ax1.set_xlabel('Span [m]')
-    ax1.set_ylabel('Mx [Nm]', color=color)
-    ax1.plot(y_lst, Mx_lst, color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
-
-    ax2 = ax1.twinx()
-
-    # color = 'tab:blue'
-    # ax2.set_ylabel('My [Nm]', color=color)  # we already handled the x-label with ax1
-    # ax2.plot(y_lst, My_lst, color=color, linestyle='--')
-    # ax2.tick_params(axis='y', labelcolor=color)
-
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.plot(y_lst, Mx_lst, label='Internal moment distribution model')
+    plt.plot(y_lst, MA_lst, label='Internal moment distribution analytical', linestyle='--')
+    plt.legend()
+    plt.xlabel('Span [m]')
+    plt.ylabel('Mx [Nm]')
     plt.show()
+    # fig, ax1 = plt.subplots()
+    #
+    # color = 'tab:red'
+    # ax1.set_xlabel('Span [m]')
+    # ax1.set_ylabel('Mx [Nm]', color=color)
+    # ax1.plot(y_lst, Mx_lst, color=color)
+    # ax1.tick_params(axis='y', labelcolor=color)
+    #
+    # ax2 = ax1.twinx()
+    #
+    # color = 'tab:blue'
+    # ax2.set_ylabel('Mx [Nm]', color=color)  # we already handled the x-label with ax1
+    # ax2.plot(y_lst, MA_lst, color=color, linestyle='--')
+    # ax2.tick_params(axis='y', labelcolor=color)
+    #
+    # fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    # plt.show()
 
     # Internal stress diagram
     sigmaz_1_lst, sigmaz_2_lst, sigmaz_3_lst, sigmaz_4_lst = InternalStress()
-    plt.plot(y_lst, sigmaz_1_lst, label='Stress distribution in point 1')
-    plt.plot(y_lst, sigmaz_2_lst, label='Stress distribution in point 2')
-    plt.plot(y_lst, sigmaz_3_lst, label='Stress distribution in point 3')
-    plt.plot(y_lst, sigmaz_4_lst, label='Stress distribution in point 4')
+    plt.plot([data*(-1) for data in y_lst][::-1], sigmaz_1_lst[::-1], label='Stress distribution in point 1')
+    plt.plot([data*(-1) for data in y_lst][::-1], sigmaz_2_lst[::-1], label='Stress distribution in point 2')
+    plt.plot([data*(-1) for data in y_lst][::-1], sigmaz_3_lst[::-1], label='Stress distribution in point 3')
+    plt.plot([data*(-1) for data in y_lst][::-1], sigmaz_4_lst[::-1], label='Stress distribution in point 4')
+    plt.plot([data*(-1) for data in y_lst][::-1], sigma_min_lst[::-1], label='Minimum stress analytical model', linestyle='--')
+    plt.plot([data*(-1) for data in y_lst][::-1], sigma_max_lst[::-1], label='Maximum stress analytical model', linestyle='--')
     plt.legend()
     plt.ylabel('Stress [Mpa]')
     plt.xlabel('Span [m]')
