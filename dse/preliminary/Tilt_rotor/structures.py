@@ -1,5 +1,5 @@
 from scipy.interpolate import InterpolatedUnivariateSpline
-from constants import const, aircraftParameters
+from .constants import const, aircraftParameters
 import numpy as np
 
 

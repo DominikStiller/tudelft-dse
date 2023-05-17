@@ -3,12 +3,16 @@ from power_sizing import power
 import numpy as np
 
 
-def DragEstimation(Swing, Vcr, visc_cr):
-    # Dimensions
-    lf = 1.78 + aircraftParameters['chord']
+def DragEstimation(Swing, Vcr, visc_cr, changeDimensions=None):
+    # Initial Dimensions
+    lf = 1.78 + aircraftParameters['chord']  # Fuselage length
     bf = 1
     hf = bf  # Fuselage height
-    # Initial dimensions
+
+    if changeDimensions is not None:
+        lf = changeDimensions[0]
+        bf = changeDimensions[1]
+        hf = bf
 
     # Fuselage
     Cd_fusS = 0.0031 * lf * (bf + hf)

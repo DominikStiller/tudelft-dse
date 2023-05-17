@@ -2,17 +2,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
-from cruise_sizing import max_tipSpeed
+from .cruise_sizing import max_tipSpeed
 from dse.preliminary.Tilt_rotor.structures import max_rotor_loads
-from power_sizing import power
-from constants import const
+from .power_sizing import power
+from .constants import const
 
 
-def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_results=False):
+def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_results=False, changeConstants=None, ExtremeValue=False):
+
+    if changeConstants is not None:
+        const[changeConstants[0]] = changeConstants[1]
+
     # Rename constants
     gm = const['gravityMars']
     rho = const['airDensity']
     V_m = const['soundSpeed']
+
+    if N_rotors <= 0:
+        return "N_rotors has to be greater than zero.",0,0,0
+    elif N_blades <= 0:
+        return "N_blades has to be greater than zero.",0,0,0
 
     b = N_blades
     v_tip = V_tip
@@ -21,6 +30,11 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
     # Initial guesses
     T = 0
     R = 1
+
+    if ExtremeValue is True:
+        c = R / 20  # Update the chord
+        pow = power(T, R)
+
     while T < T_min:
         R += 0.1  # Increase the radius
         c = R/20  # Update the chord
@@ -77,7 +91,7 @@ def RadiusMassElementMomentum(M, N_rotors, N_blades, coaxial, V_tip, print_resul
         pow = rho*A*V_tip**3 *Cq / 550 / 1.341 * 1000
         pow = power(T, R)
     sigma = b*c/(np.pi*R)
-    #print(Ct/sigma)
+    # print(Ct/sigma)
 
     # Rotor Weight:
     x_cord_top = np.flip([1, 0.99838, 0.99417, 0.98825, 0.98075, 0.97111, 0.95884,0.94389,0.92639,0.90641,0.88406,0.85947,0.83277,

@@ -16,7 +16,7 @@ Verification procedure:
 Unit tests:
     - Tip speed calculation:
         - Inputs: cruise speed
-        - Outputs: maximum allowable cruise speed
+        - Outputs: maximum allowable tip speed
 
         Tests:
         - Check that increasing airspeed leads to smaller tip velocity

@@ -1,6 +1,6 @@
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
-from constants import const, aircraftParameters
+from .constants import const, aircraftParameters
 from PIL import Image
 import numpy as np
 

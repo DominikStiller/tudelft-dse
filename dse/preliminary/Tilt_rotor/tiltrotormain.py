@@ -25,6 +25,11 @@ def design(iterate=False):
                                       N_blades=aircraftParameters['bladesPerRotor'],
                                       coaxial=aircraftParameters['coaxial'], V_tip=takeOffTipSpeed, print_results=True)
 
+        if aircraftParameters['rotorRadius'] == "N_rotors has to be greater than zero.":
+            raise ValueError("N_rotors has to be greater than zero.")
+        elif aircraftParameters['rotorRadius'] == "N_blades has to be greater than zero.":
+            raise ValueError("N_blades has to be greater than zero.")
+
         # Calculate wing area
         area(const['cl'], Mass_design, 0.5 * const['airDensity'] * const['cruiseSpeed'] ** 2)
 
