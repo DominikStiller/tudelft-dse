@@ -42,7 +42,7 @@ def AircraftClimbPerf(m_bat_cr, P_dens_cr, M_design, R, V_cr):
     T_max = (P_climb_ac / (np.sqrt(1 / (2 * const['airDensity'] * np.pi * R**2))))**(2/3)
     gamma = np.arctan(T_max/W - const['cd']/const['cl'])
     ROC_cr = np.sin(gamma)*V_cr
-    print(f'ROC in aircraft configuration: {ROC_cr} [m/s]')
+    print(f'ROC in aircraft configuration: {ROC_cr} [m/s] at a glide angle of {np.degrees(gamma)} degrees')
     return ROC_cr
 
 

@@ -13,7 +13,7 @@ def design(iterate=False):
     diff = 100
     Range = 1000
     aircraftParameters['totalMass'] = const['maxMass']
-    while diff > 0.001 and Range >= 1000:
+    while diff > 0.005 and Range >= 1000:
         const['airDensity'] = 0.01
         Mass_design = aircraftParameters['totalMass']
 
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     airc = aircraftParameters.copy()
 
 
-    m, dim, acParams = design(iterate=False)
+    m, dim, acParams = design(iterate=True)
     s1223 = np.array([[1, 0.99838, 0.99417, 0.98825, 0.98075, 0.97111, 0.95884,0.94389,0.92639,0.90641,0.88406,0.85947,0.83277,
                   0.80412,0.77369,0.74166,0.70823,0.6736,0.63798,0.60158,0.56465,0.52744,0.49025,0.4534,0.41721,0.38193,
                   0.34777,0.31488,0.28347,0.2537,0.22541,0.19846,0.17286,0.14863,0.12591,0.10482,0.08545,0.06789,0.05223,
@@ -121,6 +121,7 @@ if __name__ == '__main__':
               0.04088,0.03387,0.02624,0.01822,0.0106,0.00468,0.00115,0]])
     max_rotor_loads(aircraftParameters['rotorRadius']/20 *s1223)
 
-    plt.legend(loc='best')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1),
+          ncol=3, fancybox=True, shadow=True)
     plt.savefig('../Figures/Payload-Range.pdf')
     plt.show()
