@@ -71,8 +71,20 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     lf = 1.78 + c
     bf = 1  # Fuselage width
 
+    if changeDimensions is not None:
+        lf = changeDimensions[0]
+        bf = changeDimensions[1]
 
     hf = bf  # Fuselage height
+
+    if R <= 0:
+        return "Rotor radius has to be greater than zero.",0,0,0
+    if RotorMass <= 0:
+        return "Rotor mass has to be greater than zero.",0,0,0
+    if Wto <= 0:
+        return "Take-off mass has to be greater than zero.",0,0,0
+    if V_cr <= 0:
+        return "Cruise speed has to be greater than zero.",0,0,0
 
     # Wing and tail area
     Stail = Swing * c / (1.5 * R)
