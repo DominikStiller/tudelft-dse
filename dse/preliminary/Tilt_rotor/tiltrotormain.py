@@ -13,7 +13,7 @@ def design(iterate=False):
     diff = 100
     Range = 1000
     aircraftParameters['totalMass'] = const['maxMass']
-    while diff > 0.01 and Range >= 1000:
+    while diff > 0.001 and Range >= 1000:
         const['airDensity'] = 0.01
         Mass_design = aircraftParameters['totalMass']
 
@@ -23,7 +23,7 @@ def design(iterate=False):
         aircraftParameters['totalPower'], aircraftParameters['rotorMass'] = \
             RadiusMassElementMomentum(M=Mass_thrust, N_rotors=aircraftParameters['totalRotors'],
                                       N_blades=aircraftParameters['bladesPerRotor'],
-                                      coaxial=aircraftParameters['coaxial'], V_tip=takeOffTipSpeed, print_results=True)
+                                      coaxial=aircraftParameters['coaxial'], V_tip=takeOffTipSpeed, print_results=False)
 
         # Calculate wing area
         area(const['cl'], Mass_design, 0.5 * const['airDensity'] * const['cruiseSpeed'] ** 2)
@@ -41,7 +41,7 @@ def design(iterate=False):
             size_power_subsystem(aircraftParameters['rotorRadius'], takeOffThrustPerEngine,
                                  aircraftParameters['cruiseThrust'],
                                  const['designRange'] / const['cruiseSpeed'],
-                                 const['takeOffTime'], aircraftParameters['wingArea'], plot=True)
+                                 const['takeOffTime'], aircraftParameters['wingArea'], plot=False)
 
         # Calculate weights
         Range, aircraftParameters['wingMass'], aircraftParameters['tailMass'], aircraftParameters['bodyMass'] = \

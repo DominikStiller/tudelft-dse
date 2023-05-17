@@ -81,8 +81,8 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     Wtail2Wto = 0.64 * (N_ult * Stail ** 2) ** 0.75
 
     # Body Group
-    Vdive = 1.1 * V_cr
-    lt = lf
+    Vdive = V_cr
+    lt = lf/2
     S_g = 4 * np.pi * hf**2 + 2*np.pi*hf * lf
     Wf = .23 * np.sqrt(Vdive * lt / (bf + hf)) * S_g ** 1.2
 
