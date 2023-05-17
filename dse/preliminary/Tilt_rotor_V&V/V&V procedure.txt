@@ -1,6 +1,5 @@
 Verification procedure:
 
-
 - Functions to be tested:
     - Tip speed calculation
     - RadiusMassElementMomentum
@@ -11,7 +10,6 @@ Verification procedure:
     - PayloadRange
     - AircraftClimbPerf
     - RotorClimbPerf
-
 
 Unit tests:
     - Tip speed calculation:
