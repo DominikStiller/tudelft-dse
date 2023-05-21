@@ -6,8 +6,6 @@ const = {
     'cd': 0.03,
     'irradiance': 590,
     'solarPanelDensity': 1.76,
-    'batteryEnergyDensity': 333.33,
-    'batteryPowerDensity': 300,
     'takeoffBatteryPowerDensity': 1317,
     'takeoffBatteryEnergyDensity': 437,
     'bladeDensity': 1500,
@@ -22,8 +20,9 @@ const = {
     'takeOffTime': 300,
     'margin': 0.0,
     'payloadMass': 350,
-    'maxMass': 3000,
-    'oswald': 0.9
+    'maxMass': 2700,
+    'oswald': 0.9,
+    'fillFactor': 0.084
 }
 
 aircraftParameters = {
