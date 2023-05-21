@@ -114,7 +114,7 @@ Unit tests:
 
         Correlations
         - Positive MTOM-ROC
-        - Positive rotor radius-ROC
+        - Positive rotor radius-ROC -> gives NEGATIVE relation as TRUE
         - Positive n_rotors-ROC
 
         Extreme values
