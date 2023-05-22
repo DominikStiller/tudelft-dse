@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.ticker import NullLocator
 
 from dse.plotting import format_plot, save_plot
 from dse.tradeoff.io import load_sheets
@@ -89,11 +90,11 @@ if __name__ == "__main__":
     for design_name, expected, worst, best in zip(
         design_names, expected_scores, worst_scores, best_scores
     ):
-        print(f"  - {design_name}: {expected:.1f} ({worst:.1f} – {best:.1f})")
+        print(f"  - {design_name}: {expected:.0f} ({worst:.0f} – {best:.0f})")
 
     print(f"Best design is {design_names[np.argmax(expected_scores)]}")
 
-    fig, ax = plt.subplots(figsize=(7, 4))
+    fig, ax = plt.subplots(figsize=(10, 5))
 
     ax.scatter(design_names, worst_scores, marker="_", s=700, label="Worst case", color="#C00000")
     ax.scatter(design_names, best_scores, marker="_", s=700, label="Best case", color="#70AD47")
@@ -105,9 +106,11 @@ if __name__ == "__main__":
         ax.axhspan(lower, upper, color=f"#{color}", alpha=0.15)
 
     ax.set_ylim([0, 100])
+    ax.set_ylabel("Total weighted score")
+    ax.set_yticks([0, 25, 50, 75, 100])
 
     ax.legend()
 
-    format_plot()
-    save_plot(".", "tradeoff_results")
+    format_plot(xlocator=NullLocator())
+    save_plot("tradeoff", "tradeoff_results")
     plt.show()

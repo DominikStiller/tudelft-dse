@@ -23,11 +23,11 @@ sb.set(
 )
 
 
-def save_plot(results_folder: Union[Path, str], name: str, fig=None, type="pdf"):
+def save_plot(results_folder: Union[Path, str], name: str, fig=None, type="png"):
     if isinstance(results_folder, str):
         results_folder = Path(results_folder)
 
-    plots_folder = results_folder / "plots"
+    plots_folder = "plots" / results_folder
     plots_folder.mkdir(parents=True, exist_ok=True)
 
     if fig is None:

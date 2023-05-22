@@ -14,15 +14,23 @@ def plot_statistics(dfs, df_weights):
         index=dfs[0].index,
     ).astype("float")
 
+    df = df.dropna()
+    df_weights = df_weights.loc[df.index]
+
     fig, ax = plt.subplots(figsize=(10, 5), tight_layout=True)
-    im = ax.imshow(df.to_numpy().T / df.to_numpy().mean(axis=1)[:, None].T, cmap="Reds")
+    im = ax.imshow(
+        (df.to_numpy() - np.nanmin(df.to_numpy(), axis=1)[:, None]).T
+        / (np.nanmax(df.to_numpy(), axis=1) - np.nanmin(df.to_numpy(), axis=1))[:, None].T,
+        cmap="Reds",
+    )
     fig.colorbar(im)
 
     std_pct = df.std(axis=1) / df.mean(axis=1) * 100
 
-    _add_labels(ax, df_weights, std_pct)
+    _add_labels(ax, df_weights, std_pct=std_pct)
 
-    save_plot(".", "tradeoff_values", type="png")
+    fig.tight_layout(pad=0.1, h_pad=0.4, w_pad=0.4)
+    save_plot("tradeoff", "tradeoff_values")
     plt.show()
 
     with pd.option_context(
@@ -31,7 +39,7 @@ def plot_statistics(dfs, df_weights):
         print(df)
 
 
-def plot_scores(dfs, df_weights, df_scoring, score_categories):
+def plot_summary(dfs, df_weights, df_scoring, score_categories):
     df = pd.DataFrame(
         {design_name: dfs[i]["expected"].to_numpy() for i, design_name in enumerate(design_names)},
         index=dfs[0].index,
@@ -46,21 +54,26 @@ def plot_scores(dfs, df_weights, df_scoring, score_categories):
 
     scores = df_scores.values.T
 
-    fig, ax = plt.subplots(figsize=(8, 5), tight_layout=True)
+    fig, ax = plt.subplots(figsize=(10, 5), tight_layout=True)
     im = ax.imshow(
         scores,
-        cmap=ListedColormap(["#C00000", "#ED7D31", "#FFC000", "#70AD47", "#375623"]),
+        cmap=ListedColormap(["#C00000", "#ED7D31", "#FFC000", "#70AD47", "#548235"]),
     )
-    fig.colorbar(im, boundaries=[0, 0.5, 1.5, 2.5, 3.5, 4], ticks=[0, 1, 2, 3, 4], label="Score")
+    cbar = fig.colorbar(im, boundaries=[-0.5, 0.5, 1.5, 2.5, 3.5, 4.5], ticks=[0, 1, 2, 3, 4])
+    cbar.ax.set_yticklabels(df_scoring.index[::-1])
 
     _add_labels(
-        ax, df_weights, colors=np.where(np.logical_or(scores == 4, scores == 0), "white", "black")
+        ax,
+        df_weights,
+        selected_bold=False,
     )
 
+    fig.tight_layout(pad=0.1, h_pad=0.4, w_pad=0.4)
+    save_plot("tradeoff", "tradeoff_summary")
     plt.show()
 
 
-def _add_labels(ax, df_weights, std_pct=None, colors=None):
+def _add_labels(ax, df_weights, selected_bold=True, std_pct=None):
     criteria_names = list(df_weights.index)
     units = df_weights["unit"].fillna("-")
 
@@ -85,18 +98,15 @@ def _add_labels(ax, df_weights, std_pct=None, colors=None):
 
     for i in range(len(design_names)):
         for j, criterion_name in enumerate(criteria_names):
-            if colors is None:
-                color = "white"
-            else:
-                color = colors[i, j]
             ax.text(
                 j,
                 i,
                 f"{dfs[i].loc[criterion_name]['expected']:.1f}",
                 ha="center",
                 va="center",
-                weight="bold" if criterion_name in selected_criteria else "normal",
-                color=color,
+                weight="bold"
+                if (selected_bold and criterion_name in selected_criteria)
+                else "normal",
             )
 
 
@@ -111,4 +121,4 @@ if __name__ == "__main__":
     dfs, df_weights, df_scoring, score_categories = load_sheets(
         "data/tradeoff.xlsx", design_names, selected_only=True
     )
-    plot_scores(dfs, df_weights, df_scoring, score_categories)
+    plot_summary(dfs, df_weights, df_scoring, score_categories)
