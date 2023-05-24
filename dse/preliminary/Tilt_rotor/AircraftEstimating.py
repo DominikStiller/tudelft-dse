@@ -107,12 +107,12 @@ def Class2Weight(R, RotorMass, Wto, N_ult, AR, wingbraced, V_cr, E_density, P_de
     Wtot = Wwing2Wto*Wto + Wtail2Wto + Wf + RotorMass + m_payload + m_solar
     Range, Endurance, m_battery_TO, m_battery_cr = RangeCalc(Wto, Wtot, R, V_cr)
 
-    # if print_results:
-        # print('Wing weight: ' + str(Wwing2Wto * Wto) + '[kg]')
-        # print('Tail weight: ' + str(Wtail2Wto) + '[kg]')
-        # print('Body weight: ' + str(Wf) + '[kg]')
-        # print('Available weight for batteries: ' + str(Wto - Wtot) + '[kg]')
-        # print('Available Endurance: ' + str(Endurance) + '[h]')
-        # print('Available Range: ' + str(Range) + '[km]')
-        # print('Flight Radius: ' + str(Range / 2) + '[km]')
+    if print_results:
+        print('Wing weight: ' + str(Wwing2Wto * Wto) + '[kg]')
+        print('Tail weight: ' + str(Wtail2Wto) + '[kg]')
+        print('Body weight: ' + str(Wf) + '[kg]')
+        print('Available weight for batteries: ' + str(Wto - Wtot) + '[kg]')
+        print('Available Endurance: ' + str(Endurance) + '[h]')
+        print('Available Range: ' + str(Range) + '[km]')
+        print('Flight Radius: ' + str(Range / 2) + '[km]')
     return Range, Wwing2Wto * Wto, Wtail2Wto, Wf
