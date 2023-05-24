@@ -23,7 +23,7 @@ sb.set(
 )
 
 
-def save_plot(results_folder: Union[Path, str], name: str, fig=None, type="png"):
+def save_plot(results_folder: Union[Path, str], name: str, fig=None, type="pdf"):
     if isinstance(results_folder, str):
         results_folder = Path(results_folder)
 

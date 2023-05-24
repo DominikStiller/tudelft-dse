@@ -111,12 +111,12 @@ def _add_labels(ax, df_weights, selected_bold=True, std_pct=None):
 
 
 if __name__ == "__main__":
-    design_names = ["Blended wing", "Conventional aircraft", "Tilt-rotor", "Multicopter", "Airship"]
+    design_names = ["Blended wing", "Biplane aircraft", "Tiltrotor", "Multicopter", "Airship"]
 
     dfs, df_weights, _, _ = load_sheets("data/tradeoff.xlsx", design_names, selected_only=False)
     selected_criteria = df_weights[df_weights["selected"] == "x"].index
 
-    plot_statistics(dfs, df_weights)
+    # plot_statistics(dfs, df_weights)
 
     dfs, df_weights, df_scoring, score_categories = load_sheets(
         "data/tradeoff.xlsx", design_names, selected_only=True

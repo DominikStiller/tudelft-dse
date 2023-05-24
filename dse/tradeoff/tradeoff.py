@@ -69,7 +69,7 @@ def calculate_score_regions(df_scoring, df_weights):
 
 
 if __name__ == "__main__":
-    design_names = ["Blended wing", "Conventional aircraft", "Tilt-rotor", "Multicopter", "Airship"]
+    design_names = ["Blended wing", "Biplane aircraft", "Tiltrotor", "Multicopter", "Airship"]
     dfs, df_weights, df_scoring, score_categories = load_sheets("data/tradeoff.xlsx", design_names)
     score_regions, maximum_score = calculate_score_regions(df_scoring, df_weights)
 
@@ -90,20 +90,22 @@ if __name__ == "__main__":
     for design_name, expected, worst, best in zip(
         design_names, expected_scores, worst_scores, best_scores
     ):
-        print(f"  - {design_name}: {expected:.0f} ({worst:.0f} – {best:.0f})")
+        print(
+            f"  - {design_name}: {expected:.0f} ({worst:.0f} – {best:.0f}, range {best - worst:.0f})"
+        )
 
     print(f"Best design is {design_names[np.argmax(expected_scores)]}")
 
     fig, ax = plt.subplots(figsize=(10, 5))
 
-    ax.scatter(design_names, worst_scores, marker="_", s=700, label="Worst case", color="#C00000")
-    ax.scatter(design_names, best_scores, marker="_", s=700, label="Best case", color="#70AD47")
-    ax.scatter(design_names, expected_scores, marker="_", s=700, label="Expected", color="black")
+    ax.scatter(design_names, best_scores, marker="v", s=70, label="Best case", color="#70AD47")
+    ax.scatter(design_names, expected_scores, marker="x", s=70, label="Expected", color="black")
+    ax.scatter(design_names, worst_scores, marker="^", s=70, label="Worst case", color="#C00000")
 
     for (lower, upper), color in zip(score_regions, ["375623", "70AD47", "FFC000", "ED7D31"]):
         lower = 100 * lower / maximum_score
         upper = 100 * upper / maximum_score
-        ax.axhspan(lower, upper, color=f"#{color}", alpha=0.15)
+        ax.axhspan(lower, upper, color=f"#{color}", alpha=0.3)
 
     ax.set_ylim([0, 100])
     ax.set_ylabel("Total weighted score")
