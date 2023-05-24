@@ -183,3 +183,4 @@ fabric.properties
 data/
 private/
 plots/
+.DS_Store
