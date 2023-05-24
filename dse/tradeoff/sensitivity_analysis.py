@@ -17,7 +17,16 @@ def perturb_weights(dfs, df_weights, df_scoring, score_categories):
         df_weights_perturbed = df_weights.copy()
         dfs = [df.copy() for df in dfs]
 
-        df_weights_perturbed["weight"] *= np.random.uniform(0.5, 2, size=len(df_weights.index))
+        # Ensure even sampling of factors below/above one
+        perturbation_factors = np.hstack(
+            [
+                np.random.uniform(0.5, 1, len(df_weights.index) // 2),
+                np.random.uniform(1, 2, len(df_weights.index) // 2),
+            ]
+        )
+        np.random.shuffle(perturbation_factors)
+
+        df_weights_perturbed["weight"] *= perturbation_factors
 
         _, maximum_score = calculate_score_regions(df_scoring, df_weights_perturbed)
 
