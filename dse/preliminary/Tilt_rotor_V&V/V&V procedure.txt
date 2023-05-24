@@ -1,0 +1,161 @@
+Verification procedure:
+
+- Functions to be tested:
+    - Tip speed calculation
+    - RadiusMassElementMomentum
+    - area
+    - DragEstimation
+    - size_power_subsystem
+    - Class2Weight
+    - PayloadRange
+    - AircraftClimbPerf
+    - RotorClimbPerf
+
+Unit tests:
+    - Tip speed calculation:
+        - Inputs: cruise speed
+        - Outputs: maximum allowable tip speed
+
+        Tests:
+        - Check that increasing airspeed leads to smaller tip velocity
+
+    - RadiusMassElementMomentum
+        - Inputs: take-off mass, n_rotors, n_blades, coaxial, V_tip
+        - Outputs: radius, thrust, power, rotor mass
+
+        Correlations:
+        - Check for positive mass-thrust correlation
+        - Check for positive mass-radius correlation
+        - Check for positive mass-rotor mass correlation
+        - Check for negative n_rotors-thrust correlation
+        - Check for negative density-radius correlation
+        - Check for positive gravity-thrust correlation
+
+        Extreme value tests:
+        - What happens when take-off mass = 0?
+        - What happens when n_rotors/n_blades = 0?
+        - What happens if the values are negative?
+
+    - area
+        - Inputs: cl, MTOM, dynamic pressure
+        - Outputs: wing area, wingspan, chord AR
+
+        Correlations
+        - Negative cl-area
+        - Positive MTOM-wing area
+        - Negative dynamic pressure-wing area
+        - Positive gravity-wing area
+
+        Extreme value tests
+        - 0 Cl leads to inf S
+        - 0 MTOM = 0 S
+
+    - DragEstimation
+        - Inputs: wing area, cruise speed, viscosity at cruise, fuselage dimensions
+        - Outputs: cd0
+
+        Correlations
+        - Positive fuselage size-cd0
+
+    - size_power_subsystem
+        - Inputs: rotor radius, take off thrust, cruise thrust, cruise time, take-off time, surface area
+        - Outputs: battery mass, panel mass, power surplus
+
+        Correlations
+        - Positive TOthrust-battery mass
+        - Positive time-battery mass
+
+        Checks
+        - Compare power and energy calculations with hand calculations
+        - Power surplus decreases at higher latitudes the
+
+    - Class2Weight
+        - Inputs: rotor radius, rotor mass, take-off mass, ultimate load, wingbraced, cruise speed, battery energy density, paylaod mass, solar panel mass, aircraft dimensions
+        - Outputs: range, wing weight, tail weight, fuselage weight
+
+        Correlations
+        - Negative rotor radius-tail weight
+        - Positive fuselage width-body weight
+        - Negative wingbraced-wing weight
+        - Positive ultimate load-tail weight
+
+        Extreme value
+        - What if inputs = 0?
+        - What if inputs are negative?
+
+    - PayloadRange
+        - Inputs: rotor radius, rotor mass, design mass, ultimate load, aspect ratio, wingbraced, cruise speed, battery properties, panel mass, minimum payload, minimum range, available space
+        - Outputs: payload-range diagram
+
+        Extreme values
+        - What if inputs = 0?
+        - What if inputs are negative?
+
+
+    - AircraftClimbPerf
+        - Inputs: cruise battery mass, power density, design mass, rotor radius, cruise speed
+        - Outputs: cruise rate of climb
+
+        Correlations
+        - Positive battery mass-ROC
+        - Positive power density-ROC
+        - Negative design mass-ROC
+
+        Extreme values
+        - What if inputs = 0?
+        - What if inputs are negative?
+
+
+    - RotorClimbPerf
+        - Inputs: MTOM, rotor radius, number of rotors
+        - Outputs: ROC in rotorcraft mode
+
+        Correlations
+        - Positive MTOM-ROC
+        - Positive rotor radius-ROC -> gives NEGATIVE relation as TRUE
+        - Positive n_rotors-ROC
+
+        Extreme values
+        - What if inputs = 0?
+        - What if inputs are negative?
+
+
+System tests:
+    - Input sensitivity analysis
+        - Given values: payload mass, design range, cruise speed, maximum mass
+        - Calculated values: gravity Mars, air density, speed of sound, cruise viscosity
+        - Assumed values: cl, cd, t/c, battery power/energy density, blade density, fill factor, ultimate load, take-off load, take off time, oswald efficiency factor
+
+    - Function sensitivity analysis
+        Procedure
+        - Change the outputs of the functions upstream by 10% and see how affected are the values downstream
+
+
+Validation procedure
+    - Tip speed calculation
+        - Compare the results with hand calculations
+
+    - RadiusMassElementMomentum
+        - Compare results with a set of helicopters/tilt-rotor aircraft with well known data DONE
+
+    - area
+        - Compare results against hand calculations [DONE]
+
+    - DragEstimation
+        - Compare results against data for aircraft with well known data [DONE]
+
+    - size_power_subsystem [DONE]
+        - Compare results against hand calculations
+        - Compare results against electrical aircraft data?
+
+    - Class2Weight [DONE (by Torenbeek)]
+        - Compare results against aircraft with well known data
+
+    - PayloadRange
+        - Compare results against hand calculations
+
+    - AircraftClimbPerf
+        - Compare results against hand calculations
+
+    - RotorClimbPerf
+        - Compare results against hand calculations
