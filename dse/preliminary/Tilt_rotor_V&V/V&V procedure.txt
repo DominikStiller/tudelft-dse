@@ -122,10 +122,9 @@ Unit tests:
 
 System tests:
     - Input sensitivity analysis
-        - Inputs: cl, cd, air density, cruise speed, battery energy/power density, blade fill factor, takeOffTime, payload mass, oswald efficiency factor
-
-        Procedure
-        - Change inputs by +-10% and see the effect on the final design
+        - Given values: payload mass, design range, cruise speed, maximum mass
+        - Calculated values: gravity Mars, air density, speed of sound, cruise viscosity
+        - Assumed values: cl, cd, t/c, battery power/energy density, blade density, fill factor, ultimate load, take-off load, take off time, oswald efficiency factor
 
     - Function sensitivity analysis
         Procedure

@@ -1,27 +1,23 @@
-from .PerformanceAnalysis import PayloadRange, AircraftClimbPerf, RotorClimbPerf
-from .AircraftEstimating import Class2Weight, DragEstimation
-from .RotorEngineSizing import RadiusMassElementMomentum
-from .structures import calculate_cg, assembly_volume, max_rotor_loads
-from .constants import const, aircraftParameters
-from .power_sizing import size_power_subsystem
-from .cruise_sizing import area
+from dse.preliminary.Tilt_rotor.PerformanceAnalysis import PayloadRange, AircraftClimbPerf, RotorClimbPerf
+from dse.preliminary.Tilt_rotor.AircraftEstimating import Class2Weight, DragEstimation
+from dse.preliminary.Tilt_rotor.RotorEngineSizing import RadiusMassElementMomentum
+from dse.preliminary.Tilt_rotor.structures import calculate_cg, assembly_volume, max_rotor_loads
+from dse.preliminary.Tilt_rotor.constants import const, aircraftParameters
+from dse.preliminary.Tilt_rotor.power_sizing import size_power_subsystem
+from dse.preliminary.Tilt_rotor.cruise_sizing import area
 from matplotlib import pyplot as plt
 import numpy as np
 
 
-
-def design(iterate=False, inputSensitivity=None, functionSensitivity=(None, None)):
-    if inputSensitivity is not None:
-        key_list = ['cl', 'cd', 'airDensity', 'cruiseSpeed', 'soundSpeed', 'takeoffBatteryEnergyDensity',
-                    'takeoffBatteryPowerDensity', 'fillFactor', 'takeOffTime', 'payloadMass', 'oswald']
-        for i in range(len(key_list)):
-            const[key_list[i]] = inputSensitivity[i]
+def design(iterate=False, Print=False, inputSensitivity=(None, None), functionSensitivity=(None, None)):
+    if inputSensitivity[0] is not None:
+        for i in range(len(inputSensitivity[0])):
+            const[inputSensitivity[0][i]] = inputSensitivity[1][i]
 
     diff = 100
     Range = 1000
     aircraftParameters['totalMass'] = const['maxMass']
     while diff > 0.005 and Range >= 1000:
-        const['airDensity'] = 0.01
         Mass_design = aircraftParameters['totalMass']
 
         takeOffTipSpeed = 0.92 * const['soundSpeed']
@@ -30,7 +26,7 @@ def design(iterate=False, inputSensitivity=None, functionSensitivity=(None, None
         aircraftParameters['totalPower'], aircraftParameters['rotorMass'] = \
             RadiusMassElementMomentum(M=Mass_thrust, N_rotors=aircraftParameters['totalRotors'],
                                       N_blades=aircraftParameters['bladesPerRotor'],
-                                      coaxial=aircraftParameters['coaxial'], V_tip=takeOffTipSpeed, print_results=True)
+                                      coaxial=aircraftParameters['coaxial'], V_tip=takeOffTipSpeed, print_results=Print)
 
         if aircraftParameters['rotorRadius'] == "N_rotors has to be greater than zero.":
             raise ValueError("N_rotors has to be greater than zero.")
@@ -56,12 +52,14 @@ def design(iterate=False, inputSensitivity=None, functionSensitivity=(None, None
 
         aircraftParameters['cruiseThrust'] = (cd0 + const['cl']**2/(np.pi*aircraftParameters['AR']*const['oswald'])) * \
             0.5 * const['airDensity'] * const['cruiseSpeed']**2 * aircraftParameters['wingArea']
-        print(f'Cruise drag = {aircraftParameters["cruiseThrust"]}')
 
-        const['airDensity'] = 0.01
+        if Print:
+            print(f'Cruise drag = {aircraftParameters["cruiseThrust"]}')
 
         # Size batteries for cruise and solar panels
-        print(f'Total Drag on the aircraft: {aircraftParameters["cruiseThrust"]}[N]')
+        if Print:
+            print(f'Total Drag on the aircraft: {aircraftParameters["cruiseThrust"]}[N]')
+
         aircraftParameters['batteryMass'], aircraftParameters['panelMass'], powerSurplus = \
             size_power_subsystem(aircraftParameters['rotorRadius'], takeOffThrustPerEngine,
                                  aircraftParameters['cruiseThrust'],
@@ -77,7 +75,8 @@ def design(iterate=False, inputSensitivity=None, functionSensitivity=(None, None
             Class2Weight(aircraftParameters['rotorRadius'], aircraftParameters['rotorMass'], Mass_design,
                          const['ultimateLoad'], aircraftParameters['AR'], aircraftParameters['wingbraced'],
                          const['cruiseSpeed'], const['takeoffBatteryEnergyDensity'], const['takeoffBatteryPowerDensity'],
-                         const['takeoffBatteryEnergyDensity'], const['payloadMass'], aircraftParameters['panelMass'])
+                         const['takeoffBatteryEnergyDensity'], const['payloadMass'], aircraftParameters['panelMass'],
+                         print_results=Print)
 
         if functionSensitivity[0] == 4:
             Range *= functionSensitivity[1]
@@ -92,16 +91,19 @@ def design(iterate=False, inputSensitivity=None, functionSensitivity=(None, None
                                       aircraftParameters['tailMass'] + aircraftParameters['bodyMass'] + \
                                       const['payloadMass']
 
-        if aircraftParameters['totalMass'] > Mass_design:
+        if aircraftParameters['totalMass'] > Mass_design and \
+                functionSensitivity == (None, None) and \
+                inputSensitivity == (None, None):
             print('Total mass was higher than the design mass')
-            return 0, 0, 0
+            return 0
 
-        # Payload-Range
-        PayloadRange(aircraftParameters['rotorRadius'], aircraftParameters['rotorMass'], Mass_design,
-                     const['ultimateLoad'], aircraftParameters['AR'], aircraftParameters['wingbraced'],
-                     const['cruiseSpeed'], const['batteryEnergyDensity'], const['batteryPowerDensity'],
-                     const['batteryEnergyDensity'], aircraftParameters['panelMass'], const['payloadMass'],
-                     const['designRange'] / 1000, Mass_design - aircraftParameters['totalMass'])
+        if Print:
+            # Payload-Range
+            PayloadRange(aircraftParameters['rotorRadius'], aircraftParameters['rotorMass'], Mass_design,
+                         const['ultimateLoad'], aircraftParameters['AR'], aircraftParameters['wingbraced'],
+                         const['cruiseSpeed'], const['takeoffBatteryEnergyDensity'], const['takeoffBatteryPowerDensity'],
+                         const['takeoffBatteryEnergyDensity'], aircraftParameters['panelMass'], const['payloadMass'],
+                         const['designRange'] / 1000, Mass_design - aircraftParameters['totalMass'])
         # Climb Performance
         ROC_cruise = AircraftClimbPerf(aircraftParameters['batteryMass'], const['takeoffBatteryPowerDensity'], Mass_design,
                                        aircraftParameters['rotorRadius'], const['cruiseSpeed'])
@@ -110,10 +112,11 @@ def design(iterate=False, inputSensitivity=None, functionSensitivity=(None, None
                                    aircraftParameters['totalRotors'])
 
         aircraftParameters['aircraftVolume'] = assembly_volume()
-        print(f'Total aircraft weight = {aircraftParameters["totalMass"]}kg\n')
-        print(f'Cg location is {1.78 + aircraftParameters["chord"] / 2 - calculate_cg()} in front of the rotors thrust')
-        print(f'Aircraft volume = {aircraftParameters["aircraftVolume"]}')
-        print('-' * 50 + '\n')
+        if Print:
+            print(f'Total aircraft weight = {aircraftParameters["totalMass"]}kg\n')
+            print(f'Cg location is {1.78 + aircraftParameters["chord"] / 2 - calculate_cg()} in front of the rotors thrust')
+            print(f'Aircraft volume = {aircraftParameters["aircraftVolume"]}')
+            print('-' * 50 + '\n')
 
         # Store results
         massArr = np.array([[aircraftParameters['totalMass'], aircraftParameters['rotorMass'],
@@ -130,10 +133,10 @@ def design(iterate=False, inputSensitivity=None, functionSensitivity=(None, None
         else:
             diff = 0
 
-    return [aircraftParameters['totalMass'], aircraftParameters['rotorMass'], aircraftParameters['batteryMass'], \
-           aircraftParameters['panelMass'], aircraftParameters['bodyMass'], aircraftParameters['wingMass'], \
-           aircraftParameters['tailMass'], aircraftParameters['rotorRadius'], aircraftParameters['wingspan'], \
-           aircraftParameters['chord'], aircraftParameters['cruiseThrust'], ROC_cruise, ROC_rotor]
+    return [Range, aircraftParameters['totalMass'], aircraftParameters['rotorMass'], aircraftParameters['batteryMass'],\
+            aircraftParameters['bodyMass'], aircraftParameters['wingMass'], aircraftParameters['tailMass'],
+            aircraftParameters['rotorRadius'], aircraftParameters['wingspan'], aircraftParameters['chord'],
+            aircraftParameters['cruiseThrust'], aircraftParameters['totalPower']]
 
 
 
@@ -145,7 +148,7 @@ if __name__ == '__main__':
     airc = aircraftParameters.copy()
 
 
-    m, dim, acParams = design(iterate=True)
+    arr = design(iterate=True)
     s1223 = np.array([[1, 0.99838, 0.99417, 0.98825, 0.98075, 0.97111, 0.95884,0.94389,0.92639,0.90641,0.88406,0.85947,0.83277,
                        0.80412,0.77369,0.74166,0.70823,0.6736,0.63798,0.60158,0.56465,0.52744,0.49025,0.4534,0.41721,0.38193,
                        0.34777,0.31488,0.28347,0.2537,0.22541,0.19846,0.17286,0.14863,0.12591,0.10482,0.08545,0.06789,0.05223,
