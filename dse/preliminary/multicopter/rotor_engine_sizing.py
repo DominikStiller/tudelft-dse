@@ -1,6 +1,6 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy
-import matplotlib.pyplot as plt
 
 from dse.plotting import format_plot, save_plot
 
