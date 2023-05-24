@@ -226,7 +226,7 @@ def rollingmoment():
 
 
 def plot_radius_rpm_range():
-    plt.subplots(figsize=(10, 5))
+    plt.subplots(figsize=(10, 3.5))
 
     RR = np.arange(0.2, 10.5, 0.1)
     rpms = np.hstack([[200, 250, 350], np.arange(500, 2501, 1000)])
@@ -246,14 +246,14 @@ def plot_radius_rpm_range():
         omegas.append(omega)
         T_max.append(solve_thrust_hover(R_max, omega))
 
-    plt.scatter(R_maxs, T_max, marker="x", c="black", label="Max. radius for M<=0.85")
+    plt.scatter(R_maxs, T_max, marker="x", c="black", label="Max. radius for $M \leq 0.85$")
     plt.xlabel("Blade radius [m]")
     plt.ylabel("Total thrust [N]")
     plt.yscale("log")
     plt.axhline(mass * g_mars, c="black", label="Weight at 3000 kg")
     plt.legend()
     format_plot()
-    save_plot("..", "multicopter_radius_rpm")
+    save_plot(".", "multicopter_radius_rpm")
 
     plt.show()
     return R_maxs, T_max, rpms * (2 * np.pi / 60)
@@ -360,7 +360,7 @@ if __name__ == "__main__":
     angle_of_attack = np.radians(10)
     climb_speed = 10
 
-    # plot_radius_rpm_range()
+    plot_radius_rpm_range()
 
     # rmax, tmaxhower, omegas = plot_radius_rpm_range()
     # tmaxhower, tmaxclimb, tmaxcruise, torquehower, torqueclimb, torquecruise = thrust_and_force_for_optimum_Tip_Mach(speed, angle_of_attack, climb_speed)

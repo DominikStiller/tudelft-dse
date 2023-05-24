@@ -129,7 +129,7 @@ def calc_component_masses(
 
 def iterate_mass(
     payload_mass,
-    fuel_mass,
+    fuel_mass_initial,
     n_blades,
     n_rotors,
     coaxial,
@@ -137,13 +137,15 @@ def iterate_mass(
     radius,
     c_to_R_ratio,
     tip_speed,
-    MTOM,
+    MTOM_target,
     wet_area_fuselage,
     fuselage_length,
     engine_mass,
     spar_mass,
     blade_mass,
 ):
+    fuel_mass = fuel_mass_initial
+    MTOM = MTOM_target
     diff = 1
     while diff > 0.01:
         W_array = calc_component_masses(
@@ -161,11 +163,11 @@ def iterate_mass(
             spar_mass,
             blade_mass,
         )
-        MTOM_new = np.sum(W_array) + payload_mass + fuel_mass
-        diff = abs((MTOM_new - MTOM) / MTOM)
-        MTOM = MTOM_new
+        MTOM = np.sum(W_array) + payload_mass + fuel_mass
+        fuel_mass = MTOM_target - (np.sum(W_array) + payload_mass)
+        diff = abs((MTOM - MTOM_target) / MTOM)
 
-    return MTOM, W_array
+    return MTOM, W_array, fuel_mass
 
 
 if __name__ == "__main__":
@@ -191,13 +193,13 @@ if __name__ == "__main__":
         rho_blades = rho_cfrp
 
         payload_mass = 350
-        fuel_mass = 437 * 1.3
+        fuel_mass_initial = 437 * 1.3
         coaxial = True
         n_legs = 4
         c_to_R_ratio = 1 / 20
         chord = radius * c_to_R_ratio
         tip_speed = 220 * 0.85
-        MTOM = 2700
+        MTOM_target = 2700
         fuselage_length = 5
         wet_area_fuselage = fuselage_length * 3 * 2
         engine_mass = 60
@@ -207,9 +209,9 @@ if __name__ == "__main__":
         )
         blade_mass, blade_thickness = calc_blade(rho_blades, chord, radius)
 
-        W_total, W_components = iterate_mass(
+        W_total, W_components, fuel_mass = iterate_mass(
             payload_mass,
-            fuel_mass,
+            fuel_mass_initial,
             n_blades,
             n_rotors,
             coaxial,
@@ -217,7 +219,7 @@ if __name__ == "__main__":
             radius,
             c_to_R_ratio,
             tip_speed,
-            MTOM,
+            MTOM_target,
             wet_area_fuselage,
             fuselage_length,
             engine_mass,
@@ -225,6 +227,6 @@ if __name__ == "__main__":
             blade_mass,
         )
         print(
-            f"{n_rotors=} {n_blades=} {blade_thickness=} {chord=} {spar_length=:.2} {spar_diameter=:.2} {W_total=}"
+            f"{n_rotors=} {n_blades=} {blade_thickness=} {chord=} "
+            f"{spar_length=:.2} {spar_diameter=:.2} {fuel_mass=} {W_total=} OEM={np.sum(W_components)}"
         )
-        print(np.sum(W_components))
