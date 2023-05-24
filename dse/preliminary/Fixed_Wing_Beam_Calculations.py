@@ -438,6 +438,7 @@ def MakePlots2(indx, WingboxArray, Data, Loads, NA):
 
 n = 1000
 indx = 0
+
 if indx == 0:
     Airfoilcoordinates = GetAirfoil(filenameArray[-1])
     Data = GetDataXFLR(filenameArray[indx])
