@@ -112,7 +112,7 @@ Unit tests:
 
         Correlations
         - Positive MTOM-ROC
-        - Positive rotor radius-ROC
+        - Positive rotor radius-ROC -> gives NEGATIVE relation as TRUE
         - Positive n_rotors-ROC
 
         Extreme values
@@ -136,19 +136,19 @@ Validation procedure
         - Compare the results with hand calculations
 
     - RadiusMassElementMomentum
-        - Compare results with a set of helicopters/tilt-rotor aircraft with well known data
+        - Compare results with a set of helicopters/tilt-rotor aircraft with well known data DONE
 
     - area
-        - Compare results against hand calculations
+        - Compare results against hand calculations [DONE]
 
     - DragEstimation
-        - Compare results against data for aircraft with well known data
+        - Compare results against data for aircraft with well known data [DONE]
 
-    - size_power_subsystem
+    - size_power_subsystem [DONE]
         - Compare results against hand calculations
         - Compare results against electrical aircraft data?
 
-    - Class2Weight
+    - Class2Weight [DONE (by Torenbeek)]
         - Compare results against aircraft with well known data
 
     - PayloadRange
