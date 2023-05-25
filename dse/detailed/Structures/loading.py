@@ -72,24 +72,22 @@ class Force:
 
 
 
-class Structure:
-    def __init__(self, structure_type):
-        self.type = structure_type
-
-
-class Beam(Structure):
-    def __init__(self, x, y, z, structure_type):
-        super().__init__(structure_type)
-
+class Beam:
+    def __init__(self, x, y, z, cross_section):
         # Beam dimensions
-        self.x = np.linspace(0, x, 100)
-        self.y = np.linspace(0, y, 100)
-        self.z = np.linspace(0, z, 100)
+        self.x = x  # Width
+        self.y = y  # Length
+        self.z = z  # Height
+
+        if cross_section == 'full':
+            self.section = np.ones((x, z))
+        else:
+            self.section = cross_section
 
         # Internal forces
-        self.fx_loading = np.zeros(100)
-        self.fy_loading = np.zeros(100)
-        self.fz_loading = np.zeros(100)
+        self.fx_loading = np.zeros(len(self.x))
+        self.fy_loading = np.zeros(len(self.y))
+        self.fz_loading = np.zeros(len(self.z))
 
         # Internal moments
         self.mx_loading = np.zeros(100)
