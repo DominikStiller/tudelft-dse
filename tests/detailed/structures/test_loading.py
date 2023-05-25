@@ -1,12 +1,15 @@
 from unittest import TestCase
 import numpy as np
+import os
 
 
 class Test(TestCase):
     def test_xflr_forces(self):
         from dse.detailed.Structures.loading import xflr_forces
+        if os.getcwd().split('\\')[-1] != 'Structures':
+            os.chdir('..\\dse\\detailed\\Structures')
 
-        force = xflr_forces(filename='..\\dse\\detailed\\Structures\\Test_xflr5_file.csv',
+        force = xflr_forces(filename='Test_xflr5_file.csv',
                             q=0.5*0.01*112**2,
                             b=16.8)
 
@@ -36,19 +39,27 @@ class Test(TestCase):
 
     def test_xflr_forces_q_type(self):
         from dse.detailed.Structures.loading import xflr_forces
+
+        if os.getcwd().split('\\')[-1] != 'Structures':
+            os.chdir('..\\dse\\detailed\\Structures')
+
         try:
-            Forces = xflr_forces('..\\dse\\detailed\\Structures\\Test_xflr5_file.csv',
+            Forces = xflr_forces('Test_xflr5_file.csv',
                                  q='0.5 * 0.01 * 112 ** 2',
                                  b=16.8)
             a = False
         except TypeError:
             a = True
         self.assertTrue(a)
+
     def test_xflr_forces_b_type(self):
         from dse.detailed.Structures.loading import xflr_forces
 
+        if os.getcwd().split('\\')[-1] != 'Structures':
+            os.chdir('..\\dse\\detailed\\Structures')
+
         try:
-            Forces = xflr_forces(filename='..\\dse\\detailed\\Structures\\Test_xflr5_file.csv',
+            Forces = xflr_forces(filename='Test_xflr5_file.csv',
                                  q=0.5 * 0.01 * 112 ** 2,
                                  b='16.8')
             a = False
