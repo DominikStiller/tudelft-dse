@@ -93,13 +93,8 @@ class Beam:
         self.m_loading = np.zeros(np.shape(self.coords))
 
     def unload(self):
-        self.fx_loading = np.zeros(100)
-        self.fy_loading = np.zeros(100)
-        self.fz_loading = np.zeros(100)
-
-        self.mx_loading = np.zeros(100)
-        self.my_loading = np.zeros(100)
-        self.mz_loading = np.zeros(100)
+        self.f_loading = np.zeros(np.shape(self.coords))
+        self.m_loading = np.zeros(np.shape(self.coords))
 
     def add_loading(self, force):
         # Locate where in the beam are the loads located
