@@ -6,7 +6,9 @@ import os
 class Test(TestCase):
     def test_xflr_forces(self):
         from dse.detailed.Structures.loading import xflr_forces
-        if os.getcwd().split('\\')[-1] != 'Structures':
+        if os.getcwd().split('\\')[-1] == 'structures':
+            os.chdir('..\\..\\..\\dse\\detailed\\Structures')
+        else:
             os.chdir('..\\dse\\detailed\\Structures')
 
         force = xflr_forces(filename='Test_xflr5_file.csv',
