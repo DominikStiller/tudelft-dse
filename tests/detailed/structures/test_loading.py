@@ -1,0 +1,50 @@
+from unittest import TestCase
+import numpy as np
+
+
+class Test(TestCase):
+    def test_xflr_forces(self):
+        self.fail()
+
+
+class TestForce(TestCase):
+    def test_concatenate_two_forces(self):
+        from dse.detailed.Structures.loading import Force
+        dummy = Force(magnitude=np.array([[3, 3, 3]]).T, point_of_application=np.array([[1, 0, 0]]).T)
+        dummy_2 = Force(magnitude=np.array([[-2, 0, 1]]).T, point_of_application=np.array([[2, 0, 0]]).T)
+        dummy = dummy.concatenate_forces(dummy_2)
+
+        assert np.shape(dummy.F) == (3, 2)
+
+    def test_concatenate_functions_list(self):
+        from dse.detailed.Structures.loading import Force
+        dummy = Force(magnitude=np.array([[3, 3, 3]]).T,
+                      point_of_application=np.array([[1, 0, 0]]).T)
+        dummy_2 = Force(magnitude=np.array([[-2, 0, 1]]).T,
+                        point_of_application=np.array([[2, 0, 0]]).T)
+        dummy_3 = Force(magnitude=np.array([[1, 0, 0]]).T,
+                        point_of_application=np.array([[3, 0, 0]]).T)
+
+        dummy = dummy.concatenate_forces([dummy_2, dummy_3])
+
+        assert np.shape(dummy.F) == (3, 3)
+
+    def test_separate_forces_number(self):
+        from dse.detailed.Structures.loading import Force
+        mag = np.array([[1, 5], [0, 0], [0, 0]])
+        app = np.array([[1, 3], [0, 0], [0, 0]])
+        dummy = Force(magnitude=mag, point_of_application=app)
+        lst = dummy.separate_forces()
+
+        if len(lst) == np.shape(mag)[1]:
+            for i in range(len(lst)):
+                if np.shape(lst[i].F) != (3, 1):
+                    assert np.shape(lst[i].F) == (3, 1)
+            assert True
+        else:
+            assert len(lst) == np.shape(mag)[1]
+
+
+class TestBeam(TestCase):
+    def test_add_loading(self):
+        self.fail()
