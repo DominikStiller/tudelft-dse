@@ -6,7 +6,7 @@ class Test(TestCase):
     def test_xflr_forces(self):
         from dse.detailed.Structures.loading import xflr_forces
 
-        force = xflr_forces(filename='Test_xflr5_file.csv',
+        force = xflr_forces(filename='..\\dse\\detailed\\Structures\\Test_xflr5_file.csv',
                             q=0.5*0.01*112**2,
                             b=16.8)
 
@@ -45,7 +45,9 @@ class Test(TestCase):
         from dse.detailed.Structures.loading import xflr_forces
 
         try:
-            Forces = xflr_forces(filename='Test_xflr5_file.csv', q='0.5 * 0.01 * 112 ** 2', b = 16.8)
+            Forces = xflr_forces(filename='..\\dse\\detailed\\Structures\\Test_xflr5_file.csv',
+                                 q='0.5 * 0.01 * 112 ** 2',
+                                 b=16.8)
 
             a = False
         except TypeError:
