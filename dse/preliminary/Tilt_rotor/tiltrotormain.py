@@ -80,20 +80,17 @@ def design(
         if Print:
             print(f'Total Drag on the aircraft: {aircraftParameters["cruiseThrust"]}[N]')
 
-
         aircraftParameters["batteryMass"],
         aircraftParameters["panelMass"],
-        powerSurplus = \
-            size_power_subsystem(
-        aircraftParameters["rotorRadius"],
-        takeOffThrustPerEngine,
-        aircraftParameters["cruiseThrust"],
-        const["designRange"] / const["cruiseSpeed"],
-        const["takeOffTime"],
-        aircraftParameters["wingArea"],
-        plot=False,
+        powerSurplus = size_power_subsystem(
+            aircraftParameters["rotorRadius"],
+            takeOffThrustPerEngine,
+            aircraftParameters["cruiseThrust"],
+            const["designRange"] / const["cruiseSpeed"],
+            const["takeOffTime"],
+            aircraftParameters["wingArea"],
+            plot=False,
         )
-
 
         if functionSensitivity[0] == 3:
             aircraftParameters["batteryMass"] *= functionSensitivity[1]
