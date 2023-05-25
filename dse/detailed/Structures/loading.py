@@ -4,7 +4,14 @@ import pandas as pd
 import csv
 
 
-def xflr_forces(filename='Test_xflr5_file.csv', q=0.5*0.01*112**2, b=16.8):
+def xflr_forces(filename, q, b):
+    if type(filename) != str:
+        raise TypeError(f"Input 1 should be a string, not {type(filename)}")
+    if type(q) != float:
+        raise TypeError(f"Input 2 should be a float, not {type(q)}")
+    if type(b) != float:
+        raise TypeError(f"Input 3 should be a float, not {type(b)}")
+
     # Rewrite the xflr data file into a readable format. ranging from the negative wingtip to closest to zero root
     with open(filename) as csvfile:
         data = csv.reader(csvfile, delimiter=",")

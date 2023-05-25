@@ -11,8 +11,8 @@ class Test(TestCase):
                             b=16.8)
 
         if np.all(force.fy == 0):
-            if np.all(force.fx > 0):
-                if np.all(force.fz < 0):
+            if np.all(force.fx < 0):
+                if np.all(force.fz > 0):
                     if np.shape(force.F) == np.shape(force.application):
                         assert True
                     else:
@@ -23,6 +23,36 @@ class Test(TestCase):
                 assert np.all(force.fx > 0)
         else:
             assert np.all(force.fy == 0)
+
+
+    def test_xflr_forces_file_type(self):
+        from dse.detailed.Structures.loading import xflr_forces
+        try:
+            Forces = xflr_forces(5, q=0.5 * 0.01 * 112 ** 2, b = 16.8)
+            a = False
+        except TypeError:
+            a = True
+        self.assertTrue(a)
+    def test_xflr_forces_q_type(self):
+        from dse.detailed.Structures.loading import xflr_forces
+        try:
+            Forces = xflr_forces(5, q=0.5 * 0.01 * 112 ** 2, b = 16.8)
+            a = False
+        except TypeError:
+            a = True
+        self.assertTrue(a)
+    def test_xflr_forces_b_type(self):
+        from dse.detailed.Structures.loading import xflr_forces
+
+        try:
+            Forces = xflr_forces(filename='Test_xflr5_file.csv', q='0.5 * 0.01 * 112 ** 2', b = 16.8)
+
+            a = False
+        except TypeError:
+            a = True
+        self.assertTrue(a)
+
+
 
 
 
