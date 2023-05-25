@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import csv
 
 
 class Force:
@@ -33,6 +34,42 @@ class Force:
         for i in range(len(mag)):
             f_list.append(Force(magnitude=mag[i], point_of_application=point[i]))
         return f_list
+
+    def read_xlfrdata(self, filename):
+        with open(filename) as csvfile:
+            data = csv.reader(csvfile, delimiter=",")
+            Data = []
+            for row in data:
+                Data.append(row)
+        y_lst = np.array([float(i[0]) for i in Data[1:]])  # [m] Y-step of the applied loads b
+        c_lst = np.array([float(i[1]) for i in Data[1:]])  # [m] Y-step of the applied loads b
+        AoA_lst = [float(i[2]) for i in Data[1:]]  # [degrees] induced angle of angle of attack
+        CL_lst = np.array([float(i[3]) for i in Data[1:]])  # [-] Lift coefficient of the wing
+        PCd_lst = np.array([float(i[4]) for i in Data[1:]])  # [-] Parasite drag coefficient of the wing
+        ICd_lst = [float(i[5]) for i in Data[1:]]  # [-] Induced drag coefficient of the wing
+        # CmGeom_lst = [float(i[6]) for i in Data[1:]]  # [-] Moment coefficient
+        # CmAirfchord4_lst = [float(i[7]) for i in Data[1:]]  # [-] Moment coefficient at quarter chord
+        # XTrtop = [float(i[8]) for i in Data[1:]]  # [-] Moment coefficient at quarter chord
+        # XTrBot = [float(i[9]) for i in Data[1:]]  # [-] Moment coefficient at quarter chord
+        XCP = [float(i[10]) for i in Data[1:]]  # [-] Moment coefficient at quarter chord
+        # BM = [float(i[11]) for i in Data[1:]]  # [-] Moment coefficient at quarter chord
+
+
+        ## Application of the forces
+        # Assume drag acts through the neutral axis
+        self.application = np.zeros((3, len(y_lst)))  # [m] (3, n) where n is the length of y_lst
+        self.application[0] = np.array(XCP)  # [m] Point of application in the x direction
+        self.application[1] = np.array(y_lst)  # [m] Point of application in the y direction
+
+        ## Magnitude of the forces
+        # Overwrite the forces in y direction if there are any present.
+        self.mag = np.zeros((3, len(y_lst))) # [N] (3 x n) where n is the length of y_lst
+        self.mag[0] = (ICd_lst+PCd_lst)* q *   # [N] Forces in x-direction due to drag
+        self.mag[2] = CL_lst * q * S  # [N] Forces in z-direction due to lift
+        return Data
+
+
+
 
 
 class Structure:
