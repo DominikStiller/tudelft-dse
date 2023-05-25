@@ -103,3 +103,34 @@ class Beam:
             distance = self.coords[:, point:-1] - self.coords[:, point+1:]
             for j in range(np.shape(distance)[1]):
                 self.m_loading[:, (point+1)+j] += np.cross(force.F[:, i], distance[:, j])
+
+    def plot_internal_loading(self):
+        fig, axs = plt.subplots(2, 3)
+
+        axs[0, 0].plot(self.x, self.f_loading[0])
+        axs[0, 0].set_xlabel('Width')
+        axs[0, 0].set_ylabel('Internal load')
+
+        axs[0, 1].plot(self.y, self.f_loading[1])
+        axs[0, 1].set_xlabel('Length')
+        axs[0, 1].set_ylabel('Internal load')
+
+        axs[0, 2].plot(self.z, self.f_loading[2])
+        axs[0, 2].set_xlabel('Height')
+        axs[0, 2].set_ylabel('Internal load')
+
+        axs[1, 0].plot(self.x, self.m_loading[0])
+        axs[1, 0].set_xlabel('Width')
+        axs[1, 0].set_ylabel('Internal load')
+
+        axs[1, 1].plot(self.y, self.m_loading[1])
+        axs[1, 1].set_xlabel('Length')
+        axs[1, 1].set_ylabel('Internal load')
+
+        axs[1, 2].plot(self.z, self.m_loading[2])
+        axs[1, 2].set_xlabel('Height')
+        axs[1, 2].set_ylabel('Internal load')
+
+        plt.show()
+
+
