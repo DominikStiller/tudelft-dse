@@ -18,58 +18,19 @@ def xflr_forces(filename, q):
 
     xflr_data = pd.DataFrame(Data[1:], columns=Data[0])
 
-    y_lst = np.array([float(i[0]) for i in Data[1:]])  # [m] Y-step of the applied loads b
-    c_lst = np.array([float(i[1]) for i in Data[1:]])  # [m] Y-step of the applied loads b
-    CL_lst = np.array([float(i[3]) for i in Data[1:]])  # [-] Lift coefficient of the wing
-    PCd_lst = np.array([float(i[4]) for i in Data[1:]])  # [-] Parasite drag coefficient of the wing
-    ICd_lst = np.array([float(i[5]) for i in Data[1:]])  # [-] Induced drag coefficient of the wing
-    XCP = np.array([float(i[10]) for i in Data[1:]])  # [m] x-coordinate of the center of pressure
-
     ## Application of the forces
     # Assume drag acts through the neutral axis
-    application = np.zeros((3, len(y_lst)))  # [m] (3, n) where n is the length of y_lst
-    application[0] = np.array(XCP)  # [m] Point of application in the x direction
-    application[1] = np.array(y_lst)  # [m] Point of application in the y direction
+    application = np.zeros((3, len(xflr_data['y-span'])))   # [m] (3, n) where n is the length of y_lst
+    application[0] = np.array(xflr_data['XCP'])             # [m] Point of application in the x direction
+    application[1] = np.array(xflr_data['y-span'])          # [m] Point of application in the y direction
 
     ## Magnitude of the forces
     # Overwrite the forces in y direction if there are any present.
-    S_array = c_lst * abs(
-        application[1][1:] - application[1][:-1]
-    )  # [m2] Array of all the surface areas
-    mag = np.zeros((3, len(y_lst)))  # [N] (3 x n) where n is the length of y_lst
-    mag[0][1:] = (ICd_lst + PCd_lst) * q * S_array  # [N] Forces in x-direction due to drag
-    mag[2] = (
-        CL_lst * q * S_array
-    )  # [N] Forces in z-direction due to lift    def xflr_forces(self, filename, q):
-
-    # Rewrite the xflr data file into a readable format. ranging from the negative wingtip to closest to zero root
-    with open(filename) as csvfile:
-        data = csv.reader(csvfile, delimiter=",")
-        Data = []
-        for row in data:
-            Data.append(row)
-
-    y_lst = np.array([float(i[0]) for i in Data[1:]])  # [m] Y-step of the applied loads b
-    c_lst = np.array([float(i[1]) for i in Data[1:]])  # [m] Y-step of the applied loads b
-    CL_lst = np.array([float(i[3]) for i in Data[1:]])  # [-] Lift coefficient of the wing
-    PCd_lst = np.array([float(i[4]) for i in Data[1:]])  # [-] Parasite drag coefficient of the wing
-    ICd_lst = np.array([float(i[5]) for i in Data[1:]])  # [-] Induced drag coefficient of the wing
-    XCP = np.array([float(i[10]) for i in Data[1:]])  # [m] x-coordinate of the center of pressure
-
-    ## Application of the forces
-    # Assume drag acts through the neutral axis
-    application = np.zeros((3, len(y_lst)))  # [m] (3, n) where n is the length of y_lst
-    application[0] = np.array(XCP)  # [m] Point of application in the x direction
-    application[1] = np.array(y_lst)  # [m] Point of application in the y direction
-
-    ## Magnitude of the forces
-    # Overwrite the forces in y direction if there are any present.
-    S_array = c_lst * abs(
-        application[1][1:] - application[1][:-1]
-    )  # [m2] Array of all the surface areas
-    mag = np.zeros((3, len(y_lst)))  # [N] (3 x n) where n is the length of y_lst
-    mag[0][1:] = (ICd_lst + PCd_lst) * q * S_array  # [N] Forces in x-direction due to drag
-    mag[2] = CL_lst * q * S_array  # [N] Forces in z-direction due to lift
+        # [m2] Array of all the surface areas
+    S_array = xflr_data['Chord'] * abs(application[1][1:] - application[1][:-1])
+    mag = np.zeros((3, len(xflr_data['y-span'])))                          # [N] (3 x n) where n is the length of y_lst
+    mag[0][1:] = (xflr_data['ICd'] + xflr_data['PCd']) * q * S_array       # [N] Forces in x-direction due to drag
+    mag[2] = (xflr_data['Cl'] * q * S_array)                               # [N] Forces in z-direction due to lift
 
     return Force(magnitude=mag, point_of_application=application)
 
