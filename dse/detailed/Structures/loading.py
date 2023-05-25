@@ -123,36 +123,48 @@ class Beam:
                 self.m_loading[y_point+j] += np.reshape(np.cross(force.F[:, i], distance.T), (3, 1))
 
     def plot_internal_loading(self):
-        fig, axs = plt.subplots(2, 3)
+        fig, (axs1, axs2) = plt.subplots(2, 1)
+        f_loading = np.reshape(self.f_loading, (len(self.y), 3))
+        m_loading = np.reshape(self.m_loading, (len(self.y), 3))
 
-        axs[0, 0].plot(self.x, self.f_loading[0])
-        axs[0, 0].set_xlabel("Width")
-        axs[0, 0].set_ylabel("Internal load")
+        axs1.plot(self.y, f_loading[:, 0], label=r'$V_x$')
+        axs1.plot(self.y, f_loading[:, 1], label=r'$V_y$')
+        axs1.plot(self.y, f_loading[:, 2], label=r'$V_z$')
+        axs1.set_xlabel('Span [m]')
+        axs1.set_ylabel('Force [N]')
+        axs1.legend()
 
-        axs[0, 1].plot(self.y, self.f_loading[1])
-        axs[0, 1].set_xlabel("Length")
-        axs[0, 1].set_ylabel("Internal load")
+        axs2.plot(self.y, m_loading[:, 0], label=r'$M_x$')
+        axs2.plot(self.y, m_loading[:, 1], label=r'$M_y$')
+        axs2.plot(self.y, m_loading[:, 2], label=r'$M_z$')
+        axs2.set_xlabel('Span [m]')
+        axs2.set_ylabel('Moment [Nm]')
+        axs2.legend()
 
-        axs[0, 2].plot(self.z, self.f_loading[2])
-        axs[0, 2].set_xlabel("Height")
-        axs[0, 2].set_ylabel("Internal load")
-
-        axs[1, 0].plot(self.x, self.m_loading[0])
-        axs[1, 0].set_xlabel("Width")
-        axs[1, 0].set_ylabel("Internal load")
-
-        axs[1, 1].plot(self.y, self.m_loading[1])
-        axs[1, 1].set_xlabel("Length")
-        axs[1, 1].set_ylabel("Internal load")
-
-        axs[1, 2].plot(self.z, self.m_loading[2])
-        axs[1, 2].set_xlabel("Height")
-        axs[1, 2].set_ylabel("Internal load")
-
+        plt.tight_layout()
         plt.show()
 
 
 if __name__ == '__main__':
     q = 0.5 * 0.01 * 112 ** 2
     aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, 16.8)
-    wing = Beam()
+    x = np.linspace(0, 0.1, 10)
+    y = np.linspace(-2, 0, 100)
+    z = np.linspace(0, 0.05, 5)
+    wing = Beam(x, y, z, 'full')
+
+    F = np.array([
+        [0, 0, 0],
+        [0, 0, 0],
+        [1, 1, 1]
+    ])
+
+    loc = np.array([
+        [0.05, 0.05, 0.05],
+        [-0.1, -1, -1.5],
+        [0.025, 0.025, 0.025]
+    ])
+    force = Force(magnitude=F, point_of_application=loc)
+
+    wing.add_loading(force)
+    wing.plot_internal_loading()
