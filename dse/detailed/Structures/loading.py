@@ -68,11 +68,6 @@ class Force:
         self.mag[0][1:] = (ICd_lst+PCd_lst)* q * S_array  # [N] Forces in x-direction due to drag
         self.mag[2] = CL_lst * q * S_array  # [N] Forces in z-direction due to lift
 
-
-
-
-
-
 class Beam:
     def __init__(self, x, y, z, cross_section):
         # Beam dimensions
