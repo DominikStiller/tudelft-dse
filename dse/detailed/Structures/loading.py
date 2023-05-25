@@ -64,12 +64,9 @@ class Force:
         ## Magnitude of the forces
         # Overwrite the forces in y direction if there are any present.
         self.mag = np.zeros((3, len(y_lst))) # [N] (3 x n) where n is the length of y_lst
-        self.mag[0] = (ICd_lst+PCd_lst)* q *   # [N] Forces in x-direction due to drag
-        self.mag[2] = CL_lst * q * S  # [N] Forces in z-direction due to lift
+        # self.mag[0] = (ICd_lst+PCd_lst)* q *   # [N] Forces in x-direction due to drag
+        # self.mag[2] = CL_lst * q * S  # [N] Forces in z-direction due to lift
         return Data
-
-
-
 
 
 class Beam:
@@ -78,21 +75,18 @@ class Beam:
         self.x = x  # Width
         self.y = y  # Length
         self.z = z  # Height
+        self.coords = np.reshape(np.hstack((x, y, z)), (3, len(x)))
 
         if cross_section == 'full':
-            self.section = np.ones((x, z))
+            self.section = np.ones((len(x), len(y)))
         else:
             self.section = cross_section
 
         # Internal forces
-        self.fx_loading = np.zeros(len(self.x))
-        self.fy_loading = np.zeros(len(self.y))
-        self.fz_loading = np.zeros(len(self.z))
+        self.f_loading = np.zeros(np.shape(self.coords))
 
         # Internal moments
-        self.mx_loading = np.zeros(100)
-        self.my_loading = np.zeros(100)
-        self.mz_loading = np.zeros(100)
+        self.m_loading = np.zeros(np.shape(self.coords))
 
     def unload(self):
         self.fx_loading = np.zeros(100)
@@ -104,16 +98,14 @@ class Beam:
         self.mz_loading = np.zeros(100)
 
     def add_loading(self, force):
-        x_index = (np.abs(self.x - force.application[0])).argmin()
-        y_index = (np.abs(self.y - force.application[1])).argmin()
-        z_index = (np.abs(self.z - force.application[2])).argmin()
+        # Locate where in the beam are the loads located
+        for i in range(np.shape(force.F)[1]):
+            point = (np.abs(self.coords[:, i] - force.application[:, i])).argmin()
 
-        # Add step loads
-        self.fx_loading[:x_index + 1] = force.fx
-        self.fz_loading[:y_index + 1] = force.fy
-        self.fz_loading[:z_index + 1] = force.fz
+            # Add step loads
+            self.f_loading[point:] += force.F[:, i]
 
-        # Calculate moments
-
-
-
+            # Calculate moments
+            distance = self.coords[:, point:-1] - self.coords[:, point+1:]
+            for j in range(np.shape(distance)[1]):
+                self.m_loading[:, (point+1)+j] += np.cross(force.F[:, i], distance[:, j])
