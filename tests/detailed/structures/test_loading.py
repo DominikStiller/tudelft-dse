@@ -4,7 +4,26 @@ import numpy as np
 
 class Test(TestCase):
     def test_xflr_forces(self):
-        self.fail()
+        from dse.detailed.Structures.loading import xflr_forces
+
+        force = xflr_forces(filename='Test_xflr5_file.csv',
+                            q=0.5*0.01*112**2,
+                            b=16.8)
+
+        if np.all(force.fy == 0):
+            if np.all(force.fx > 0):
+                if np.all(force.fz < 0):
+                    if np.shape(force.F) == np.shape(force.application):
+                        assert True
+                    else:
+                        assert np.shape(force.F) == np.shape(force.application)
+                else:
+                    assert np.all(force.fz < 0)
+            else:
+                assert np.all(force.fx > 0)
+        else:
+            assert np.all(force.fy == 0)
+
 
 
 class TestForce(TestCase):

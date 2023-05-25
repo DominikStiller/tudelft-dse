@@ -4,7 +4,7 @@ import pandas as pd
 import csv
 
 
-def xflr_forces(filename, q, b):
+def xflr_forces(filename='Test_xflr5_file.csv', q=0.5*0.01*112**2, b=16.8):
     # Rewrite the xflr data file into a readable format. ranging from the negative wingtip to closest to zero root
     with open(filename) as csvfile:
         data = csv.reader(csvfile, delimiter=",")
