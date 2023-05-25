@@ -4,7 +4,7 @@ import pandas as pd
 import csv
 
 
-def xflr_forces(filename, q):
+def xflr_forces(filename, q, b):
     # Rewrite the xflr data file into a readable format. ranging from the negative wingtip to closest to zero root
     with open(filename) as csvfile:
         data = csv.reader(csvfile, delimiter=",")
@@ -16,20 +16,25 @@ def xflr_forces(filename, q):
     indx = Data.index(['Main Wing'])
     Data = Data[indx+1:]
 
-    xflr_data = pd.DataFrame(Data[1:], columns=Data[0])
+    xflr_data = pd.DataFrame(Data[1:], columns=Data[0], dtype=float)
+
+    # Cut half wing
+    cutpoint = int(round(len(xflr_data['Cl']) / 2))
+    xflr_data = xflr_data[:cutpoint]
+
 
     ## Application of the forces
     # Assume drag acts through the neutral axis
-    application = np.zeros((3, len(xflr_data['y-span'])))   # [m] (3, n) where n is the length of y_lst
+    application = np.zeros((3, len(xflr_data['  y-span'])))   # [m] (3, n) where n is the length of y-span
     application[0] = np.array(xflr_data['XCP'])             # [m] Point of application in the x direction
-    application[1] = np.array(xflr_data['y-span'])          # [m] Point of application in the y direction
+    application[1] = np.array(xflr_data['  y-span'])          # [m] Point of application in the y direction
 
     ## Magnitude of the forces
     # Overwrite the forces in y direction if there are any present.
         # [m2] Array of all the surface areas
-    S_array = xflr_data['Chord'] * abs(application[1][1:] - application[1][:-1])
-    mag = np.zeros((3, len(xflr_data['y-span'])))                          # [N] (3 x n) where n is the length of y_lst
-    mag[0][1:] = (xflr_data['ICd'] + xflr_data['PCd']) * q * S_array       # [N] Forces in x-direction due to drag
+    S_array = xflr_data['Chord'] * np.hstack((np.array([b-abs(xflr_data['  y-span'][0])]), abs(application[1][1:] - application[1][:-1])))
+    mag = np.zeros((3, len(xflr_data['  y-span'])))                          # [N] (3 x n) where n is the length of y_lst
+    mag[0] = - (xflr_data['ICd'] + xflr_data['PCd']) * q * S_array       # [N] Forces in x-direction due to drag
     mag[2] = (xflr_data['Cl'] * q * S_array)                               # [N] Forces in z-direction due to lift
 
     return Force(magnitude=mag, point_of_application=application)
@@ -138,4 +143,4 @@ class Beam:
 
 if __name__ == '__main__':
     q = 0.5 * 0.01 * 112 ** 2
-    xflr_forces('Test_xflr5_file.csv', q)
+    xflr_forces('Test_xflr5_file.csv', q, 16.8)
