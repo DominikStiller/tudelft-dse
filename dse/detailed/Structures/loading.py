@@ -88,35 +88,39 @@ class Beam:
         self.x = x  # Width
         self.y = y  # Length
         self.z = z  # Height
-        self.coords = np.reshape(np.hstack((x, y, z)), (3, len(x)))
 
         if cross_section == "full":
-            self.section = np.ones((len(x), len(y)))
+            self.section = np.ones((len(z), len(x)))
         else:
             self.section = cross_section
 
+        self.coords = np.empty((len(y), len(z), len(x)))
+        for i in range(len(y)):
+            self.coords[i] = self.section
+
         # Internal forces
-        self.f_loading = np.zeros(np.shape(self.coords))
+        self.f_loading = np.zeros((len(y), 3, 1))
 
         # Internal moments
-        self.m_loading = np.zeros(np.shape(self.coords))
+        self.m_loading = np.zeros((len(y), 3, 1))
 
     def unload(self):
-        self.f_loading = np.zeros(np.shape(self.coords))
-        self.m_loading = np.zeros(np.shape(self.coords))
+        self.f_loading = np.zeros((len(self.y), 3, 1))
+        self.m_loading = np.zeros((len(self.y), 3, 1))
 
-    def add_loading(self, force):
+    def add_loading(self,
+                    force):
         # Locate where in the beam are the loads located
         for i in range(np.shape(force.F)[1]):
-            point = (np.abs(self.coords[:, i] - force.application[:, i])).argmin()
+            y_point = (np.abs(self.y - force.application[1, i])).argmin()
 
             # Add step loads
-            self.f_loading[point:] += force.F[:, i]
+            self.f_loading[y_point:] += np.reshape(force.F[:, i], (3, 1))
 
             # Calculate moments
-            distance = self.coords[:, point:-1] - self.coords[:, point + 1 :]
-            for j in range(np.shape(distance)[1]):
-                self.m_loading[:, (point + 1) + j] += np.cross(force.F[:, i], distance[:, j])
+            for j in range(len(self.y[y_point:])):
+                distance = np.array([[np.mean(self.x), self.y[y_point+j], np.mean(self.z)]]).T - np.reshape(force.application[:, i], (3, 1))
+                self.m_loading[y_point+j] += np.reshape(np.cross(force.F[:, i], distance.T), (3, 1))
 
     def plot_internal_loading(self):
         fig, axs = plt.subplots(2, 3)
@@ -150,4 +154,5 @@ class Beam:
 
 if __name__ == '__main__':
     q = 0.5 * 0.01 * 112 ** 2
-    xflr_forces('Test_xflr5_file.csv', q, 16.8)
+    aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, 16.8)
+    wing = Beam()
