@@ -33,10 +33,13 @@ class Test(TestCase):
         except TypeError:
             a = True
         self.assertTrue(a)
+
     def test_xflr_forces_q_type(self):
         from dse.detailed.Structures.loading import xflr_forces
         try:
-            Forces = xflr_forces(5, q=0.5 * 0.01 * 112 ** 2, b = 16.8)
+            Forces = xflr_forces('..\\dse\\detailed\\Structures\\Test_xflr5_file.csv',
+                                 q='0.5 * 0.01 * 112 ** 2',
+                                 b=16.8)
             a = False
         except TypeError:
             a = True
@@ -46,9 +49,8 @@ class Test(TestCase):
 
         try:
             Forces = xflr_forces(filename='..\\dse\\detailed\\Structures\\Test_xflr5_file.csv',
-                                 q='0.5 * 0.01 * 112 ** 2',
-                                 b=16.8)
-
+                                 q=0.5 * 0.01 * 112 ** 2,
+                                 b='16.8')
             a = False
         except TypeError:
             a = True
