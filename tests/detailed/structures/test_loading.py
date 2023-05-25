@@ -8,7 +8,7 @@ class Test(TestCase):
         from dse.detailed.Structures.loading import xflr_forces
         if os.getcwd().split('\\')[-1] == 'structures':
             os.chdir('..\\..\\..\\dse\\detailed\\Structures')
-        else:
+        elif os.getcwd().split('\\')[-1] != 'Structures':
             os.chdir('..\\dse\\detailed\\Structures')
 
         force = xflr_forces(filename='Test_xflr5_file.csv',
@@ -42,7 +42,9 @@ class Test(TestCase):
     def test_xflr_forces_q_type(self):
         from dse.detailed.Structures.loading import xflr_forces
 
-        if os.getcwd().split('\\')[-1] != 'Structures':
+        if os.getcwd().split('\\')[-1] == 'structures':
+            os.chdir('..\\..\\..\\dse\\detailed\\Structures')
+        elif os.getcwd().split('\\')[-1] != 'Structures':
             os.chdir('..\\dse\\detailed\\Structures')
 
         try:
@@ -57,7 +59,9 @@ class Test(TestCase):
     def test_xflr_forces_b_type(self):
         from dse.detailed.Structures.loading import xflr_forces
 
-        if os.getcwd().split('\\')[-1] != 'Structures':
+        if os.getcwd().split('\\')[-1] == 'structures':
+            os.chdir('..\\..\\..\\dse\\detailed\\Structures')
+        elif os.getcwd().split('\\')[-1] != 'Structures':
             os.chdir('..\\dse\\detailed\\Structures')
 
         try:
