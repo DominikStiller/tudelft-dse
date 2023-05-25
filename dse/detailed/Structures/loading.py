@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import csv
 
 
@@ -10,6 +11,13 @@ def xflr_forces(filename, q):
         Data = []
         for row in data:
             Data.append(row)
+    while [] in Data:
+        Data.remove([])
+    indx = Data.index(['Main Wing'])
+    Data = Data[indx+1:]
+
+    xflr_data = pd.DataFrame(Data[1:], columns=Data[0])
+
     y_lst = np.array([float(i[0]) for i in Data[1:]])  # [m] Y-step of the applied loads b
     c_lst = np.array([float(i[1]) for i in Data[1:]])  # [m] Y-step of the applied loads b
     CL_lst = np.array([float(i[3]) for i in Data[1:]])  # [-] Lift coefficient of the wing
@@ -165,3 +173,8 @@ class Beam:
         axs[1, 2].set_ylabel("Internal load")
 
         plt.show()
+
+
+if __name__ == '__main__':
+    q = 0.5 * 0.01 * 112 ** 2
+    xflr_forces('Test_xflr5_file.csv', q)
