@@ -110,6 +110,7 @@ if __name__ == "__main__":
     ax.set_ylim([0, 100])
     ax.set_ylabel("Total weighted score")
     ax.set_yticks([0, 25, 50, 75, 100])
+    # ax.set_xticklabels(ax.get_xticklabels(), rotation=15, ha="right")
 
     ax.legend()
 
