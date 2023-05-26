@@ -26,6 +26,7 @@ Vclimb = 2
 #simulation
 duration = 20 #duration of simulation in seconds
 dt = 0.01 #time increment in seconds
+Tangvel = np.radians(3*dt) #3 deg/s ang vel of thrust
 
 def add_force(F,pos_vector):
     """
@@ -35,29 +36,29 @@ def add_force(F,pos_vector):
     :return: Force and position vector
     """
 
-def thrust_force(mode, Faero, W, deltaang):
+def thrust_force(mode, Faero, W, ang):
     if mode == 0:
         T = np.array([0, 0, -Tmax])
-        return T, True
+        return T
     elif mode == 1:
         T = -1* (W + Faero)
-        return T, True
+        return T
     elif mode == 2:
-        T = -1 * W - np.array([Faero[0], 0, 0])
-        #Textra = Tmax - np.linalg.norm(T)
-        ang = np.arctan(T[0]/T[2])
-        angnew = ang - np.radians(deltaang)
-        T[0] = T[2] * np.tan(angnew)
-        print(T[0])
-        if Tmax > np.linalg.norm(T):
-            return T, angnew
+        T = -1 * W - np.array([0, 0, Faero[2]])
+        newang = ang + Tangvel
+        T[0] = T[2] / np.tan(newang)
+        if abs(Tmax) > np.linalg.norm(T):
+            return T, newang
         else:
-            T[0] = T[2] * np.tan(ang)
-            return T, ang
+            T[0] = - T[2] / np.tan(abs(ang))
+            return T, newang
 
     elif mode == 3:
-        a = 1
-        # keep Fz and Fx net = 0
+        Tcurrent = Faero[0] + m * ang
+        T = [Tcurrent, 0, 0]
+        return T
+
+
 
 
 def aerodynamic_force(V, alpha, beta, alphah, S):
@@ -185,7 +186,7 @@ def run_simulation(duration, dt):
         mode = 0
         W = np.array([-W0 * np.sin(pitch), 0, W0 * np.cos(pitch)])
         Fw, Fh = aerodynamic_force(V[i - 1], alpha, beta, alphah, S)
-        T, ang = thrust_force(mode, (Fw + Fh), W, 0)
+        T = thrust_force(mode, (Fw + Fh), W, 0)
         Fnet = W + Fw + Fh + T
         A[i] = Fnet / m
         V[i] = V[i - 1] + A[i] * dt
@@ -193,6 +194,7 @@ def run_simulation(duration, dt):
         t[i] = np.round(t[i - 1] + dt, 2)
         if t[i] >= duration - dt:
             return A, V, X, t
+
 
     # climb until 500m phase
     while X[i][2] > -500:
@@ -200,7 +202,7 @@ def run_simulation(duration, dt):
         mode = 1
         W = np.array([-W0 * np.sin(pitch), 0, W0 * np.cos(pitch)])
         Fw, Fh = aerodynamic_force(V[i - 1], alpha, beta, alphah, S)
-        T, ang = thrust_force(mode, Fw+Fh, W, 0)
+        T = thrust_force(mode, Fw+Fh, W, 0)
         Fnet = W + Fw + Fh + T
         A[i] = Fnet / m
         V[i] = V[i - 1] + A[i] * dt
@@ -209,26 +211,45 @@ def run_simulation(duration, dt):
         if t[i] >= duration - dt:
             return A, V, X, t
 
-    Tang = 90
-    Tangvel = 3*dt #3 deg/s
-    while Tang > 0:
-        mode = 2
+    V[i][2] = 0
+    Tang = np.radians(-90)
+    while Tang<0:
         i = i + 1
         mode = 2
         alpha = np.radians(8)
         W = np.array([-W0 * np.sin(pitch), 0, W0 * np.cos(pitch)])
         Fw, Fh = aerodynamic_force(V[i - 1], alpha, beta, alphah, S)
-        T, ang = thrust_force(mode, Fw + Fh, W, Tangvel)
+        T, Tang = thrust_force(mode, Fw + Fh, W, Tang)
         Fnet = W + Fw + Fh + T
         A[i] = Fnet / m
         V[i] = V[i - 1] + A[i] * dt
         X[i] = X[i - 1] + V[i] * dt
         t[i] = np.round(t[i - 1] + dt, 2)
-        print(T, ang)
-        if ang:
-            Tang = Tang - Tangvel
+        #print(Tang)
+        #print(Fnet)
+
+        print(Tang)
+        print(Fnet)
+        print(V[i])
         if t[i] >= duration - dt:
             return A, V, X, t
+
+        while V[i][0] < 400/3.6:
+            mode = 3
+            i = i + 1
+            alpha = np.radians(8)
+            acc = 0.5
+            W = np.array([-W0 * np.sin(pitch), 0, W0 * np.cos(pitch)])
+            Fw, Fh = aerodynamic_force(V[i - 1], alpha, beta, alphah, S)
+            T = thrust_force(mode, Fw + Fh, W, acc)
+            Fnet = W + Fw + Fh + T
+            Fnet = np.array([Fnet[0],0,0])
+            A[i] = Fnet / m
+            V[i] = V[i - 1] + A[i] * dt
+            X[i] = X[i - 1] + V[i] * dt
+            t[i] = np.round(t[i - 1] + dt, 2)
+            if t[i] >= duration - dt:
+                return A, V, X, t
 
 
     return A, V, X, t
@@ -249,9 +270,13 @@ def run_simulation(duration, dt):
 
 
 if __name__ == "__main__":
-    A, V, X, t = run_simulation(600, 0.1)
+    A, V, X, t = run_simulation(2000, 0.1)
     print(V.T[2])
-    plt.plot(t, X.T[2])
+    plt.plot(t, X.T[2], color='b')
+    Vnew = []
+    for i in V:
+        Vnew.append(np.linalg.norm(i))
+    plt.plot(t, Vnew, color='r')
     plt.show()
 
 
