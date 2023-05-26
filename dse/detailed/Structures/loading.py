@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import csv
+from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.optimize import curve_fit
 
 
 def xflr_forces(filename, q, b):
@@ -140,6 +142,54 @@ class Beam:
             for j in range(len(self.y[y_point:])):
                 distance = np.array([[np.mean(self.x), self.y[y_point+j], np.mean(self.z)]]).T - np.reshape(force.application[:, i], (3, 1))
                 self.m_loading[y_point+j] += np.reshape(np.cross(force.F[:, i], distance.T), (3, 1))
+
+
+
+    def MoI(self, boom_coordinates, interconnection):
+        Airfoil = pd.read_csv('S1223.dat', delimiter='\s+', dtype=float, skiprows=1, names=['x', 'z'])
+        if interconnection != 0:
+            print('Interconnection between stringers still need to be implemented')
+        if boom_coordinates != 0:
+            print('The code now only runs for all coordinates of the stringers being the booms')
+        else:
+            boom_Data = Airfoil
+
+        IndxSplit = np.where(Airfoil['x'] == np.min(Airfoil['x']))
+
+        # Initial gues for the boom areas add up to a percentage fill of the airfoil shape
+        # Assume for the first estimate all the boom areas to be equal: Bi = A_airfoil / #booms
+        Infill = 0.10  # The percentage infull of the wingbox area
+
+        Airfoil_top = InterpolatedUnivariateSpline(Airfoil['x'][:IndxSplit+1].to_numpy(),
+                                                   Airfoil['z'][:IndxSplit+1].to_numpy())
+        Airfoil_bot = InterpolatedUnivariateSpline(Airfoil['x'][IndxSplit:].to_numpy(),
+                                                   Airfoil['z'][IndxSplit:].to_numpy())
+
+        A_airfoil = (Airfoil_top.integral(0, 1) - Airfoil_bot.integral(0, 1)) * self.x[-1]  # The Area of the airfoil
+        boom_Data['x'] *= self.x[-1]
+        boom_Data['z'] *= self.x[-1]
+        Bi_initial = A_airfoil / len(boom_coordinates['x'])
+        boom_Data['B'] = np.ones((len(boom_coordinates['x']), len(Bi_initial))) * Bi_initial
+        for it in range(10):
+            ## Neutral Axis Calculations
+            NAx = (np.sum(boom_Data['B'] * boom_Data['x'], 0)) / (np.sum(boom_Data['B'], 0))
+            NAz = (np.sum(boom_Data['B'] * boom_Data['z'], 0)) / (np.sum(boom_Data['B'], 0))
+
+            Ixx = np.sum(boom_Data['B'] * (boom_Data['z'] - NAz) ** 2)
+            Izz = np.sum(boom_Data['B'] * (boom_Data['z'] - NAx) ** 2)
+            Ixz = np.sum(boom_Data['B'] * (boom_Data['x'] - NAx) * (boom_Data['z'] - NAz))
+            for i in range(len(boom_coordinates)-1):
+                sigma1 = 0
+
+        ### The Boom areas are computed
+        # for i in rang
+        # for i in range(len(cross_section)):
+        #     Ixx = 0
+        # a = [[0, 1], [1, 0]]
+        # plt.imshow(a, cmap='gray')
+        # plt.show()
+
+
 
     def plot_internal_loading(self):
         fig, (axs1, axs2) = plt.subplots(2, 1)
