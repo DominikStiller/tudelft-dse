@@ -90,7 +90,7 @@ class Beam:
         self.z = z  # Height
 
         if cross_section == "full":
-            self.section = np.ones((len(z), len(x)))
+            self.section = np.ones((len(y), len(z), len(x)))
         else:
             self.section = cross_section
 
