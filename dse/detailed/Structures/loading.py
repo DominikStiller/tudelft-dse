@@ -83,20 +83,39 @@ class Force:
 
 
 class Beam:
-    def __init__(self, x, y, z, cross_section):
+    def __init__(self, width, length, height, cross_section):
         # Beam dimensions
-        self.x = x  # Width
-        self.y = y  # Length
-        self.z = z  # Height
+        if type(width) == int or type(width) == float:
+            self.x = np.linspace(0, width, 100)
+        elif type(width) == np.ndarray:
+            self.x = width
+        else:
+            raise TypeError('Width needs to be either a constant float/int or a 100 x n array')
+
+        if type(length) == int or type(length) == float:
+            self.y = np.linspace(0, length, 100)
+        elif type(length) == np.ndarray:
+            self.y = length
+        else:
+            raise TypeError('Length needs to be either a constant float/int or a 100 x n array')
+
+        if type(height) == int or type(height) == float:
+            self.z = np.linspace(0, height, 100)
+        elif type(height) == np.ndarray:
+            self.z = height
+        else:
+            raise TypeError('Height needs to be either a constant float/int or a 100 x n array')
 
         if cross_section == "full":
-            self.section = np.ones((len(y), len(z), len(x)))
+            self.section = np.ones((len(self.y), len(self.z), len(self.x)))
         else:
-            self.section = cross_section
-
-        self.coords = np.empty((len(y), len(z), len(x)))
-        for i in range(len(y)):
-            self.coords[i] = self.section
+            if type(cross_section) != np.ndarray:
+                raise TypeError('The cross section needs to be either "full" or a 3D array')
+            else:
+                if np.shape(cross_section) != (len(self.y), len(self.z), len(self.x)):
+                    raise ValueError('Cross section needs to have a size consistent with the '
+                                     'amount of points indicated for length, height and width')
+                self.section = cross_section
 
         # Internal forces
         self.f_loading = np.zeros((len(y), 3, 1))
