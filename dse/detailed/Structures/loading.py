@@ -95,7 +95,7 @@ class Beam:
             raise TypeError('Width needs to be either a constant float/int or a 100 x n array')
 
         if type(length) == int or type(length) == float:
-            self.y = np.linspace(0, length, 100)
+            self.y = np.linspace(-length, 0, 100)
         elif type(length) == np.ndarray:
             self.y = length
         else:
