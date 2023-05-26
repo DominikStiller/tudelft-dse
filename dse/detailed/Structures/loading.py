@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import time
 import csv
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
@@ -166,20 +167,40 @@ class Beam:
         A_airfoil = (Airfoil_top.integral(0, 1) - Airfoil_bot.integral(0, 1)) * self.x[-1]  # The Area of the airfoil
         x_booms = np.reshape(boom_Data['x'].to_numpy(), (len(boom_Data['x']), 1)) * self.x[-1]
         z_booms = np.reshape(boom_Data['z'].to_numpy(), (len(boom_Data['z']), 1)) * self.x[-1]
-        Bi_initial = A_airfoil / len(x_booms)
-        boomArea = np.ones((np.shape(x_booms)[0], 1)) * Bi_initial
 
-        diff = 100
-        while abs(diff) > 0.01:
+        boomDistance = np.sqrt((x_booms[1:] - x_booms[:-1])**2 + (z_booms[1:] - z_booms[:-1])**2)
+        tSkin = (Infill * A_airfoil) / np.sum(boomDistance, 0) * np.ones((np.shape(boomDistance)[0], 1))
+
+        x_booms_nr = x_booms[:-1]
+        z_booms_nr = z_booms[:-1]
+
+        Bi_initial = A_airfoil / len(x_booms_nr)
+        boomArea_nr = np.ones((np.shape(x_booms_nr)[0], 1)) * Bi_initial * Infill
+
+        diff = np.ones(np.shape(boomArea_nr)[1])
+        while np.any(np.abs(diff) > 0.01):
             ## Neutral Axis Calculations
-            NAx = (np.sum(boomArea * x_booms, 0)) / (np.sum(boomArea, 0))
-            NAz = (np.sum(boomArea * z_booms, 0)) / (np.sum(boomArea, 0))
+            NAx = (np.sum(boomArea_nr * x_booms_nr, 0)) / (np.sum(boomArea_nr, 0))
+            NAz = (np.sum(boomArea_nr * z_booms_nr, 0)) / (np.sum(boomArea_nr, 0))
 
-            Ixx = np.sum(boomArea * (z_booms - NAz) ** 2)
-            Izz = np.sum(boomArea * (z_booms - NAx) ** 2)
-            Ixz = np.sum(boomArea * (x_booms - NAx) * (z_booms - NAz))
-            for i in range(np.shape(x_booms)[1]):
-                ...
+            Ixx = np.sum(boomArea_nr * (x_booms_nr - NAz) ** 2, 0)
+            Izz = np.sum(boomArea_nr * (z_booms_nr - NAx) ** 2, 0)
+            Ixz = np.sum(boomArea_nr * (x_booms_nr - NAx) * (z_booms_nr - NAz), 0)
+
+            sigma = ((np.reshape(self.m_loading[:, 0], (np.shape(Izz))) * Izz - np.reshape(self.m_loading[:, 2], (np.shape(Ixz))) * Ixz) * z_booms_nr +
+                     (np.reshape(self.m_loading[:, 2], (np.shape(Ixx))) * Ixx - np.reshape(self.m_loading[:, 0], (np.shape(Ixz))) * Ixz) * x_booms_nr) / (Ixx*Izz + Ixz**2)
+            sigma = np.vstack((sigma, sigma[0]))
+            sigma[np.where(sigma == 0)] = 0.1
+            boomAreaCopy = np.copy(boomArea_nr)
+            for i in range(np.shape(x_booms_nr)[0]):
+                boomAreaCopy[i] = tSkin[i-1] * boomDistance[i-1] / 6 * (2 + sigma[i-1]/sigma[i]) + \
+                                  tSkin[i] * boomDistance[i] / 6 * (2 + sigma[i+1]/sigma[i])
+
+            diff = np.mean((boomAreaCopy - boomArea_nr) / boomArea_nr, 0)
+            boomArea_nr = np.copy(boomAreaCopy)
+            print(np.max(np.abs(diff)), np.where(np.abs(diff) == np.max(np.abs(diff))))
+            time.sleep(0.5)
+
 
 
     def plot_internal_loading(self):
@@ -209,7 +230,8 @@ if __name__ == '__main__':
     q = 0.5 * 0.01 * 112 ** 2
     aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, 16.8)
     wing = Beam(3.35, 16.8, 3.35/12, 'full')
-    wing.MoI(0, 0)
 
     wing.add_loading(aerodynamic_forces)
+    wing.MoI(0, 0)
+
     wing.plot_internal_loading()
