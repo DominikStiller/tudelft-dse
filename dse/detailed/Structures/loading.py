@@ -148,23 +148,10 @@ class Beam:
 if __name__ == '__main__':
     q = 0.5 * 0.01 * 112 ** 2
     aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, 16.8)
-    x = np.linspace(0, 0.1, 10)
-    y = np.linspace(-2, 0, 100)
-    z = np.linspace(0, 0.05, 5)
+    x = np.linspace(0, 3.35, 100)
+    y = np.linspace(-16.8, 0, 100)
+    z = np.linspace(0, 3.35/12, 100)
     wing = Beam(x, y, z, 'full')
 
-    F = np.array([
-        [0, 0, 0],
-        [0, 0, 0],
-        [1, 1, 1]
-    ])
-
-    loc = np.array([
-        [0.05, 0.05, 0.05],
-        [-0.1, -1, -1.5],
-        [0.025, 0.025, 0.025]
-    ])
-    force = Force(magnitude=F, point_of_application=loc)
-
-    wing.add_loading(force)
+    wing.add_loading(aerodynamic_forces)
     wing.plot_internal_loading()
