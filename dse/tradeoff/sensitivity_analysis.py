@@ -10,6 +10,7 @@ from dse.tradeoff.tradeoff import calculate_total_score, calculate_score_regions
 
 def perturb_weights(dfs, df_weights, df_scoring, score_categories):
     N = 1000
+    max_spread = 5
 
     scores_per_design = [[] for _ in design_names]
 
@@ -17,16 +18,7 @@ def perturb_weights(dfs, df_weights, df_scoring, score_categories):
         df_weights_perturbed = df_weights.copy()
         dfs = [df.copy() for df in dfs]
 
-        # Ensure even sampling of factors below/above one
-        perturbation_factors = np.hstack(
-            [
-                np.random.uniform(0.5, 1, len(df_weights.index) // 2),
-                np.random.uniform(1, 2, len(df_weights.index) // 2),
-            ]
-        )
-        np.random.shuffle(perturbation_factors)
-
-        df_weights_perturbed["weight"] *= perturbation_factors
+        df_weights_perturbed["weight"] = np.random.uniform(1, max_spread, len(df_weights.index))
 
         _, maximum_score = calculate_score_regions(df_scoring, df_weights_perturbed)
 
@@ -59,7 +51,9 @@ if __name__ == "__main__":
 
         print(f"  - {design_name}: {median:.0f} ({q1:.0f} – {q3:.0f}, IQR = {iqr:.0f})")
 
-    fix, ax = plt.subplots(figsize=(10, 5), sharey="all", sharex="all")
+    fix, ax = plt.subplots(figsize=(10, 3), sharey="all", sharex="all")
+
+    ax.boxplot(scores_perturbed, labels=design_names)
 
     for (lower, upper), color in zip(score_regions, ["375623", "70AD47", "FFC000", "ED7D31"]):
         lower = 100 * lower / maximum_score
