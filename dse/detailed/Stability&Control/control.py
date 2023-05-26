@@ -21,7 +21,7 @@ S = [100, 10]
 m = 3000
 gmars = 3.71
 Tmax = 12000
-
+Vclimb = 2
 
 #simulation
 duration = 20 #duration of simulation in seconds
@@ -35,16 +35,25 @@ def add_force(F,pos_vector):
     :return: Force and position vector
     """
 
-def thrust_force(mode, Faero, W):
+def thrust_force(mode, Faero, W, deltaang):
     if mode == 0:
         T = np.array([0, 0, -Tmax])
-        return T
+        return T, True
     elif mode == 1:
         T = -1* (W + Faero)
-        return T
+        return T, True
     elif mode == 2:
-        a = 1
-        # turn the rotor while keeping Fz net = 0
+        T = -1 * W - np.array([Faero[0], 0, 0])
+        #Textra = Tmax - np.linalg.norm(T)
+        ang = np.arctan(T[0]/T[2])
+        angnew = ang - np.radians(deltaang)
+        T[0] = T[2] * np.tan(angnew)
+        print(T[0])
+        if Tmax > np.linalg.norm(T):
+            return T, angnew
+        else:
+            T[0] = T[2] * np.tan(ang)
+            return T, ang
 
     elif mode == 3:
         a = 1
@@ -58,8 +67,8 @@ def aerodynamic_force(V, alpha, beta, alphah, S):
     CLh = clalphah * alphah
     CDh = CLh / clcdh
 
-    Cdwz = 2 * CDw
-    Cdhz = 2 * CDh
+    Cdwz = 0.2
+    Cdhz = 0.2
 
     q = 0.5 * rho
 
@@ -70,12 +79,12 @@ def aerodynamic_force(V, alpha, beta, alphah, S):
         Fwz = - CLw * q * S[0] * V[0] ** 2 - (Cdwz * q * S[0] * V[2] ** 2)
         Fhz = - CLh * q * S[1] * V[0] ** 2 + (Cdhz * q * S[1] * V[2] ** 2)
 
-
     Fwx = - CDw * q * S[0] * V[0] ** 2
     Fhx = - CDh * q * S[1] * V[0] ** 2
 
     Fw = np.array([Fwx, 0, Fwz]).T
     Fh = np.array([Fhx, 0, Fhz]).T
+
 
     Fw = np.matmul(aero_to_body(alpha, beta), Fw).T
     Fh = np.matmul(aero_to_body(alpha, beta), Fh).T
@@ -168,40 +177,82 @@ def run_simulation(duration, dt):
     X[0] = Xi
     A[0] = Ai
     t[0] = ti
+    i = 0
+    # initial acceleration phase
 
-    for i,time in enumerate(np.arange(0, duration, dt)):
-        #if V[2] < 20:
+    while V[i][2] > -Vclimb:
+        i = i + 1
         mode = 0
         W = np.array([-W0 * np.sin(pitch), 0, W0 * np.cos(pitch)])
-        Fw, Fh = aerodynamic_force(V[i], alpha, beta, alphah, S)
-        T = thrust_force(mode, (Fw+Fh), W)
+        Fw, Fh = aerodynamic_force(V[i - 1], alpha, beta, alphah, S)
+        T, ang = thrust_force(mode, (Fw + Fh), W, 0)
         Fnet = W + Fw + Fh + T
-        print(Fnet)
-
-
         A[i] = Fnet / m
-        V[i] = V[i-1] + A[i] * dt
-        X[i] = X[i-1] + V[i] * dt
-        t[i] = time
+        V[i] = V[i - 1] + A[i] * dt
+        X[i] = X[i - 1] + V[i] * dt
+        t[i] = np.round(t[i - 1] + dt, 2)
+        if t[i] >= duration - dt:
+            return A, V, X, t
 
-    print(A)
-    print(V)
-    plt.plot(t, X.T[2])
-    plt.show()
+    # climb until 500m phase
+    while X[i][2] > -500:
+        i = i + 1
+        mode = 1
+        W = np.array([-W0 * np.sin(pitch), 0, W0 * np.cos(pitch)])
+        Fw, Fh = aerodynamic_force(V[i - 1], alpha, beta, alphah, S)
+        T, ang = thrust_force(mode, Fw+Fh, W, 0)
+        Fnet = W + Fw + Fh + T
+        A[i] = Fnet / m
+        V[i] = V[i - 1] + A[i] * dt
+        X[i] = X[i - 1] + V[i] * dt
+        t[i] = np.round(t[i - 1] + dt, 2)
+        if t[i] >= duration - dt:
+            return A, V, X, t
+
+    Tang = 90
+    Tangvel = 3*dt #3 deg/s
+    while Tang > 0:
+        mode = 2
+        i = i + 1
+        mode = 2
+        alpha = np.radians(8)
+        W = np.array([-W0 * np.sin(pitch), 0, W0 * np.cos(pitch)])
+        Fw, Fh = aerodynamic_force(V[i - 1], alpha, beta, alphah, S)
+        T, ang = thrust_force(mode, Fw + Fh, W, Tangvel)
+        Fnet = W + Fw + Fh + T
+        A[i] = Fnet / m
+        V[i] = V[i - 1] + A[i] * dt
+        X[i] = X[i - 1] + V[i] * dt
+        t[i] = np.round(t[i - 1] + dt, 2)
+        print(T, ang)
+        if ang:
+            Tang = Tang - Tangvel
+        if t[i] >= duration - dt:
+            return A, V, X, t
+
+
+    return A, V, X, t
+
+
+    # for i,time in enumerate(np.arange(0, duration, dt)):
+    #     mode = 0
+    #     W = np.array([-W0 * np.sin(pitch), 0, W0 * np.cos(pitch)])
+    #     Fw, Fh = aerodynamic_force(V[i-1], alpha, beta, alphah, S)
+    #     T = thrust_force(mode, (Fw+Fh), W)
+    #     Fnet = W + Fw + Fh + T
+    #     A[i] = Fnet / m
+    #     V[i] = V[i-1] + A[i] * dt
+    #     X[i] = X[i-1] + V[i] * dt
+    #     t[i] = time
 
 
 
-        # if V[2] > 20:
-        #     mode = 1
-        #
-        # if X[2] > 500:
-        #     mode = 2
-        #
-        # if V[0] > 110:
-        #     mode = 3
 
 if __name__ == "__main__":
-    run_simulation(20, 0.1)
+    A, V, X, t = run_simulation(600, 0.1)
+    print(V.T[2])
+    plt.plot(t, X.T[2])
+    plt.show()
 
 
 
