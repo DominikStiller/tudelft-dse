@@ -88,7 +88,7 @@ class Beam:
     def __init__(self, width, length, height, cross_section):
         # Beam dimensions
         if type(width) == int or type(width) == float:
-            self.x = np.linspace(0, width, 100)
+            self.x = np.reshape(np.linspace(0, width, 100), (100, 1)) * np.ones(100)
         elif type(width) == np.ndarray:
             self.x = width
         else:
@@ -102,7 +102,7 @@ class Beam:
             raise TypeError('Length needs to be either a constant float/int or a 100 x n array')
 
         if type(height) == int or type(height) == float:
-            self.z = np.linspace(0, height, 100)
+            self.z = np.reshape(np.linspace(0, height, 100), (100, 1)) * np.ones(100)
         elif type(height) == np.ndarray:
             self.z = height
         else:
@@ -120,10 +120,10 @@ class Beam:
                 self.section = cross_section
 
         # Internal forces
-        self.f_loading = np.zeros((len(y), 3, 1))
+        self.f_loading = np.zeros((len(self.y), 3, 1))
 
         # Internal moments
-        self.m_loading = np.zeros((len(y), 3, 1))
+        self.m_loading = np.zeros((len(self.y), 3, 1))
 
     def unload(self):
         self.f_loading = np.zeros((len(self.y), 3, 1))
@@ -143,8 +143,6 @@ class Beam:
                 distance = np.array([[np.mean(self.x), self.y[y_point+j], np.mean(self.z)]]).T - np.reshape(force.application[:, i], (3, 1))
                 self.m_loading[y_point+j] += np.reshape(np.cross(force.F[:, i], distance.T), (3, 1))
 
-
-
     def MoI(self, boom_coordinates, interconnection):
         Airfoil = pd.read_csv('S1223.dat', delimiter='\s+', dtype=float, skiprows=1, names=['x', 'z'])
         if interconnection != 0:
@@ -160,35 +158,28 @@ class Beam:
         # Assume for the first estimate all the boom areas to be equal: Bi = A_airfoil / #booms
         Infill = 0.10  # The percentage infull of the wingbox area
 
-        Airfoil_top = InterpolatedUnivariateSpline(Airfoil['x'][:IndxSplit+1].to_numpy(),
-                                                   Airfoil['z'][:IndxSplit+1].to_numpy())
-        Airfoil_bot = InterpolatedUnivariateSpline(Airfoil['x'][IndxSplit:].to_numpy(),
-                                                   Airfoil['z'][IndxSplit:].to_numpy())
+        Airfoil_top = InterpolatedUnivariateSpline(np.flip(Airfoil['x'][:IndxSplit[0][0]+1].to_numpy()),
+                                                   np.flip(Airfoil['z'][:IndxSplit[0][0]+1].to_numpy()))
+        Airfoil_bot = InterpolatedUnivariateSpline(Airfoil['x'][IndxSplit[0][0]:].to_numpy(),
+                                                   Airfoil['z'][IndxSplit[0][0]:].to_numpy())
 
         A_airfoil = (Airfoil_top.integral(0, 1) - Airfoil_bot.integral(0, 1)) * self.x[-1]  # The Area of the airfoil
-        boom_Data['x'] *= self.x[-1]
-        boom_Data['z'] *= self.x[-1]
-        Bi_initial = A_airfoil / len(boom_coordinates['x'])
-        boom_Data['B'] = np.ones((len(boom_coordinates['x']), len(Bi_initial))) * Bi_initial
-        for it in range(10):
+        x_booms = np.reshape(boom_Data['x'].to_numpy(), (len(boom_Data['x']), 1)) * self.x[-1]
+        z_booms = np.reshape(boom_Data['z'].to_numpy(), (len(boom_Data['z']), 1)) * self.x[-1]
+        Bi_initial = A_airfoil / len(x_booms)
+        boomArea = np.ones((np.shape(x_booms)[0], 1)) * Bi_initial
+
+        diff = 100
+        while abs(diff) > 0.01:
             ## Neutral Axis Calculations
-            NAx = (np.sum(boom_Data['B'] * boom_Data['x'], 0)) / (np.sum(boom_Data['B'], 0))
-            NAz = (np.sum(boom_Data['B'] * boom_Data['z'], 0)) / (np.sum(boom_Data['B'], 0))
+            NAx = (np.sum(boomArea * x_booms, 0)) / (np.sum(boomArea, 0))
+            NAz = (np.sum(boomArea * z_booms, 0)) / (np.sum(boomArea, 0))
 
-            Ixx = np.sum(boom_Data['B'] * (boom_Data['z'] - NAz) ** 2)
-            Izz = np.sum(boom_Data['B'] * (boom_Data['z'] - NAx) ** 2)
-            Ixz = np.sum(boom_Data['B'] * (boom_Data['x'] - NAx) * (boom_Data['z'] - NAz))
-            for i in range(len(boom_coordinates)-1):
-                sigma1 = 0
-
-        ### The Boom areas are computed
-        # for i in rang
-        # for i in range(len(cross_section)):
-        #     Ixx = 0
-        # a = [[0, 1], [1, 0]]
-        # plt.imshow(a, cmap='gray')
-        # plt.show()
-
+            Ixx = np.sum(boomArea * (z_booms - NAz) ** 2)
+            Izz = np.sum(boomArea * (z_booms - NAx) ** 2)
+            Ixz = np.sum(boomArea * (x_booms - NAx) * (z_booms - NAz))
+            for i in range(np.shape(x_booms)[1]):
+                ...
 
 
     def plot_internal_loading(self):
@@ -217,10 +208,8 @@ class Beam:
 if __name__ == '__main__':
     q = 0.5 * 0.01 * 112 ** 2
     aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, 16.8)
-    x = np.linspace(0, 3.35, 100)
-    y = np.linspace(-16.8, 0, 100)
-    z = np.linspace(0, 3.35/12, 100)
-    wing = Beam(x, y, z, 'full')
+    wing = Beam(3.35, 16.8, 3.35/12, 'full')
+    wing.MoI(0, 0)
 
     wing.add_loading(aerodynamic_forces)
     wing.plot_internal_loading()
