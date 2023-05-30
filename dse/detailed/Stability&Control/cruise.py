@@ -24,14 +24,15 @@ def definegeometry():
     '''
     Rwingleft = np.array([1, -10, -1])
     Rwingright = np.array([1, 10, -1])
-    Rstabilizer = np.array([-10, 0, -2])
+    Rstabilizer = np.array([-10, 0, -1])
     Raileronleft = np.array([0, -16, -1])
     Raileronright = np.array([0, 16, -1])
+    Relevator = np.array([-10, 0, -2])
     Rrudder = np.array([-10, 0, -3])
     Cg = np.array([0, 0, 0])
     Rthrustleft = np.array([2, -17, -1])
     Rthrustright = np.array([2, 17, -1])
-    R = np.array([Rwingleft, Rwingright, Rstabilizer, Raileronleft, Raileronright, Rrudder, Rthrustright, Rthrustleft, Cg])
+    R = np.array([Rwingleft, Rwingright, Rstabilizer, Raileronleft, Raileronright, Relevator, Rrudder, Rthrustleft, Rthrustright, Cg])
     return R
 
 def getcoefficients(aoal, aoar, aoah):
@@ -96,6 +97,18 @@ def aerodynamic(aoa, v, beta):
     return wl, wr, h
 
 def thrust(v, aoa, a, Tl, Tr):
+    '''
+
+    Args:
+        v: velocity vector
+        aoa: angle of attack vector including pitch at index 3
+        a: acceleration vector
+        Tl: thrust of the left endine
+        Tr: thrust of the right engine
+    Returns:
+        Tl: thrust of the left engine
+        Tr: thrust of the right engine
+    '''
     if a[0]>0.05:
         #accelerating too fast
         Tl = Tl - 50
@@ -114,20 +127,39 @@ def thrust(v, aoa, a, Tl, Tr):
         Tl = Tl + 25
     elif v[0] < Vcruise * np.cos(np.radians(aoa[3])) and a[0] > 0:
         #accelerating towards cruise
-        Tr = Tr - 25 * abs(v[0] - Vcruise * np.cos(np.radians(aoa[3])))/abs(Vcruise * np.cos(np.radians(aoa[3])))
-        Tl = Tl - 25 * abs(v[0] - Vcruise * np.cos(np.radians(aoa[3])))/abs(Vcruise * np.cos(np.radians(aoa[3])))
+        Tr = Tr - 10 * abs(v[0] - Vcruise * np.cos(np.radians(aoa[3])))/abs(Vcruise * np.cos(np.radians(aoa[3])))
+        Tl = Tl - 10 * abs(v[0] - Vcruise * np.cos(np.radians(aoa[3])))/abs(Vcruise * np.cos(np.radians(aoa[3])))
     elif v[0] > Vcruise * np.cos(np.radians(aoa[3])) and a[0] < 0:
         #deacelerating towards cruise
-        Tr = Tr + 25 * abs(v[0] - Vcruise * np.cos(np.radians(aoa[3]))) / abs(Vcruise * np.cos(np.radians(aoa[3])))
-        Tl = Tl + 25 * abs(v[0] - Vcruise * np.cos(np.radians(aoa[3]))) / abs(Vcruise * np.cos(np.radians(aoa[3])))
+        Tr = Tr + 10 * abs(v[0] - Vcruise * np.cos(np.radians(aoa[3]))) / abs(Vcruise * np.cos(np.radians(aoa[3])))
+        Tl = Tl + 10 * abs(v[0] - Vcruise * np.cos(np.radians(aoa[3]))) / abs(Vcruise * np.cos(np.radians(aoa[3])))
     else:
         Tl = Tl
         Tr = Tr
 
     return Tl, Tr
 
-def control():
-    return 1
+def control(ang, Ftail, a,aoa):
+    # angular acceleration, force of the tail. accelration, angle of attack
+    #angular acceleration, first two things we do is reduce it to below 0.05 again always ez
+    #then we do the same as in thrust but with pure
+
+    #first check hard limit that aoa is in the good range
+
+    if aoa[3] > 15:
+        Ftail = Ftail - 100
+    elif aoa[3] < 0:
+        Ftail = Ftail + 100
+    elif ang[1] > 0.2:
+        Ftail = Ftail - 10
+    elif ang[1] < 0.2:
+        Ftail = Ftail + 10
+    # elif a[2] < 0:
+    #     Ftail = Ftail + 25
+    # elif a[2] > 0:
+    #     Ftail = Ftail - 25
+    return Ftail
+
 
 def moments(R, F):
     '''
@@ -147,6 +179,16 @@ def moments(R, F):
     return M
 
 def accelerations(F, M, I):
+    '''
+
+    Args:
+         F: force vector
+         M: moment vector
+         I: moment of inertia vecotr
+    Returns:
+        a: acceleration vecotor
+        ang: angular acceleration vector
+    '''
 
     a = [sum(F.T[0])/m, sum(F.T[1])/m, sum(F.T[2])/m]
     ang = [M[0]/I[0], M[1]/I[1], M[2]/I[2]]
@@ -155,6 +197,14 @@ def accelerations(F, M, I):
 
 
 def aero_to_body(a, b):
+    '''
+
+    Args:
+        a: angle of attack
+        b: angle of sideslip
+    Returns:
+        T: the transformation matrix
+    '''
     a = np.radians(a)
     b = np.radians(b)
     T = np.array([[np.cos(b) * np.cos(a), np.sin(b), np.cos(b) * np.sin(a)],
@@ -164,6 +214,15 @@ def aero_to_body(a, b):
 
     return T
 def body_to_inertial(theta, gamma, psi):
+    '''
+
+    Args:
+        theta: rotation around X axis
+        gamma: rotation around Z axis
+        psi: rotation around Y axis
+    Returns:
+        T: the transformation matrix
+    '''
     theta = np.radians(theta)
     gamma = np.radians(gamma)
     psi = np.radians(psi)
@@ -180,54 +239,62 @@ def body_to_inertial(theta, gamma, psi):
     # aoa = (aoal + aoar) /2
     # aoah = aoa - downwash + instalation
 
-#take as input the angle of attack, the speed, the density
-#so next thing to do is to get the aerodynamic forces cuz those we cant really coontrol
-
-
 if __name__ == "__main__":
     R = definegeometry()
-    aoa = [7, 7, 9, 7] #left wing, right wing, tail, pitch #first 3 include velocity and rotation aoa, last is pitch for trasformation matrix
+    aoa = np.array([7, 7, 9, 7]) #left wing, right wing, tail, pitch #first 3 include velocity and rotation aoa, last is pitch for trasformation matrix
+    pitch = aoa[3]  #later we control pitch and calculate aoa but for now its all togethear
     v = [110, 110, 110] #left wing, right wing, tail
     vcruise = [110, 0, 0] #x, y ,z component of velocity
-    beta = 0    # mass in kg
+    beta = 0
     wl, wr, h = aerodynamic(aoa, v, beta)
-    pitch = aoa[3]
     W0 = m * 3.71
     # Rwingleft, Rwingright, Rstabilizer, Raileronleft, Raileronright, Rrudder, Rthrustright, Rthrustleft, Cg
     W = np.array([-W0 * np.sin(np.radians(pitch)), 0, W0 * np.cos(np.radians(pitch))])
-    F = np.array([wl, wr, h, np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, 0]), W])
+    F = np.array([wl, wr, h, np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, 0]), W])
     M = moments(R, F)
-    print(M)
     a, ang = accelerations(F, M, I)
-    print(a)
-    Tl = 0
-    Tr = 0
+    Tlx = 0
+    Trx = 0
+    Fh = 0
     acc = []
+    angs = []
     tllist = []
     trlist = []
     times = []
     velo = []
-    for i, time in enumerate(np.arange(0, 1000, 0.1)):
+    aoas = []
+    ass = []
+    for i, time in enumerate(np.arange(0, 250, 0.1)):
         wl, wr, h = aerodynamic(aoa, v, beta)
-        pitch = aoa[3]
         W0 = m * 3.71
         W = np.array([-W0 * np.sin(np.radians(pitch)), 0, W0 * np.cos(np.radians(pitch))])
-        F = np.array([wl, wr, h, np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([Tl, 0, 0]), np.array([Tr, 0, 0]),
-                      np.array([0, 0, 0]), W])
+        F = np.array([wl, wr, h, np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, Fh]), np.array([0, 0, 0]), np.array([Tlx, 0, 0]),
+                      np.array([Trx, 0, 0]), W])
         M = moments(R, F)
+        print(wl[0], h[0], W[0])
         a, ang = accelerations(F, M, I)
-        Tl, Tr = thrust(v, aoa, a, Tl, Tr)
-        v[0] = v[0] + a[0] * 0.1
-        velo.append(v[0])
-        acc.append(a[0])
-        tllist.append(Tl)
-        trlist.append(Tr)
+        aoa = aoa + ang[1] * 0.1
+        Tlx, Trx = thrust(v, aoa, a, Tlx, Trx)
+        Fh = control(ang, Fh, a, aoa)
+        #velo.append(v[0])
+        #acc.append(a[0])
+        #tllist.append(Tlx)
+        #trlist.append(Trx)
         times.append(time)
+        angs.append(ang[1])
+        aoas.append(aoa[1])
+        ass.append(a[2])
 
-    plt.plot(times, tllist, color='b')
-    plt.plot(times, trlist, color='r')
+    # plt.plot(times, tllist, color='b')
+    # plt.plot(times, trlist, color='r')
+    # plt.show()
+    # plt.plot(times, acc, color='g')
+    # plt.show()
+    # plt.plot(times, velo, color='b')
+    # plt.show()
+    plt.plot(times, angs, color='b')
     plt.show()
-    plt.plot(times, acc, color='g')
+    plt.plot(times, aoas, color='g')
     plt.show()
-    plt.plot(times, velo, color='b')
+    plt.plot(times, ass, color='r')
     plt.show()
