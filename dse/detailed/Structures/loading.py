@@ -4,7 +4,7 @@ import pandas as pd
 import time
 import csv
 from scipy.interpolate import InterpolatedUnivariateSpline
-from scipy.optimize import curve_fit
+from scipy.optimize import minimize, LinearConstraint, curve_fit
 
 
 def xflr_forces(filename, q, b):
@@ -109,13 +109,14 @@ class Beam:
         else:
             raise TypeError('Height needs to be either a constant float/int or a 100 x n array')
 
-        if cross_section == "full":
-            self.section = np.ones((len(self.y), len(self.z), len(self.x)))
+        if type(cross_section) == str:
+            if cross_section == "full":
+                self.section = np.ones((len(self.y), len(self.z), len(self.x)))
         else:
             if type(cross_section) != np.ndarray:
                 raise TypeError('The cross section needs to be either "full" or a 3D array')
             else:
-                if np.shape(cross_section) != (len(self.y), len(self.z), len(self.x)):
+                if np.shape(cross_section) != (len(self.y), 2, len(self.x)):
                     raise ValueError('Cross section needs to have a size consistent with the '
                                      'amount of points indicated for length, height and width')
                 self.section = cross_section
@@ -202,6 +203,46 @@ class Beam:
             time.sleep(0.5)
 
 
+    def required_thickness(self):
+        t_min = 0.001
+        self.t = np.ones((np.shape(self.section) - np.array([0, 1, 0])))
+        for i in range(np.size(self.y)):
+            section = self.section[i]
+
+            points_doubled = np.hstack((section, np.reshape(section[:, 0], (2, 1))))
+            distances = points_doubled[:, 1:] - points_doubled[:, :-1]
+            distances = np.sum(distances ** 2, 0)
+
+            t = np.ones(np.shape(self.x)) * 0.01
+            sigma = np.zeros(np.shape(t))
+            while np.any(np.abs(sigma) < 225e6) or np.any(np.abs(sigma) > 250e6):
+                t0 = np.copy(t)
+                NAx = np.sum(section[0] * t * distances) / np.sum(t * distances)
+                NAz = np.sum(section[1] * t * distances) / np.sum(t * distances)
+
+                Ixx = np.sum(t * distances * (section[0] - NAx) ** 2)
+                Izz = np.sum(t * distances * (section[1] - NAz) ** 2)
+                Ixz = np.sum(t * distances * (section[0] - NAx) * (section[1] - NAz))
+
+                Fy = self.f_loading[i][1] / np.size(self.x)
+                Mx = self.m_loading[i][0]
+                Mz = self.m_loading[i][2]
+
+                sigma = Fy / (t * distances) + (
+                        (Mx * Izz + Mz * Ixz) * section[1] + (Mz * Ixx + Mx * Ixz) * section[0]) / (
+                                Ixx * Izz + Ixz ** 2)
+
+                if np.any(np.abs(sigma) > 250e6):
+                    t[np.where(np.abs(sigma) > 250e6)] += 0.0001
+                if np.any(np.abs(sigma) < 225e6):
+                    t[np.where(np.abs(sigma) < 225e6)] -= 0.0001
+                if np.any(t < t_min):
+                    t[np.where(t < t_min)] = t_min
+                if np.all(t == t0):
+                    break
+            self.t[i] = t
+            print(i)
+
 
     def plot_internal_loading(self):
         fig, (axs1, axs2) = plt.subplots(2, 1)
@@ -227,11 +268,42 @@ class Beam:
 
 
 if __name__ == '__main__':
-    q = 0.5 * 0.01 * 112 ** 2
-    aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, 16.8)
-    wing = Beam(3.35, 16.8, 3.35/12, 'full')
+    # q = 0.5 * 0.01 * 112 ** 2
+    #
+    # aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, 16.8)
+    # wing = Beam(3.35, 16.8, 3.35/12, 'full')
+    #
+    # wing.add_loading(aerodynamic_forces)
+    # wing.MoI(0, 0)
+    #
+    # wing.plot_internal_loading()
 
-    wing.add_loading(aerodynamic_forces)
-    wing.MoI(0, 0)
 
-    wing.plot_internal_loading()
+    F = np.array([
+        [0],
+        [0],
+        [3e3 * 3.71]
+    ])
+    loc = np.array([
+        [0],
+        [-16.8],
+        [0]
+    ])
+
+    dummy_force = Force(magnitude=F, point_of_application=loc)
+
+    w = np.hstack((np.ones(20) * -0.5, np.linspace(-0.5, 0.5, 40)[1:-1], np.ones(40) * 0.5, np.linspace(0.5, -0.5, 40)[1:-1], np.ones(19) * -0.5))
+    h = np.hstack((np.linspace(0, 0.5, 20), np.ones(38) * 0.5, np.linspace(0.5, -0.5, 40), np.ones(38) * -0.5, np.linspace(-0.5, 0, 20)[:-1]))
+    l = np.linspace(-16.8, 0, 50)
+
+    section = np.reshape(np.ones((np.size(l), 1)) * np.hstack((w, h)), (np.size(l), 2, np.size(w)))
+
+    square_beam = Beam(width=w, length=l, height=h, cross_section=section)
+    square_beam.add_loading(dummy_force)
+    square_beam.required_thickness()
+
+    plt.plot(np.reshape(l, (np.size(l))), [np.max(square_beam.t[i]) for i in range(len(l))], label='Max t')
+    plt.plot(np.reshape(l, (np.size(l))), [np.min(square_beam.t[i]) for i in range(len(l))], label='Min t')
+    plt.legend()
+    plt.show()
+
