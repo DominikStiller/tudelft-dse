@@ -48,3 +48,4 @@ aircraftParameters = {
     "totalMass": 0,
     "aircraftVolume": 0,
 }
+
