@@ -3,7 +3,6 @@ from Controllers import Controller, thrust_Controller
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 # state_now
 # reference_now
 # send error to controller
@@ -19,8 +18,9 @@ euler_ref = np.array([0, 0, 0.])
 velocity_linear_ref = np.array([111, 0, 0.])
 euler_in_time = []
 velocity_linear_in_time = []
+Tlx, Trx = 200, 200
 
-for i in range(1000):
+for i in range(10000):
     euler, velocity_linear, velocity_angular = system.get_state()
 
     euler_in_time.append(np.copy(euler))
@@ -29,7 +29,7 @@ for i in range(1000):
     error_euler = euler_ref - euler
     error_velocity_linear = velocity_linear_ref - velocity_linear
 
-    Tlx, Trx = thrust_Controller(-1, -1, -1, -1, -1, -1.)
+    Tlx, Trx = thrust_Controller(velocity_linear[0], np.arctan2(velocity_linear[2], velocity_linear[0]), -1, Tlx, Trx, velocity_linear_ref)
     exc_sig = np.array([0, 0, 0.]), np.array([0, 0, 0.]), controller_theta(error_euler[1]), np.array([0, 0, 0.]), Tlx, Trx
 
     system(exc_sig, dt)
@@ -39,3 +39,8 @@ velocity_linear_in_time = np.array(velocity_linear_in_time)
 
 plt.plot(velocity_linear_in_time[:, 0])
 plt.show()
+plt.plot(velocity_linear_in_time[:, 2])
+plt.show()
+plt.plot(euler_in_time[:, 1], color='r')
+plt.show()
+
