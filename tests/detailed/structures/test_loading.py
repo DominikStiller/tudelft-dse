@@ -118,6 +118,12 @@ class TestForce(TestCase):
 
 
 class TestBeam(TestCase):
+    # Functions without tests:
+    #    AirfoilBoom
+    #    unitSquareBoom
+    #    DesignConstraints
+    #    BoomArea
+    #    plot_internal_loading
     def test_add_loading_point_load(self):
         from dse.detailed.Structures.loading import Beam, Force
 
