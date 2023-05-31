@@ -227,13 +227,18 @@ class Beam:
         return Ixx, Izz, Ixz
 
     def StressCalculations(self, Mx, Mz, x_booms_nr, z_booms_nr, boomArea_nr):
+        Mx = np.reshape(self.m_loading[:, 0], np.size(self.y))
+        Mz = np.reshape(self.m_loading[:, 2], np.size(self.y))
+        Fy = np.reshape(self.f_loading[:, 1], np.size(self.y))
+
+
         # Call the neutral & moments of inertia
         NAx, NAz = self.NeutralAxis(boomArea_nr, x_booms_nr, z_booms_nr)
         Ixx, Izz, Ixz = self.MoI(boomArea_nr, x_booms_nr, z_booms_nr)
         # Stress calculations
         sigma_nr = (
             (Mx * Izz - Mz * Ixz) * (z_booms_nr - NAz) + (Mz * Ixx - Mx * Ixz) * (x_booms_nr - NAx)
-        ) / (Ixx * Izz + Ixz**2)
+        ) / (Ixx * Izz + Ixz**2) + (Fy / np.shape(boomArea_nr)[0]) / (boomArea_nr)
         return sigma_nr
 
     def BoomArea(self, boomAreaCopy, tSkin, boomDistance, sigma):
@@ -277,8 +282,7 @@ class Beam:
             diff = np.ones(np.shape(boomArea_nr)[1])
             while np.any(np.abs(diff) > 0.0001):
                 # Moment of Inertia
-                Mx = np.reshape(self.m_loading[:, 0], (np.shape(boomDistance)[1]))
-                Mz = np.reshape(self.m_loading[:, 2], (np.shape(boomDistance)[1]))
+
 
                 # Stress Calculations
                 sigma_nr = self.StressCalculations(Mx, Mz, x_booms_nr, z_booms_nr, boomArea_nr)
@@ -341,6 +345,7 @@ if __name__ == "__main__":
     # wing.MoI(0, 0)
     #
     # wing.plot_internal_loading()
+
     F = np.array([[0], [0], [3e3 * 3.71]])
 
     loc = np.array([[0.5], [-16.8], [0]])
