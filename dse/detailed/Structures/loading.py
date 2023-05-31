@@ -139,7 +139,10 @@ class Beam:
 
         # Internal moments
         self.m_loading = np.zeros((len(self.y), 3, 1))
+
+        # Parameters to be calulated later
         self.t = None
+        self.sigma = None
 
     def unload(self):
         self.f_loading = np.zeros((len(self.y), 3, 1))
@@ -209,7 +212,7 @@ class Beam:
 
     def DesignConstraints(self):
         n = 1.5  # [-] Safety factor
-        sigma_yield = 250 * 10**6  # [MPa] The yield strength
+        sigma_yield = 250e6  # [MPa] The yield strength
         tSkin_min = 0.001  # [m] The minimal allowable thickness
         return n, sigma_yield, tSkin_min
 
@@ -227,18 +230,25 @@ class Beam:
         Ixz = np.sum(boomArea_nr * (x_booms_nr - NAx) * (z_booms_nr - NAz), 0)
         return Ixx, Izz, Ixz
 
-    def StressCalculations(self, x_booms_nr, z_booms_nr, boomArea_nr):
+    def StressCalculations(self, boomArea_nr):
         Mx = np.reshape(self.m_loading[:, 0], np.size(self.y))
         Mz = np.reshape(self.m_loading[:, 2], np.size(self.y))
         Fy = np.reshape(self.f_loading[:, 1], np.size(self.y))
 
+        x_booms, z_booms = np.split(np.reshape(self.section, (np.size(self.y), 2 * np.shape(self.x)[0])), 2, 1)
+        if np.all(x_booms[:, 0] == x_booms[:, -1]):
+            x_booms = x_booms[:, :-1]
+            z_booms = z_booms[:, :-1]
+
+        x_booms = x_booms.T
+        z_booms = z_booms.T
 
         # Call the neutral & moments of inertia
-        NAx, NAz = self.NeutralAxis(boomArea_nr, x_booms_nr, z_booms_nr)
-        Ixx, Izz, Ixz = self.MoI(boomArea_nr, x_booms_nr, z_booms_nr)
+        NAx, NAz = self.NeutralAxis(boomArea_nr, x_booms, z_booms)
+        Ixx, Izz, Ixz = self.MoI(boomArea_nr, x_booms, z_booms)
         # Stress calculations
         sigma_nr = (
-                           (Mx * Izz - Mz * Ixz) * (z_booms_nr - NAz) + (Mz * Ixx - Mx * Ixz) * (x_booms_nr - NAx)
+                           (Mx * Izz - Mz * Ixz) * (z_booms - NAz) + (Mz * Ixx - Mx * Ixz) * (x_booms - NAx)
                    ) / (Ixx * Izz + Ixz**2) + (Fy / np.shape(boomArea_nr)[0]) / (boomArea_nr)
         return sigma_nr
 
@@ -257,15 +267,26 @@ class Beam:
         if boom_coordinates != 0:  # Defines locations of the booms
             print("The code now only runs for all coordinates of the stringers being the booms")
 
-        x_booms = np.reshape(self.x, (len(self.x), 1))
-        z_booms = np.reshape(self.z, (len(self.z), 1))
-        x_booms_nr = x_booms[:-1]
-        z_booms_nr = z_booms[:-1]
+        x_booms, z_booms = np.split(np.reshape(self.section, (np.size(self.y), 2 * np.shape(self.x)[0])), 2, 1)
+        if np.all(x_booms[:, 0] == x_booms[:, -1]):
+            x_booms_nr = x_booms[:, :-1]
+            z_booms_nr = z_booms[:, :-1]
+        else:
+            x_booms_nr = np.copy(x_booms)
+            z_booms_nr = np.copy(z_booms)
+            x_booms = np.hstack((x_booms, np.reshape(x_booms[:, 0], (np.size(self.y), 1))))
+            z_booms = np.hstack((z_booms, np.reshape(z_booms[:, 0], (np.size(self.y), 1))))
+
+        x_booms = x_booms.T
+        x_booms_nr = x_booms_nr.T
+        z_booms = z_booms.T
+        z_booms_nr = z_booms_nr.T
+
 
         ## Calculate the distance between each boom, there needs to be an update for the vertical connections
         boomDistance = np.sqrt(
             (x_booms[1:] - x_booms[:-1]) ** 2 + (z_booms[1:] - z_booms[:-1]) ** 2
-        ) * np.ones(np.size(self.y))
+        )
 
         ## The design constraints
         n, sigma_ult, tSkin_min = self.DesignConstraints()
@@ -273,8 +294,10 @@ class Beam:
         ## Initial guess for the boom area and skin thickness and stress
         if i == 0:
             Bi_initial = self.AirfoilBoom()
-        else:
+        elif i == 1:
             Bi_initial = self.unitSquareBoom()
+        else:
+            Bi_initial = 0.001 * np.ones(np.shape(x_booms_nr))
         boomArea_nr = np.ones((np.shape(x_booms_nr)[0], np.size(self.y))) * Bi_initial
         tSkin = np.ones(np.shape(boomDistance)) * tSkin_min
         sigma = np.ones(np.shape(self.x)) * n * sigma_ult
@@ -283,11 +306,11 @@ class Beam:
             diff = np.ones(np.shape(boomArea_nr)[1])
             while np.any(np.abs(diff) > 0.0001):
                 # Stress Calculations
-                sigma_nr = self.StressCalculations(x_booms_nr, z_booms_nr, boomArea_nr)
+                sigma_nr = self.StressCalculations(boomArea_nr)
 
                 # Stress with repeating column for the first node for easy calculations for the boom areas
                 sigma = np.vstack((sigma_nr, sigma_nr[0]))
-                sigma[np.where(sigma == 0)] = 0.1
+                sigma[np.where(np.abs(sigma) <= 0.01)] = 0.1
 
                 # Boom area calculations
                 boomAreaCopy = np.copy(boomArea_nr)
@@ -305,10 +328,13 @@ class Beam:
                 tSkin[:, -indx:] += 0.001
             else:
                 break
+            if np.any(np.isnan(sigma)):
+                raise ValueError('There was a NaN in the stress array')
 
         self.t = tSkin
-        plt.axhline(sigma_ult)
-        plt.axhline(-sigma_ult)
+        self.sigma = sigma_nr
+        # plt.axhline(sigma_ult)
+        # plt.axhline(-sigma_ult)
         plt.plot(self.y, sigma.transpose())
         plt.show()
 

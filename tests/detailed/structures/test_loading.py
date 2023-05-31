@@ -12,7 +12,7 @@ class Test(TestCase):
         elif os.getcwd().split("\\")[-1] != "Structures":
             os.chdir("..\\dse\\detailed\\Structures")
 
-        force = xflr_forces(filename="Test_xflr5_file.csv", q=0.5 * 0.01 * 112**2, b=16.8)
+        force = xflr_forces(filename="Test_xflr5_file.csv", q=0.5 * 0.01 * 112 ** 2, b=16.8)
 
         if np.all(force.fy == 0):
             if np.all(force.fx < 0):
@@ -32,7 +32,7 @@ class Test(TestCase):
         from dse.detailed.Structures.loading import xflr_forces
 
         try:
-            Forces = xflr_forces(5, q=0.5 * 0.01 * 112**2, b=16.8)
+            Forces = xflr_forces(5, q=0.5 * 0.01 * 112 ** 2, b=16.8)
             a = False
         except TypeError:
             a = True
@@ -62,7 +62,7 @@ class Test(TestCase):
             os.chdir("..\\dse\\detailed\\Structures")
 
         try:
-            Forces = xflr_forces(filename="Test_xflr5_file.csv", q=0.5 * 0.01 * 112**2, b="16.8")
+            Forces = xflr_forces(filename="Test_xflr5_file.csv", q=0.5 * 0.01 * 112 ** 2, b="16.8")
             a = False
         except TypeError:
             a = True
@@ -123,7 +123,7 @@ class TestBeam(TestCase):
 
         x = np.linspace(0, 0.1, 10)
         y = np.linspace(-2, 0, 100)
-        z = np.linspace(0, 0.05, 5)
+        z = np.linspace(0, 0.05, 10)
         wing = Beam(x, y, z, "full")
 
         F = 1
@@ -149,7 +149,7 @@ class TestBeam(TestCase):
 
         x = np.linspace(0, 0.1, 10)
         y = np.linspace(-2, 0, 100)
-        z = np.linspace(0, 0.05, 5)
+        z = np.linspace(0, 0.05, 10)
         wing = Beam(x, y, z, "full")
 
         F = np.array([[0, 0, 0], [0, 0, 0], [1, 1, 1]])
@@ -164,18 +164,18 @@ class TestBeam(TestCase):
         y_index_3 = (np.abs(y - app[:, 2][1])).argmin()
 
         if (
-            np.all(wing.f_loading[y_index_1:] == np.reshape(np.sum(F, 1), (3, 1)))
-            and np.all(
-                wing.f_loading[y_index_2:y_index_1] == np.reshape(np.sum(F[:, 1:], 1), (3, 1))
-            )
-            and np.all(wing.f_loading[y_index_3:y_index_2] == np.reshape(F[:, -1], (3, 1)))
-            and np.all(wing.f_loading[:y_index_3] == 0)
+                np.all(wing.f_loading[y_index_1:] == np.reshape(np.sum(F, 1), (3, 1)))
+                and np.all(
+            wing.f_loading[y_index_2:y_index_1] == np.reshape(np.sum(F[:, 1:], 1), (3, 1))
+        )
+                and np.all(wing.f_loading[y_index_3:y_index_2] == np.reshape(F[:, -1], (3, 1)))
+                and np.all(wing.f_loading[:y_index_3] == 0)
         ):
             if (
-                np.abs(wing.m_loading[-1][0]) - 2.6 < 0.01
-                and np.abs(wing.m_loading[y_index_1][0]) - 2.3 < 0.01
-                and np.abs(wing.m_loading[y_index_2][0]) - 0.5 < 0.01
-                and np.all(wing.m_loading[:y_index_3] == 0)
+                    np.abs(wing.m_loading[-1][0]) - 2.6 < 0.01
+                    and np.abs(wing.m_loading[y_index_1][0]) - 2.3 < 0.01
+                    and np.abs(wing.m_loading[y_index_2][0]) - 0.5 < 0.01
+                    and np.all(wing.m_loading[:y_index_3] == 0)
             ):
                 assert True
             else:
@@ -194,3 +194,210 @@ class TestBeam(TestCase):
                 wing.f_loading[y_index_3:y_index_2] == np.reshape(F[:, -1], (3, 1))
             ), "Forces at semi-middle are off"
             assert np.all(wing.f_loading[:y_index_3] == 0), "Forces at the tip are off"
+
+    def test_neutral_axis(self):
+        from dse.detailed.Structures.loading import Beam
+        x = np.hstack(
+            (np.linspace(-1, 0, 25)[:-1],
+             np.linspace(0, 1, 25)[:-1],
+             np.linspace(1, 0, 25)[:-1],
+             np.linspace(0, -1, 25)[:-1])
+        )
+        y = np.hstack(
+            (np.linspace(0, 1, 25)[:-1],
+             np.linspace(1, 0, 25)[:-1],
+             np.linspace(0, -1, 25)[:-1],
+             np.linspace(-1, 0, 25)[:-1]
+             )
+        )
+        rombus = Beam(
+            width=x,
+            height=y,
+            length=5,
+            cross_section='constant'
+        )
+        A = np.ones((np.size(x), 100))
+
+        x_booms_nr, z_booms_nr = np.split(np.reshape(rombus.section, (np.size(rombus.y), 2 * np.shape(rombus.x)[0])), 2,
+                                          1)
+        if np.all(x_booms_nr[:, 0] == x_booms_nr[:, -1]):
+            x_booms_nr = x_booms_nr[:, :-1]
+            z_booms_nr = x_booms_nr[:, :-1]
+
+        x_booms_nr = x_booms_nr.T
+        z_booms_nr = z_booms_nr.T
+
+        NAx, NAz = rombus.NeutralAxis(
+            A,
+            x_booms_nr,
+            z_booms_nr)
+        assert np.all(np.abs(NAx) <= 0.001), 'Neutral axis is not along the axis for a symmetric shape'
+        assert np.all(np.abs(NAz) <= 0.001), 'Neutral axis is not along the axis for a symmetric shape'
+
+    def test_mo_i(self):
+        from dse.detailed.Structures.loading import Beam
+        x = np.hstack(
+            (np.linspace(-1, 0, 25)[:-1],
+             np.linspace(0, 1, 25)[:-1],
+             np.linspace(1, 0, 25)[:-1],
+             np.linspace(0, -1, 25)[:-1])
+        )
+        y = np.hstack(
+            (np.linspace(0, 1, 25)[:-1],
+             np.linspace(1, 0, 25)[:-1],
+             np.linspace(0, -1, 25)[:-1],
+             np.linspace(-1, 0, 25)[:-1]
+             )
+        )
+        rombus = Beam(
+            width=x,
+            height=y,
+            length=5,
+            cross_section='constant'
+        )
+        A = np.ones((np.size(x), 100))
+
+        x_booms_nr, z_booms_nr = np.split(np.reshape(rombus.section, (np.size(rombus.y), 2 * np.shape(rombus.x)[0])), 2, 1)
+        if np.all(x_booms_nr[:, 0] == x_booms_nr[:, -1]):
+            x_booms_nr = x_booms_nr[:, :-1]
+            z_booms_nr = x_booms_nr[:, :-1]
+
+        x_booms_nr = x_booms_nr.T
+        z_booms_nr = z_booms_nr.T
+
+        Ixx, Izz, Ixz = rombus.MoI(
+            A,
+            x_booms_nr,
+            z_booms_nr
+        )
+
+        assert np.all(Ixx - Izz <= 0.001), 'Symmetrical shape does not have equal moments of inertia'
+        assert np.all(Ixz <= 0.001), 'Symmetrical shape does not have Ixz = 0'
+
+    def test_stress_calculations(self):
+        from dse.detailed.Structures.loading import Beam, Force
+        x = np.hstack(
+            (np.linspace(-1, 0, 25)[:-1],
+             np.linspace(0, 1, 25)[:-1],
+             np.linspace(1, 0, 25)[:-1],
+             np.linspace(0, -1, 25)[:-1])
+        )
+        y = np.hstack(
+            (np.linspace(0, 1, 25)[:-1],
+             np.linspace(1, 0, 25)[:-1],
+             np.linspace(0, -1, 25)[:-1],
+             np.linspace(-1, 0, 25)[:-1]
+             )
+        )
+        rombus = Beam(
+            width=x,
+            height=y,
+            length=5,
+            cross_section='constant'
+        )
+        A = np.ones((np.size(x), 100))
+
+        dummy_force_1 = Force(
+            magnitude=np.array(
+                [
+                    [0],
+                    [1e3],
+                    [0]
+                ]
+            ),
+            point_of_application=np.array(
+                [
+                    [0],
+                    [-5],
+                    [0]
+                ]
+            )
+        )
+        rombus.add_loading(dummy_force_1)
+
+        stress = rombus.StressCalculations(
+            boomArea_nr=A
+        )
+
+        assert np.all(stress == stress[0]), 'The stress on the booms due to a point load along the length does not ' \
+                                            'result in a constant stress'
+
+        rombus.unload()
+
+        dummy_force_2 = Force(
+            magnitude=np.array(
+                [
+                    [0],
+                    [0],
+                    [1e3]
+                ]
+            ),
+            point_of_application=np.array(
+                [
+                    [0],
+                    [-5],
+                    [0]
+                ]
+            )
+        )
+
+        rombus.add_loading(dummy_force_2)
+
+        stress = rombus.StressCalculations(
+            boomArea_nr=A
+        )
+
+        stress_split = np.split(stress, 4)
+
+        assert np.all((stress_split[0][1:] - np.flip(stress_split[1], 0)[
+                                             :-1]) < 0.0001), 'The top booms have non-symmetrical stresses'
+        assert np.all((stress_split[2][1:] - np.flip(stress_split[3], 0)[
+                                             :-1]) < 0.0001), 'The bottom booms have non-symmetrical stresses'
+        assert np.where(stress == np.min(stress))[0] == 24, 'The maximum compressive stress is not at the top'
+        assert np.where(stress == np.max(stress))[0] == 72, 'The maximum tensile stress is not at the bottom'
+        assert np.max(stress) == np.abs(np.min(stress)), 'The maximum tensile and compressive stresses are not the same'
+
+    def test_internal_stress(self):
+        from dse.detailed.Structures.loading import Beam, Force
+        x = np.hstack(
+            (np.linspace(-1, 0, 25)[:-1],
+             np.linspace(0, 1, 25)[:-1],
+             np.linspace(1, 0, 25)[:-1],
+             np.linspace(0, -1, 25)[:-1])
+        )
+        y = np.hstack(
+            (np.linspace(0, 1, 25)[:-1],
+             np.linspace(1, 0, 25)[:-1],
+             np.linspace(0, -1, 25)[:-1],
+             np.linspace(-1, 0, 25)[:-1]
+             )
+        )
+        rombus = Beam(
+            width=x,
+            height=y,
+            length=5,
+            cross_section='constant'
+        )
+
+        dummy_force_2 = Force(
+            magnitude=np.array(
+                [
+                    [0],
+                    [0],
+                    [1e3]
+                ]
+            ),
+            point_of_application=np.array(
+                [
+                    [0],
+                    [-5],
+                    [0]
+                ]
+            )
+        )
+
+        rombus.add_loading(dummy_force_2)
+        rombus.InternalStress(0, 0, 2)
+        assert np.shape(rombus.t) == (np.size(x), 100), 'rombus.t is not an array of the correct shape'
+        assert np.all(rombus.t >= 0.001), 'The minimum thickness is smaller than 1mm'
+        assert np.all(rombus.sigma <= 250e6/1.5)
