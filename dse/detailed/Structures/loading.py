@@ -1,10 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import time
 import csv
 from scipy.interpolate import InterpolatedUnivariateSpline
-from scipy.optimize import minimize, LinearConstraint, curve_fit
 
 
 def xflr_forces(filename, q, b):
@@ -226,7 +224,7 @@ class Beam:
         Ixz = np.sum(boomArea_nr * (x_booms_nr - NAx) * (z_booms_nr - NAz), 0)
         return Ixx, Izz, Ixz
 
-    def StressCalculations(self, Mx, Mz, x_booms_nr, z_booms_nr, boomArea_nr):
+    def StressCalculations(self, x_booms_nr, z_booms_nr, boomArea_nr):
         Mx = np.reshape(self.m_loading[:, 0], np.size(self.y))
         Mz = np.reshape(self.m_loading[:, 2], np.size(self.y))
         Fy = np.reshape(self.f_loading[:, 1], np.size(self.y))
@@ -281,11 +279,8 @@ class Beam:
         while np.any(np.abs(sigma - sigma_ult / n) / (sigma_ult / n) > 0.1):
             diff = np.ones(np.shape(boomArea_nr)[1])
             while np.any(np.abs(diff) > 0.0001):
-                # Moment of Inertia
-
-
                 # Stress Calculations
-                sigma_nr = self.StressCalculations(Mx, Mz, x_booms_nr, z_booms_nr, boomArea_nr)
+                sigma_nr = self.StressCalculations(x_booms_nr, z_booms_nr, boomArea_nr)
 
                 # Stress with repeating column for the first node for easy calculations for the boom areas
                 sigma = np.vstack((sigma_nr, sigma_nr[0]))
@@ -318,18 +313,18 @@ class Beam:
         f_loading = np.reshape(self.f_loading, (len(self.y), 3))
         m_loading = np.reshape(self.m_loading, (len(self.y), 3))
 
-        axs1.plot(self.y, f_loading[:, 0], label=r"$V_x$")
-        axs1.plot(self.y, f_loading[:, 1], label=r"$V_y$")
-        axs1.plot(self.y, f_loading[:, 2], label=r"$V_z$")
+        axs1.plot(self.y, f_loading[:, 0] / 1e3, label=r"$V_x$")
+        axs1.plot(self.y, f_loading[:, 1] / 1e3, label=r"$V_y$")
+        axs1.plot(self.y, f_loading[:, 2] / 1e3, label=r"$V_z$")
         axs1.set_xlabel("Span [m]")
-        axs1.set_ylabel("Force [N]")
+        axs1.set_ylabel("Force [kN]")
         axs1.legend()
 
-        axs2.plot(self.y, m_loading[:, 0], label=r"$M_x$")
-        axs2.plot(self.y, m_loading[:, 1], label=r"$M_y$")
-        axs2.plot(self.y, m_loading[:, 2], label=r"$M_z$")
+        axs2.plot(self.y, m_loading[:, 0] / 1e3, label=r"$M_x$")
+        axs2.plot(self.y, m_loading[:, 1] / 1e3, label=r"$M_y$")
+        axs2.plot(self.y, m_loading[:, 2] / 1e3, label=r"$M_z$")
         axs2.set_xlabel("Span [m]")
-        axs2.set_ylabel("Moment [Nm]")
+        axs2.set_ylabel("Moment [kNm]")
         axs2.legend()
 
         plt.tight_layout()
@@ -337,20 +332,10 @@ class Beam:
 
 
 if __name__ == "__main__":
-    # q = 0.5 * 0.01 * 112 ** 2
-    # aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, 16.8)
-    # wing = Beam(3.35, 16.8, 3.35/12, 'full')
-    #
-    # wing.add_loading(aerodynamic_forces)
-    # wing.MoI(0, 0)
-    #
-    # wing.plot_internal_loading()
+    g = 3.71
+    q = 0.5 * 0.01 * 112 ** 2
+    aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, 16.8)
 
-    F = np.array([[0], [0], [3e3 * 3.71]])
-
-    loc = np.array([[0.5], [-16.8], [0]])
-
-    dummy_force = Force(magnitude=F, point_of_application=loc)
     chord = 3.35
     Airfoil = pd.read_csv("S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
     l = np.linspace(-16.8, 0, 100)
@@ -360,11 +345,82 @@ if __name__ == "__main__":
         length=l,
         cross_section="constant",
     )
-    wing.add_loading(dummy_force)
+    # wing.add_loading(aerodynamic_forces)
+    # thrust = Force(
+    #     magnitude=np.array(
+    #         [[739.5/2],
+    #          [0],
+    #          [0]]
+    #     ),
+    #     point_of_application=np.array(
+    #         [[0],
+    #          [-16.8],
+    #          [0]]
+    #     )
+    # )
+    fuselage_height = 2
+    theta = np.arctan(fuselage_height/16.8)
+
+    MTOM = 3000
+    m_r = 910 / 2
+    m_e = 100 / 2
+
+    bracing_TO = Force(
+        magnitude=np.array(
+            [
+                [0],
+                [g / np.tan(theta) * (1.1 * MTOM / 2 - (m_r + m_e))],
+                [-g * (1.1 * MTOM / 2 - (m_r + m_e))]
+            ]
+        ),
+        point_of_application=np.array(
+            [
+                [1.603],
+                [-16.8],
+                [0.1742]
+            ]
+        )
+    )
+    engine_and_rotor_weight = Force(
+        magnitude=np.array(
+            [
+                [0],
+                [0],
+                [-(m_r + m_e) * g]
+            ]
+        ),
+        point_of_application=np.array(
+            [
+                [1.603],
+                [-16.8],
+                [0.1742]
+            ]
+        )
+    )
+    liftOffLoad = Force(
+        magnitude=np.array(
+            [
+                [0],
+                [0],
+                [1.1 * MTOM * g / 2]
+            ]
+        ),
+        point_of_application=np.array(
+            [
+                [1.603],
+                [-16.8],
+                [0.1742]
+            ]
+        )
+    )
+    wing.add_loading(liftOffLoad)
+    wing.plot_internal_loading()
+
+    wing.add_loading(engine_and_rotor_weight)
+    wing.plot_internal_loading()
+
+    wing.add_loading(bracing_TO)
+    wing.plot_internal_loading()
+
     wing.InternalStress(0, 0, 0)
 
-    # w = np.reshape(np.linspace(0, 1, 100), (100, 1)) * np.ones(100)
-    # h = np.reshape(np.linspace(-0.5, 0.5, 100), (100, 1)) * np.ones(100)
-    # square_beam = Beam(width=w, length=l, height=h, cross_section='full')
-    # square_beam.add_loading(dummy_force)
-    # square_beam.MoI_V2(0, 0, 'S1223.dat')
