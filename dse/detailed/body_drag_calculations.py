@@ -37,8 +37,9 @@ class Fuselage:
         
         Self length is the total length of the fuselage, from nose tip to tail.
         
-        Self S is the external area the flow sees. What we use in Cd*q*S. Not to be confused with S_factor, which 
-        Torenbeek lumps together into Cd when he gives us CdS.
+        Self S is the external area the flow sees. What we use in Cd*q*S. Not to be confused with S_factor (see 
+        explanations inside the function definition of calculate_cd), which Torenbeek lumps together into Cd 
+        when he gives us CdS.
         
         Self Cd is the fuselage's Cd.
         """
