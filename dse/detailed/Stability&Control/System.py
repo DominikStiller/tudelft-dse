@@ -30,24 +30,23 @@ class System:
         Fal, Far, Fe, Fr, Tlx, Trx = exc_sig
 
         aoa = np.arctan2(self.velocity_linear[2], self.velocity_linear[0])  # if you are ambitious, go do something
+        velocitywings = np.array([self.velocity_linear[0], self.velocity_linear[0], self.velocity_linear[0]]) # if you are ambitious, go do something
 
-        wl, wr, h = self.aero_forces(aoa, self.velocity_linear, self.euler[2], self.euler[1])
+        wl, wr, h = self.aero_forces(aoa, velocitywings, self.euler[2], self.euler[1])
         W = np.array([-self.W0 * np.sin(np.radians(self.euler[1])), 0, self.W0 * np.cos(np.radians(self.euler[1]))])
-
-        F = np.array([wl, wr, h, np.array(Fal), np.array(Far), np.array(Fe), np.array(Fr), np.array([Tlx, 0, 0]),
+        F = np.array([wl, wr, h, np.array(Fal), np.array(Far), np.array([0, 0, Fe]), np.array(Fr), np.array([Tlx, 0, 0]),
                       np.array([Trx, 0, 0]), W])
 
         M, Fnet = self.moments(self.geometry, F)
         a, anga = self.accelerations(F, M)
 
-        matrix = np.array([[np.cos(self.euler[1]), np.sin(self.euler[0]) * np.sin(self.euler[1]), np.cos(self.euler[0])*np.sin(self.euler[1])],
+        matrix = np.array([[np.cos(self.euler[1]), np.sin(self.euler[0]) * np.sin(self.euler[1]), np.cos(self.euler[0]) * np.sin(self.euler[1])],
                            [0, np.cos(self.euler[0]) * np.cos(self.euler[1]), -np.sin(self.euler[0]) * np.cos(self.euler[1])],
                            [0, np.sin(self.euler[0]), np.cos(self.euler[0])]])
         d_euler = (1/np.cos(self.euler[1])) * np.matmul(matrix, self.velocity_angular)
         self.euler = self.euler_prev + d_euler*dt
         self.velocity_linear = self.velocity_linear_prev + a*dt
         self.velocity_angular = self.velocity_angular_prev + anga*dt
-
         self.euler_prev = np.copy(self.euler)
         self.velocity_linear_prev = np.copy(self.velocity_linear)
         self.velocity_angular_prev = np.copy(self.velocity_angular)
@@ -67,6 +66,7 @@ class System:
                 wr: force vector right wing
                 h: force vector horizontal stabilizer
             '''
+
         # aoa includes the effective angle of attack due to the pitch and angular velocity
         clwl, clwr, clh, cdwl, cdwr, cdh = Aircraft.get_coefficients(aoa + self.imain, aoa + self.imain, aoa + self.itail)
         Lwl = 0.5 * self.rho * self.area[0] * clwl * v[0] ** 2
@@ -83,6 +83,7 @@ class System:
         wl = np.matmul(self.aero_to_body(pitch, beta), wl).T
         wr = np.matmul(self.aero_to_body(pitch, beta), wr).T
         h = np.matmul(self.aero_to_body(pitch, beta), h).T
+
         return wl, wr, h
 
     def aero_to_body(self, aoa, b):
@@ -119,6 +120,7 @@ class System:
             M[i] = np.cross(R[i], F[i])
         M = np.array([sum(M.T[0]), sum(M.T[1]), sum(M.T[2])])
         Fnet = np.array([sum(F.T[0]), sum(F.T[1]), sum(F.T[2])])
+
         return M, Fnet
 
     def accelerations(self, F, M):
@@ -132,7 +134,6 @@ class System:
             a: acceleration vecotor
             ang: angular acceleration vector
         '''
-
         a = np.array([sum(F.T[0]) / self.m, sum(F.T[1]) / self.m, sum(F.T[2]) / self.m])
         ang = np.array([M[0] / self.I[0], M[1] / self.I[1], M[2] / self.I[2]])
         return a, ang
@@ -162,3 +163,4 @@ class System:
         T = np.linalg.inv(T)
 
         return T
+
