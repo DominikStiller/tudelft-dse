@@ -65,3 +65,4 @@ def get_coefficients(aoal, aoar, aoah):
     cdh = clh / np.interp(aoah, aoalisth, cldivcdh)
     # add the fuselage contribution later here and add s fuselage
     return clwl, clwr, clh, cdwl, cdwr, cdh
+
