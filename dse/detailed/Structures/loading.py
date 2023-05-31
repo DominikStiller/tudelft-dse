@@ -23,15 +23,14 @@ def xflr_forces(filename, q, b):
             Data.append(row)
     while [] in Data:
         Data.remove([])
-    indx = Data.index(['Main Wing'])
-    Data = Data[indx+1:]
+    indx = Data.index(["Main Wing"])
+    Data = Data[indx + 1 :]
 
     xflr_data = pd.DataFrame(Data[1:], columns=Data[0], dtype=float)
 
     # Cut half wing
-    cutpoint = int(round(len(xflr_data['Cl']) / 2))
+    cutpoint = int(round(len(xflr_data["Cl"]) / 2))
     xflr_data = xflr_data[:cutpoint]
-
 
     ## Application of the forces
     # Assume drag acts through the neutral axis
@@ -41,11 +40,18 @@ def xflr_forces(filename, q, b):
 
     ## Magnitude of the forces
     # Overwrite the forces in y direction if there are any present.
-        # [m2] Array of all the surface areas
-    S_array = xflr_data['Chord'] * np.hstack((np.array([b-abs(xflr_data['  y-span'][0])]), abs(application[1][1:] - application[1][:-1])))
-    mag = np.zeros((3, len(xflr_data['  y-span'])))                          # [N] (3 x n) where n is the length of y_lst
-    mag[0] = - (xflr_data['ICd'] + xflr_data['PCd']) * q * S_array       # [N] Forces in x-direction due to drag
-    mag[2] = (xflr_data['Cl'] * q * S_array)                               # [N] Forces in z-direction due to lift
+    # [m2] Array of all the surface areas
+    S_array = xflr_data["Chord"] * np.hstack(
+        (
+            np.array([b - abs(xflr_data["  y-span"][0])]),
+            abs(application[1][1:] - application[1][:-1]),
+        )
+    )
+    mag = np.zeros((3, len(xflr_data["  y-span"])))  # [N] (3 x n) where n is the length of y_lst
+    mag[0] = (
+        -(xflr_data["ICd"] + xflr_data["PCd"]) * q * S_array
+    )  # [N] Forces in x-direction due to drag
+    mag[2] = xflr_data["Cl"] * q * S_array  # [N] Forces in z-direction due to lift
 
     return Force(magnitude=mag, point_of_application=application)
 
@@ -93,25 +99,27 @@ class Beam:
         elif type(width) == np.ndarray:
             self.x = width
         else:
-            raise TypeError('Width needs to be either a constant float/int or a 100 x n array')
+            raise TypeError("Width needs to be either a constant float/int or a 100 x n array")
 
         if type(length) == int or type(length) == float:
             self.y = np.linspace(-length, 0, 100)
         elif type(length) == np.ndarray:
             self.y = length
         else:
-            raise TypeError('Length needs to be either a constant float/int or a 100 x n array')
+            raise TypeError("Length needs to be either a constant float/int or a 100 x n array")
 
         if type(height) == int or type(height) == float:
             self.z = np.reshape(np.linspace(0, height, 100), (100, 1)) * np.ones(100)
         elif type(height) == np.ndarray:
             self.z = height
         else:
-            raise TypeError('Height needs to be either a constant float/int or a 100 x n array')
+            raise TypeError("Height needs to be either a constant float/int or a 100 x n array")
 
         if type(cross_section) == str:
             if cross_section == "full":
                 self.section = np.ones((len(self.y), len(self.z), len(self.x)))
+            elif cross_section == "constant":
+                self.section = np.ones((len(self.y), 2, len(self.x))) * np.vstack((self.x, self.z))
         else:
             if type(cross_section) != np.ndarray:
                 raise TypeError('The cross section needs to be either "full" or a 3D array')
@@ -119,6 +127,11 @@ class Beam:
                 if np.shape(cross_section) != (len(self.y), 2, len(self.x)):
                     raise ValueError('Cross section needs to have a size consistent with the '
                                      'amount of points indicated for length, height and width')
+                if np.shape(cross_section) != (len(self.y), len(self.z), len(self.x)):
+                    raise ValueError(
+                        "Cross section needs to have a size consistent with the "
+                        "amount of points indicated for length, height and width"
+                    )
                 self.section = cross_section
 
         # Internal forces
@@ -131,8 +144,8 @@ class Beam:
         self.f_loading = np.zeros((len(self.y), 3, 1))
         self.m_loading = np.zeros((len(self.y), 3, 1))
 
-    def add_loading(self,
-                    force):
+
+    def add_loading(self, force):
         # Locate where in the beam are the loads located
         for i in range(np.shape(force.F)[1]):
             y_point = (np.abs(self.y - force.application[1, i])).argmin()
@@ -142,134 +155,185 @@ class Beam:
 
             # Calculate moments
             for j in range(len(self.y[y_point:])):
-                distance = np.array([[np.mean(self.x), self.y[y_point+j], np.mean(self.z)]]).T - np.reshape(force.application[:, i], (3, 1))
-                self.m_loading[y_point+j] += np.reshape(np.cross(force.F[:, i], distance.T), (3, 1))
+                distance = np.array(
+                    [[np.mean(self.x), self.y[y_point + j], np.mean(self.z)]]
+                ).T - np.reshape(force.application[:, i], (3, 1))
+                self.m_loading[y_point + j] += np.reshape(
+                    np.cross(force.F[:, i], distance.T), (3, 1)
+                )
 
-    def MoI(self, boom_coordinates, interconnection):
-        Airfoil = pd.read_csv('S1223.dat', delimiter='\s+', dtype=float, skiprows=1, names=['x', 'z'])
-        if interconnection != 0:
-            print('Interconnection between stringers still need to be implemented')
-        if boom_coordinates != 0:
-            print('The code now only runs for all coordinates of the stringers being the booms')
-        else:
-            boom_Data = Airfoil
-
-        IndxSplit = np.where(Airfoil['x'] == np.min(Airfoil['x']))
-
-        # Initial gues for the boom areas add up to a percentage fill of the airfoil shape
-        # Assume for the first estimate all the boom areas to be equal: Bi = A_airfoil / #booms
+    def AirfoilBoom(self):
+        ## The initial guess of the skin thickness follows from the inful percentage of the wingbox, and  circumference
         Infill = 0.10  # The percentage infull of the wingbox area
+        # Locating the leading edge.
+        IndxSplit = np.where(self.x == np.min(self.x))
+        # Calculating the area for the top skin and the bottom skin
+        Airfoil_top = InterpolatedUnivariateSpline(
+            np.flip(self.x[: IndxSplit[0][0] + 1]), np.flip(self.z[: IndxSplit[0][0] + 1])
+        )
+        Airfoil_bot = InterpolatedUnivariateSpline(
+            self.x[IndxSplit[0][0] :], self.z[IndxSplit[0][0] :]
+        )
 
-        Airfoil_top = InterpolatedUnivariateSpline(np.flip(Airfoil['x'][:IndxSplit[0][0]+1].to_numpy()),
-                                                   np.flip(Airfoil['z'][:IndxSplit[0][0]+1].to_numpy()))
-        Airfoil_bot = InterpolatedUnivariateSpline(Airfoil['x'][IndxSplit[0][0]:].to_numpy(),
-                                                   Airfoil['z'][IndxSplit[0][0]:].to_numpy())
+        A_airfoil = (Airfoil_top.integral(0, 1) - Airfoil_bot.integral(0, 1)) * max(
+            self.x
+        )  # The Area of the airfoil
 
-        A_airfoil = (Airfoil_top.integral(0, 1) - Airfoil_bot.integral(0, 1)) * self.x[-1]  # The Area of the airfoil
-        x_booms = np.reshape(boom_Data['x'].to_numpy(), (len(boom_Data['x']), 1)) * self.x[-1]
-        z_booms = np.reshape(boom_Data['z'].to_numpy(), (len(boom_Data['z']), 1)) * self.x[-1]
-
-        boomDistance = np.sqrt((x_booms[1:] - x_booms[:-1])**2 + (z_booms[1:] - z_booms[:-1])**2)
-        tSkin = (Infill * A_airfoil) / np.sum(boomDistance, 0) * np.ones((np.shape(boomDistance)[0], 1))
-
+        ## Reshapes the x and z coordinates to the correct shapes, one with repeating first node, and one without (_nr)
+        x_booms = np.reshape(self.x, (len(self.x), 1))
+        z_booms = np.reshape(self.z, (len(self.z), 1))
         x_booms_nr = x_booms[:-1]
         z_booms_nr = z_booms[:-1]
 
-        Bi_initial = A_airfoil / len(x_booms_nr)
-        boomArea_nr = np.ones((np.shape(x_booms_nr)[0], 1)) * Bi_initial * Infill
+        Bi_initial = A_airfoil / len(x_booms_nr) * Infill
 
-        diff = np.ones(np.shape(boomArea_nr)[1])
-        while np.any(np.abs(diff) > 0.01):
-            ## Neutral Axis Calculations
-            NAx = (np.sum(boomArea_nr * x_booms_nr, 0)) / (np.sum(boomArea_nr, 0))
-            NAz = (np.sum(boomArea_nr * z_booms_nr, 0)) / (np.sum(boomArea_nr, 0))
+        return Bi_initial
 
-            Ixx = np.sum(boomArea_nr * (x_booms_nr - NAz) ** 2, 0)
-            Izz = np.sum(boomArea_nr * (z_booms_nr - NAx) ** 2, 0)
-            Ixz = np.sum(boomArea_nr * (x_booms_nr - NAx) * (z_booms_nr - NAz), 0)
+    def unitSquareBoom(self):
+        ### Calculates the initial guess for the boom areas for a square wingbox of unit length
+        ## The initial guess of the skin thickness follows from the inful percentage of the wingbox, and  circumference
 
-            sigma = ((np.reshape(self.m_loading[:, 0], (np.shape(Izz))) * Izz - np.reshape(self.m_loading[:, 2], (np.shape(Ixz))) * Ixz) * z_booms_nr +
-                     (np.reshape(self.m_loading[:, 2], (np.shape(Ixx))) * Ixx - np.reshape(self.m_loading[:, 0], (np.shape(Ixz))) * Ixz) * x_booms_nr) / (Ixx*Izz + Ixz**2)
-            sigma = np.vstack((sigma, sigma[0]))
-            sigma[np.where(sigma == 0)] = 0.1
-            boomAreaCopy = np.copy(boomArea_nr)
-            for i in range(np.shape(x_booms_nr)[0]):
-                boomAreaCopy[i] = tSkin[i-1] * boomDistance[i-1] / 6 * (2 + sigma[i-1]/sigma[i]) + \
-                                  tSkin[i] * boomDistance[i] / 6 * (2 + sigma[i+1]/sigma[i])
+        Infill = 0.10  # The percentage infull of the wingbox area
+        A_airfoil = 1
 
-            diff = np.mean((boomAreaCopy - boomArea_nr) / boomArea_nr, 0)
-            boomArea_nr = np.copy(boomAreaCopy)
-            print(np.max(np.abs(diff)), np.where(np.abs(diff) == np.max(np.abs(diff))))
-            time.sleep(0.5)
+        ## Reshapes the x and z coordinates to the correct shapes, one with repeating first node, and one without (_nr)
+        x_booms = np.reshape(self.x, (len(self.x), 1))
+        z_booms = np.reshape(self.z, (len(self.z), 1))
+        x_booms_nr = x_booms[:-1]
+        z_booms_nr = z_booms[:-1]
 
+        Bi_initial = A_airfoil / len(x_booms_nr) * Infill
 
-    def required_thickness(self):
-        t_min = 0.001
-        self.t = np.ones((np.shape(self.section) - np.array([0, 1, 0])))
-        for i in range(np.size(self.y)):
-            section = self.section[i]
+        return Bi_initial
 
-            points_doubled = np.hstack((section, np.reshape(section[:, 0], (2, 1))))
-            distances = points_doubled[:, 1:] - points_doubled[:, :-1]
-            distances = np.sum(distances ** 2, 0)
+    def DesignConstraints(self):
+        n = 1.5  # [-] Safety factor
+        sigma_yield = 250 * 10**6  # [MPa] The yield strength
+        tSkin_min = 0.001  # [m] The minimal allowable thickness
+        return n, sigma_yield, tSkin_min
 
-            t = np.ones(np.shape(self.x)) * 0.01
-            sigma = np.zeros(np.shape(t))
-            while np.any(np.abs(sigma) < 225e6) or np.any(np.abs(sigma) > 250e6):
-                t0 = np.copy(t)
-                NAx = np.sum(section[0] * t * distances) / np.sum(t * distances)
-                NAz = np.sum(section[1] * t * distances) / np.sum(t * distances)
+    def NeutralAxis(self, boomArea_nr, x_booms_nr, z_booms_nr):
+        # Neutral Axis Calculations
+        NAx = (np.sum(boomArea_nr * x_booms_nr, 0)) / (np.sum(boomArea_nr, 0))  # [m]
+        NAz = (np.sum(boomArea_nr * z_booms_nr, 0)) / (np.sum(boomArea_nr, 0))  # [m]
+        return NAx, NAz
 
-                Ixx = np.sum(t * distances * (section[0] - NAx) ** 2)
-                Izz = np.sum(t * distances * (section[1] - NAz) ** 2)
-                Ixz = np.sum(t * distances * (section[0] - NAx) * (section[1] - NAz))
+    def MoI(self, boomArea_nr, x_booms_nr, z_booms_nr):
+        # Moment of Inertia calculations
+        NAx, NAz = self.NeutralAxis(boomArea_nr, x_booms_nr, z_booms_nr)
+        Ixx = np.sum(boomArea_nr * (z_booms_nr - NAz) ** 2, 0)
+        Izz = np.sum(boomArea_nr * (x_booms_nr - NAx) ** 2, 0)
+        Ixz = np.sum(boomArea_nr * (x_booms_nr - NAx) * (z_booms_nr - NAz), 0)
+        return Ixx, Izz, Ixz
 
-                Fy = self.f_loading[i][1] / np.size(self.x)
-                Mx = self.m_loading[i][0]
-                Mz = self.m_loading[i][2]
+    def StressCalculations(self, Mx, Mz, x_booms_nr, z_booms_nr, boomArea_nr):
+        # Call the neutral & moments of inertia
+        NAx, NAz = self.NeutralAxis(boomArea_nr, x_booms_nr, z_booms_nr)
+        Ixx, Izz, Ixz = self.MoI(boomArea_nr, x_booms_nr, z_booms_nr)
+        # Stress calculations
+        sigma_nr = (
+            (Mx * Izz - Mz * Ixz) * (z_booms_nr - NAz) + (Mz * Ixx - Mx * Ixz) * (x_booms_nr - NAx)
+        ) / (Ixx * Izz + Ixz**2)
+        return sigma_nr
 
-                sigma = Fy / (t * distances) + (
-                        (Mx * Izz + Mz * Ixz) * section[1] + (Mz * Ixx + Mx * Ixz) * section[0]) / (
-                                Ixx * Izz + Ixz ** 2)
+    def BoomArea(self, boomAreaCopy, tSkin, boomDistance, sigma):
+        # Update the boom areas for the given stress.
+        for i in range(np.shape(boomAreaCopy)[0]):
+            boomAreaCopy[i] = tSkin[i - 1] * boomDistance[i - 1] / 6 * (
+                2 + sigma[i - 1] / sigma[i]
+            ) + tSkin[i] * boomDistance[i] / 6 * (2 + sigma[i + 1] / sigma[i])
+        return boomAreaCopy
 
-                if np.any(np.abs(sigma) > 250e6):
-                    t[np.where(np.abs(sigma) > 250e6)] += 0.0001
-                if np.any(np.abs(sigma) < 225e6):
-                    t[np.where(np.abs(sigma) < 225e6)] -= 0.0001
-                if np.any(t < t_min):
-                    t[np.where(t < t_min)] = t_min
-                if np.all(t == t0):
-                    break
-            self.t[i] = t
-            print(i)
+    def InternalStress(self, boom_coordinates, interconnection, i):
+        if interconnection != 0:  # define the interconnection of all of the boom areas
+            print("Interconnection between stringers still need to be implemented")
 
+        if boom_coordinates != 0:  # Defines locations of the booms
+            print("The code now only runs for all coordinates of the stringers being the booms")
+
+        x_booms = np.reshape(self.x, (len(self.x), 1))
+        z_booms = np.reshape(self.z, (len(self.z), 1))
+        x_booms_nr = x_booms[:-1]
+        z_booms_nr = z_booms[:-1]
+
+        ## Calculate the distance between each boom, there needs to be an update for the vertical connections
+        boomDistance = np.sqrt(
+            (x_booms[1:] - x_booms[:-1]) ** 2 + (z_booms[1:] - z_booms[:-1]) ** 2
+        ) * np.ones(np.size(self.y))
+
+        ## The design constraints
+        n, sigma_ult, tSkin_min = self.DesignConstraints()
+
+        ## Initial guess for the boom area and skin thickness and stress
+        if i == 0:
+            Bi_initial = self.AirfoilBoom()
+        else:
+            Bi_initial = self.unitSquareBoom()
+        boomArea_nr = np.ones((np.shape(x_booms_nr)[0], np.size(self.y))) * Bi_initial
+        tSkin = np.ones(np.shape(boomDistance)) * tSkin_min
+        sigma = np.ones(np.shape(self.x)) * n * sigma_ult
+
+        while np.any(np.abs(sigma - sigma_ult / n) / (sigma_ult / n) > 0.1):
+            diff = np.ones(np.shape(boomArea_nr)[1])
+            while np.any(np.abs(diff) > 0.0001):
+                # Moment of Inertia
+                Mx = np.reshape(self.m_loading[:, 0], (np.shape(boomDistance)[1]))
+                Mz = np.reshape(self.m_loading[:, 2], (np.shape(boomDistance)[1]))
+
+                # Stress Calculations
+                sigma_nr = self.StressCalculations(Mx, Mz, x_booms_nr, z_booms_nr, boomArea_nr)
+
+                # Stress with repeating column for the first node for easy calculations for the boom areas
+                sigma = np.vstack((sigma_nr, sigma_nr[0]))
+                sigma[np.where(sigma == 0)] = 0.1
+
+                # Boom area calculations
+                boomAreaCopy = np.copy(boomArea_nr)
+                boomAreaCopy = self.BoomArea(boomAreaCopy, tSkin, boomDistance, sigma)
+
+                # Calculating the difference between the new and old boom areas.
+                diff = np.mean((boomAreaCopy - boomArea_nr) / boomArea_nr, 0)
+                boomArea_nr = np.copy(boomAreaCopy)
+
+            indx = 0
+            for k in range(np.shape(sigma)[1]):
+                if np.max(abs(sigma[:, k])) >= sigma_ult:
+                    indx += 1
+            if indx != 0:
+                tSkin[:, -indx:] += 0.001
+            else:
+                break
+
+        plt.axhline(sigma_ult)
+        plt.axhline(-sigma_ult)
+        plt.plot(self.y, sigma.transpose())
+        plt.show()
 
     def plot_internal_loading(self):
         fig, (axs1, axs2) = plt.subplots(2, 1)
         f_loading = np.reshape(self.f_loading, (len(self.y), 3))
         m_loading = np.reshape(self.m_loading, (len(self.y), 3))
 
-        axs1.plot(self.y, f_loading[:, 0], label=r'$V_x$')
-        axs1.plot(self.y, f_loading[:, 1], label=r'$V_y$')
-        axs1.plot(self.y, f_loading[:, 2], label=r'$V_z$')
-        axs1.set_xlabel('Span [m]')
-        axs1.set_ylabel('Force [N]')
+        axs1.plot(self.y, f_loading[:, 0], label=r"$V_x$")
+        axs1.plot(self.y, f_loading[:, 1], label=r"$V_y$")
+        axs1.plot(self.y, f_loading[:, 2], label=r"$V_z$")
+        axs1.set_xlabel("Span [m]")
+        axs1.set_ylabel("Force [N]")
         axs1.legend()
 
-        axs2.plot(self.y, m_loading[:, 0], label=r'$M_x$')
-        axs2.plot(self.y, m_loading[:, 1], label=r'$M_y$')
-        axs2.plot(self.y, m_loading[:, 2], label=r'$M_z$')
-        axs2.set_xlabel('Span [m]')
-        axs2.set_ylabel('Moment [Nm]')
+        axs2.plot(self.y, m_loading[:, 0], label=r"$M_x$")
+        axs2.plot(self.y, m_loading[:, 1], label=r"$M_y$")
+        axs2.plot(self.y, m_loading[:, 2], label=r"$M_z$")
+        axs2.set_xlabel("Span [m]")
+        axs2.set_ylabel("Moment [Nm]")
         axs2.legend()
 
         plt.tight_layout()
         plt.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # q = 0.5 * 0.01 * 112 ** 2
-    #
     # aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, 16.8)
     # wing = Beam(3.35, 16.8, 3.35/12, 'full')
     #
@@ -277,33 +341,25 @@ if __name__ == '__main__':
     # wing.MoI(0, 0)
     #
     # wing.plot_internal_loading()
+    F = np.array([[0], [0], [3e3 * 3.71]])
 
-
-    F = np.array([
-        [0],
-        [0],
-        [3e3 * 3.71]
-    ])
-    loc = np.array([
-        [0],
-        [-16.8],
-        [0]
-    ])
+    loc = np.array([[0.5], [-16.8], [0]])
 
     dummy_force = Force(magnitude=F, point_of_application=loc)
+    chord = 3.35
+    Airfoil = pd.read_csv("S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
+    l = np.linspace(-16.8, 0, 100)
+    wing = Beam(
+        width=Airfoil["x"].to_numpy() * chord,
+        height=Airfoil["z"].to_numpy() * chord,
+        length=l,
+        cross_section="constant",
+    )
+    wing.add_loading(dummy_force)
+    wing.InternalStress(0, 0, 0)
 
-    w = np.hstack((np.ones(20) * -0.5, np.linspace(-0.5, 0.5, 40)[1:-1], np.ones(40) * 0.5, np.linspace(0.5, -0.5, 40)[1:-1], np.ones(19) * -0.5))
-    h = np.hstack((np.linspace(0, 0.5, 20), np.ones(38) * 0.5, np.linspace(0.5, -0.5, 40), np.ones(38) * -0.5, np.linspace(-0.5, 0, 20)[:-1]))
-    l = np.linspace(-16.8, 0, 50)
-
-    section = np.reshape(np.ones((np.size(l), 1)) * np.hstack((w, h)), (np.size(l), 2, np.size(w)))
-
-    square_beam = Beam(width=w, length=l, height=h, cross_section=section)
-    square_beam.add_loading(dummy_force)
-    square_beam.required_thickness()
-
-    plt.plot(np.reshape(l, (np.size(l))), [np.max(square_beam.t[i]) for i in range(len(l))], label='Max t')
-    plt.plot(np.reshape(l, (np.size(l))), [np.min(square_beam.t[i]) for i in range(len(l))], label='Min t')
-    plt.legend()
-    plt.show()
-
+    # w = np.reshape(np.linspace(0, 1, 100), (100, 1)) * np.ones(100)
+    # h = np.reshape(np.linspace(-0.5, 0.5, 100), (100, 1)) * np.ones(100)
+    # square_beam = Beam(width=w, length=l, height=h, cross_section='full')
+    # square_beam.add_loading(dummy_force)
+    # square_beam.MoI_V2(0, 0, 'S1223.dat')
