@@ -249,7 +249,7 @@ class Beam:
         # Stress calculations
         sigma_nr = (
                            (Mx * Izz - Mz * Ixz) * (z_booms - NAz) + (Mz * Ixx - Mx * Ixz) * (x_booms - NAx)
-                   ) / (Ixx * Izz + Ixz**2) + (Fy / np.shape(boomArea_nr)[0]) / (boomArea_nr)
+                   ) / (Ixx * Izz - Ixz**2) + (Fy / np.shape(boomArea_nr)[0]) / (boomArea_nr)
         return sigma_nr
 
     def BoomArea(self, boomAreaCopy, tSkin, boomDistance, sigma):
