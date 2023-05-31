@@ -160,8 +160,7 @@ class TestBeam(TestCase):
         x = np.linspace(0, 0.1, 10)
         y = np.linspace(-2, 0, 100)
         z = np.linspace(0, 0.05, 10)
-        wing = Beam(x, y, z, "full",
-        material=materials['Al/Si'])
+        wing = Beam(x, y, z, "full", material=materials['Al/Si'])
 
         F = np.array([[0, 0, 0], [0, 0, 0], [1, 1, 1]])
 
@@ -206,7 +205,7 @@ class TestBeam(TestCase):
             ), "Forces at semi-middle are off"
             assert np.all(wing.f_loading[:y_index_3] == 0), "Forces at the tip are off"
 
-    def test_InternalLoads(self):
+    def test_InternalLoads_Rhombus(self):
         ## Hand Calculations
         NAx_hand = 0.  # Neutral axis as obtained by hand calculations
         NAz_hand = 0.  # Neutral axis as obtained by hand calculations
@@ -227,7 +226,7 @@ class TestBeam(TestCase):
             height=z,
             length=l,
             cross_section="constant",
-        material=materials['Al/Si']
+            material=materials['Al/Si']
         )
         Applied_Load = Force(
             magnitude=np.array(
@@ -260,6 +259,66 @@ class TestBeam(TestCase):
         NAx, NAz = rombus.NeutralAxis(boomArea_nr=np.ones((8, np.size(l)))*0.0125, x_booms_nr=x_booms_nr, z_booms_nr=z_booms_nr)
         Ixx, Izz, Ixz = rombus.MoI(boomArea_nr=np.ones((8, np.size(l)))*0.0125, x_booms_nr=x_booms_nr, z_booms_nr=z_booms_nr)
         sigma_nr = rombus.StressCalculations(boomArea_nr=np.ones((8, np.size(l)))*0.0125)
+
+        assert abs((NAx[-1] - NAx_hand)) < 0.0001, 'The NAx is off'
+        assert abs((NAz[-1] - NAz_hand)) < 0.0001, 'The NAz is off'
+        assert abs(Ixx[-1] - Ixx_hand) < 0.0001, 'The Ixx is off'
+        assert abs(Izz[-1] - Izz_hand) < 0.0001, 'The Izz is off'
+        assert abs(Ixz[-1] - Ixz_hand) < 0.0001, 'The Ixz is off'
+        assert np.all(abs(sigma_nr[:,-1] - sigma_hand.T)/sigma_hand.T < 0.01), 'The stresses are wrong'
+
+    def test_InternalLoads_Parallelogram(self):
+        ## Hand Calculations
+        NAx_hand = 0.  # Neutral axis as obtained by hand calculations
+        NAz_hand = 0.  # Neutral axis as obtained by hand calculations
+        Ixx_hand = 0.0375  # [m4]
+        Izz_hand = 0.075  # [m4]
+        Ixz_hand = 0.0375  # [m4]
+        sigma_hand = np.array(
+            [
+                [-2.4, 0.133333, 2.6666, 2.5333, 2.4, -1.3333, -2.666, -2.53333]
+            ]
+        ).T * 1e6
+        b = 10
+        x = np.array([1, 1, 1, 0, -1, -1, -1, 0])
+        z = np.array([0, 0.5, 1, 0.5, 0, -0.5, -1, -0.5])
+        l = np.linspace(-b, 0, 100)
+        parallelogram = Beam(
+            width=x,
+            height=z,
+            length=l,
+            cross_section="constant",
+        )
+        Applied_Load = Force(
+            magnitude=np.array(
+                [
+                    [1000],
+                    [0],
+                    [-10000]
+                ]
+            ),
+            point_of_application=np.array(
+                [
+                    [0],
+                    [-b],
+                    [0]
+                ]
+            )
+        )
+        parallelogram.add_loading(Applied_Load)
+
+        x_booms_nr, z_booms_nr = np.split(np.reshape(parallelogram.section, (np.size(parallelogram.y), 2 * np.shape(parallelogram.x)[0])), 2,
+                                          1)
+        if np.all(x_booms_nr[:, 0] == x_booms_nr[:, -1]):
+            x_booms_nr = x_booms_nr[:, :-1]
+            z_booms_nr = x_booms_nr[:, :-1]
+
+        x_booms_nr = x_booms_nr.T
+        z_booms_nr = z_booms_nr.T
+
+        NAx, NAz = parallelogram.NeutralAxis(boomArea_nr=np.ones((8, np.size(l)))*0.0125, x_booms_nr=x_booms_nr, z_booms_nr=z_booms_nr)
+        Ixx, Izz, Ixz = parallelogram.MoI(boomArea_nr=np.ones((8, np.size(l)))*0.0125, x_booms_nr=x_booms_nr, z_booms_nr=z_booms_nr)
+        sigma_nr = parallelogram.StressCalculations(boomArea_nr=np.ones((8, np.size(l)))*0.0125)
 
         assert abs((NAx[-1] - NAx_hand)) < 0.0001, 'The NAx is off'
         assert abs((NAz[-1] - NAz_hand)) < 0.0001, 'The NAz is off'
