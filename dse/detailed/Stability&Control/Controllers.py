@@ -34,7 +34,7 @@ class Controller:
 
 
 def thrust_Controller(v, aoa, a, Tl, Tr, Vcruise):
-    return 160., 160.  # so that one day this is a PID
+    return 0., 0.  # so that one day this is a PID
 
     # '''
     #
