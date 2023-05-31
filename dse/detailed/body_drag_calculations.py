@@ -13,7 +13,7 @@ class Fuselage:
         self.cab_d = cabin_diameter
         self.cab_l = cabin_length
 
-        self.d_main = self.effective_cabin_diameter(self.height_factor)
+        self.d_main = self.effective_fuselage_diameter(self.height_factor)
         self.r_main = self.d_main / 2
 
         self.length = self.cab_l + (self.L_D_nose * self.d_main) + (self.L_D_tail * self.d_main)
@@ -46,7 +46,7 @@ class Fuselage:
 
     #  --------- Methods for calculating characteristics --------- #
 
-    def effective_cabin_diameter(self, height_factor):
+    def effective_fuselage_diameter(self, height_factor):
         """ Returns dimensions [...]. Inputs are cabin_diameter, cabin_length, height_factor, all in [m] """
         d = self.cab_d * (1 + height_factor)
         return d
@@ -106,9 +106,20 @@ class Fuselage:
 
 # Testing
 
-fuselage = Fuselage(2, 2, 1 / 3, 1.5, 1)
+cabin_diameter = 2
+cabin_length = 3
+height_factor = 1/3
+L_D_nose = 1.5
+L_D_tail = 1
 
-print(f'{fuselage.cab_d}         {fuselage.d_main}         {fuselage.length}        {fuselage.cd}')
+fuselage = Fuselage(cabin_diameter, cabin_length, height_factor, L_D_nose, L_D_tail)
+
+print(f'{fuselage.cab_d}         {fuselage.d_main}         {fuselage.length}       {round(fuselage.s, 3)}        {round(fuselage.cd, 5)}')
+
+v = 111
+rho = 0.015
+drag = fuselage.drag_simulation(v, rho)
+print("drag force: ", drag)
 
 """
 #  --------------------------------  TO DO  --------------------------------  #
