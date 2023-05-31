@@ -2,6 +2,7 @@ from unittest import TestCase
 import numpy as np
 import os
 from dse.detailed.Structures.loading import *
+from dse.detailed.Structures.material_properties import materials
 
 
 class Test(TestCase):
@@ -133,7 +134,7 @@ class TestBeam(TestCase):
         x = np.linspace(0, 0.1, 10)
         y = np.linspace(-2, 0, 100)
         z = np.linspace(0, 0.05, 10)
-        wing = Beam(x, y, z, "full")
+        wing = Beam(x, y, z, "full", material=materials['Al/Si'])
 
         F = 1
         loc = -1.5
@@ -159,7 +160,8 @@ class TestBeam(TestCase):
         x = np.linspace(0, 0.1, 10)
         y = np.linspace(-2, 0, 100)
         z = np.linspace(0, 0.05, 10)
-        wing = Beam(x, y, z, "full")
+        wing = Beam(x, y, z, "full",
+        material=materials['Al/Si'])
 
         F = np.array([[0, 0, 0], [0, 0, 0], [1, 1, 1]])
 
@@ -225,6 +227,7 @@ class TestBeam(TestCase):
             height=z,
             length=l,
             cross_section="constant",
+        material=materials['Al/Si']
         )
         Applied_Load = Force(
             magnitude=np.array(
@@ -265,12 +268,6 @@ class TestBeam(TestCase):
         assert abs(Ixz[-1] - Ixz_hand) < 0.0001, 'The Ixz is off'
         assert np.all(abs(sigma_nr[:,-1] - sigma_hand.T)/sigma_hand.T < 0.01), 'The stresses are wrong'
 
-
-
-
-
-
-
     def test_neutral_axis(self):
         from dse.detailed.Structures.loading import Beam
         x = np.hstack(
@@ -290,7 +287,8 @@ class TestBeam(TestCase):
             width=x,
             height=y,
             length=5,
-            cross_section='constant'
+            cross_section='constant',
+            material=materials['Al/Si']
         )
         A = np.ones((np.size(x), 100))
 
@@ -329,7 +327,8 @@ class TestBeam(TestCase):
             width=x,
             height=y,
             length=5,
-            cross_section='constant'
+            cross_section='constant',
+            material=materials['Al/Si']
         )
         A = np.ones((np.size(x), 100))
 
@@ -369,7 +368,8 @@ class TestBeam(TestCase):
             width=x,
             height=y,
             length=5,
-            cross_section='constant'
+            cross_section='constant',
+            material=materials['Al/Si']
         )
         A = np.ones((np.size(x), 100))
 
@@ -452,7 +452,8 @@ class TestBeam(TestCase):
             width=x,
             height=y,
             length=5,
-            cross_section='constant'
+            cross_section='constant',
+            material=materials['Al/Si']
         )
 
         dummy_force_2 = Force(

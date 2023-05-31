@@ -1,8 +1,9 @@
+from dse.detailed.Structures.material_properties import materials
+from scipy.interpolate import InterpolatedUnivariateSpline
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import csv
-from scipy.interpolate import InterpolatedUnivariateSpline
 
 
 def xflr_forces(filename, q, b):
@@ -90,7 +91,7 @@ class Force:
 
 
 class Beam:
-    def __init__(self, width, length, height, cross_section):
+    def __init__(self, width, length, height, cross_section, material):
         # Beam dimensions
         if type(length) == int or type(length) == float:
             self.y = np.linspace(-length, 0, 100)
@@ -139,6 +140,8 @@ class Beam:
 
         # Internal moments
         self.m_loading = np.zeros((len(self.y), 3, 1))
+
+        self.mat = material
 
         # Parameters to be calulated later
         self.t = None
@@ -212,7 +215,7 @@ class Beam:
 
     def DesignConstraints(self):
         n = 1.5  # [-] Safety factor
-        sigma_yield = 250e6  # [MPa] The yield strength
+        sigma_yield = self.mat.sigmay  # [MPa] The yield strength
         tSkin_min = 0.001  # [m] The minimal allowable thickness
         return n, sigma_yield, tSkin_min
 
@@ -374,6 +377,7 @@ if __name__ == "__main__":
         height=Airfoil["z"].to_numpy() * chord,
         length=l,
         cross_section="constant",
+        material=materials['Al/Si']
     )
     # wing.add_loading(aerodynamic_forces)
     # thrust = Force(
