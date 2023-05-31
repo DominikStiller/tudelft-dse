@@ -92,26 +92,30 @@ class Force:
 class Beam:
     def __init__(self, width, length, height, cross_section):
         # Beam dimensions
-        if type(width) == int or type(width) == float:
-            self.x = np.reshape(np.linspace(0, width, 100), (100, 1)) * np.ones(100)
-        elif type(width) == np.ndarray:
-            self.x = width
-        else:
-            raise TypeError("Width needs to be either a constant float/int or a 100 x n array")
-
         if type(length) == int or type(length) == float:
             self.y = np.linspace(-length, 0, 100)
         elif type(length) == np.ndarray:
             self.y = length
         else:
-            raise TypeError("Length needs to be either a constant float/int or a 100 x n array")
+            raise TypeError("Length needs to be either a constant float/int or a 1D array")
+
+        if type(width) == int or type(width) == float:
+            self.x = np.reshape(np.linspace(-width/2, width, 100), (100, 1)) * np.size(self.y)
+        elif type(width) == np.ndarray:
+            self.x = width
+        else:
+            raise TypeError("Width needs to be either a constant float/int or a 100 x n array")
+
 
         if type(height) == int or type(height) == float:
-            self.z = np.reshape(np.linspace(0, height, 100), (100, 1)) * np.ones(100)
+            self.z = np.reshape(np.linspace(-height/2, height/2, 100), (100, 1)) * np.ones(np.size(self.y))
         elif type(height) == np.ndarray:
             self.z = height
         else:
             raise TypeError("Height needs to be either a constant float/int or a 100 x n array")
+
+        if np.shape(self.x) != np.shape(self.z):
+            raise ValueError('Width and height must have matching shapes')
 
         if type(cross_section) == str:
             if cross_section == "full":
@@ -125,11 +129,9 @@ class Beam:
                 if np.shape(cross_section) != (len(self.y), 2, len(self.x)):
                     raise ValueError('Cross section needs to have a size consistent with the '
                                      'amount of points indicated for length, height and width')
-                if np.shape(cross_section) != (len(self.y), len(self.z), len(self.x)):
-                    raise ValueError(
-                        "Cross section needs to have a size consistent with the "
-                        "amount of points indicated for length, height and width"
-                    )
+                if len(np.shape(self.x)) != 2:
+                    raise ValueError('If cross_section != "full" or "constant", then width and height need to be 2D '
+                                     'arrays')
                 self.section = cross_section
 
         # Internal forces
@@ -137,6 +139,7 @@ class Beam:
 
         # Internal moments
         self.m_loading = np.zeros((len(self.y), 3, 1))
+        self.t = None
 
     def unload(self):
         self.f_loading = np.zeros((len(self.y), 3, 1))
@@ -235,15 +238,15 @@ class Beam:
         Ixx, Izz, Ixz = self.MoI(boomArea_nr, x_booms_nr, z_booms_nr)
         # Stress calculations
         sigma_nr = (
-            (Mx * Izz - Mz * Ixz) * (z_booms_nr - NAz) + (Mz * Ixx - Mx * Ixz) * (x_booms_nr - NAx)
-        ) / (Ixx * Izz + Ixz**2) + (Fy / np.shape(boomArea_nr)[0]) / (boomArea_nr)
+                           (Mx * Izz - Mz * Ixz) * (z_booms_nr - NAz) + (Mz * Ixx - Mx * Ixz) * (x_booms_nr - NAx)
+                   ) / (Ixx * Izz + Ixz**2) + (Fy / np.shape(boomArea_nr)[0]) / (boomArea_nr)
         return sigma_nr
 
     def BoomArea(self, boomAreaCopy, tSkin, boomDistance, sigma):
         # Update the boom areas for the given stress.
         for i in range(np.shape(boomAreaCopy)[0]):
             boomAreaCopy[i] = tSkin[i - 1] * boomDistance[i - 1] / 6 * (
-                2 + sigma[i - 1] / sigma[i]
+                    2 + sigma[i - 1] / sigma[i]
             ) + tSkin[i] * boomDistance[i] / 6 * (2 + sigma[i + 1] / sigma[i])
         return boomAreaCopy
 
@@ -303,6 +306,7 @@ class Beam:
             else:
                 break
 
+        self.t = tSkin
         plt.axhline(sigma_ult)
         plt.axhline(-sigma_ult)
         plt.plot(self.y, sigma.transpose())
@@ -424,3 +428,9 @@ if __name__ == "__main__":
 
     wing.InternalStress(0, 0, 0)
 
+    plt.plot(wing.y, np.max(wing.t, 0) * 1000, label='Max thickness')
+    plt.plot(wing.y, np.min(wing.t, 0) * 1000, label='Min thickness')
+    plt.xlabel('Span [m]')
+    plt.ylabel('Thickness [mm]')
+    plt.legend()
+    plt.show()
