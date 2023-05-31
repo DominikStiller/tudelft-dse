@@ -3,17 +3,16 @@ import numpy as np
 
 class Fuselage:
 
-    def __init__(self, cabin_diameter, cabin_length, height_factor, L_D_nose, L_D_tail):
+    def __init__(self, cabin_diameter, cabin_length, L_D_nose, L_D_tail):
         # Useful info
         self.L_D_nose = L_D_nose
         self.L_D_tail = L_D_tail
-        self.height_factor = height_factor
 
         # Useful characteristics
         self.cab_d = cabin_diameter
         self.cab_l = cabin_length
 
-        self.d_main = self.effective_fuselage_diameter(self.height_factor)
+        self.d_main = self.cab_d
         self.r_main = self.d_main / 2
 
         self.length = self.cab_l + (self.L_D_nose * self.d_main) + (self.L_D_tail * self.d_main)
@@ -46,10 +45,10 @@ class Fuselage:
 
     #  --------- Methods for calculating characteristics --------- #
 
-    def effective_fuselage_diameter(self, height_factor):
-        """ Returns dimensions [...]. Inputs are cabin_diameter, cabin_length, height_factor, all in [m] """
-        d = self.cab_d * (1 + height_factor)
-        return d
+    # def effective_fuselage_diameter(self, height_factor):
+    #     """ Returns dimensions [...]. Inputs are cabin_diameter, cabin_length, height_factor, all in [m] """
+    #     d = self.cab_d * (1 + height_factor)
+    #     return d
 
     def calculate_cd(self):
         """ Calculates cd [-] based on the fuselage characteristics """
@@ -106,29 +105,25 @@ class Fuselage:
 
 # Testing
 
-cabin_diameter = 2
-cabin_length = 3
-height_factor = 1/3
+cabin_diameter = 8/3
+cabin_length = 2
 L_D_nose = 1.5
 L_D_tail = 1
 
-fuselage = Fuselage(cabin_diameter, cabin_length, height_factor, L_D_nose, L_D_tail)
+fuselage = Fuselage(cabin_diameter, cabin_length, L_D_nose, L_D_tail)
 
 print(f'{fuselage.cab_d}         {fuselage.d_main}         {fuselage.length}       {round(fuselage.s, 3)}        {round(fuselage.cd, 5)}')
 
 v = 111
 rho = 0.015
 drag = fuselage.drag_simulation(v, rho)
+# drag = round(drag, 3)
 print("drag force: ", drag)
 
 """
 #  --------------------------------  TO DO  --------------------------------  #
 
-V -> Document assumptions
 
-V -> Write proper class descriptions
-
-V -> Format it to be a pretty code
 
 
 """
