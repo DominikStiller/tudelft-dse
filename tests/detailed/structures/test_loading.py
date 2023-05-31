@@ -1,6 +1,7 @@
 from unittest import TestCase
 import numpy as np
 import os
+from dse.detailed.Structures.loading import *
 
 
 class Test(TestCase):
@@ -67,6 +68,8 @@ class Test(TestCase):
         except TypeError:
             a = True
         self.assertTrue(a)
+
+
 
 
 class TestForce(TestCase):
@@ -194,6 +197,73 @@ class TestBeam(TestCase):
                 wing.f_loading[y_index_3:y_index_2] == np.reshape(F[:, -1], (3, 1))
             ), "Forces at semi-middle are off"
             assert np.all(wing.f_loading[:y_index_3] == 0), "Forces at the tip are off"
+
+    def test_InternalLoads(self):
+        ## Hand Calculations
+        NAx_hand = 0.  # Neutral axis as obtained by hand calculations
+        NAz_hand = 0.  # Neutral axis as obtained by hand calculations
+        Ixx_hand = 0.0375  # [m4]
+        Izz_hand = 0.0375  # [m4]
+        Ixz_hand = 0.000  # [m4]
+        sigma_hand = np.array(
+            [
+                [0.266666666666, 1.4666666666, 2.666666666, 1.2, -0.266666666666, -1.4666666666, -2.6666666, -1.2]
+            ]
+        ).T * 1e6
+        b = 10
+        x = np.array([1, 0.5, 0, -0.5, -1, -0.5, 0, 0.5])
+        z = np.array([0, 0.5, 1, 0.5, 0, -0.5, -1, -0.5])
+        l = np.linspace(-b, 0, 100)
+        rombus = Beam(
+            width=x,
+            height=z,
+            length=l,
+            cross_section="constant",
+        )
+        Applied_Load = Force(
+            magnitude=np.array(
+                [
+                    [1000],
+                    [0],
+                    [-10000]
+                ]
+            ),
+            point_of_application=np.array(
+                [
+                    [0],
+                    [-b],
+                    [0]
+                ]
+            )
+        )
+        rombus.add_loading(Applied_Load)
+        # rombus.plot_internal_loading()
+
+        x_booms_nr, z_booms_nr = np.split(np.reshape(rombus.section, (np.size(rombus.y), 2 * np.shape(rombus.x)[0])), 2,
+                                          1)
+        if np.all(x_booms_nr[:, 0] == x_booms_nr[:, -1]):
+            x_booms_nr = x_booms_nr[:, :-1]
+            z_booms_nr = x_booms_nr[:, :-1]
+
+        x_booms_nr = x_booms_nr.T
+        z_booms_nr = z_booms_nr.T
+
+        NAx, NAz = rombus.NeutralAxis(boomArea_nr=np.ones((8, np.size(l)))*0.0125, x_booms_nr=x_booms_nr, z_booms_nr=z_booms_nr)
+        Ixx, Izz, Ixz = rombus.MoI(boomArea_nr=np.ones((8, np.size(l)))*0.0125, x_booms_nr=x_booms_nr, z_booms_nr=z_booms_nr)
+        sigma_nr = rombus.StressCalculations(boomArea_nr=np.ones((8, np.size(l)))*0.0125)
+
+        assert abs((NAx[-1] - NAx_hand)) < 0.0001, 'The NAx is off'
+        assert abs((NAz[-1] - NAz_hand)) < 0.0001, 'The NAz is off'
+        assert abs(Ixx[-1] - Ixx_hand) < 0.0001, 'The Ixx is off'
+        assert abs(Izz[-1] - Izz_hand) < 0.0001, 'The Izz is off'
+        assert abs(Ixz[-1] - Ixz_hand) < 0.0001, 'The Ixz is off'
+        assert np.all(abs(sigma_nr[:,-1] - sigma_hand.T)/sigma_hand.T < 0.01), 'The stresses are wrong'
+
+
+
+
+
+
 
     def test_neutral_axis(self):
         from dse.detailed.Structures.loading import Beam
