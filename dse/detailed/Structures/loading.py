@@ -298,13 +298,7 @@ class Beam:
 
         ## Initial guess for the boom area and skin thickness and stress
         tSkin = np.ones(np.shape(boomDistance)) * tSkin_min
-        if i == 0:
-            # Bi_initial = self.AirfoilBoom()
-            Bi_initial = np.sum(boomDistance, 0) * tSkin_min / np.shape(boomDistance)[0] * np.ones(np.shape(boomDistance))
-        elif i == 1:
-            Bi_initial = self.unitSquareBoom()
-        else:
-            Bi_initial = 0.001 * np.ones(np.shape(x_booms_nr))
+        Bi_initial = np.sum(boomDistance, 0) * tSkin_min / np.shape(boomDistance)[0] * np.ones(np.shape(boomDistance))
         boomArea_nr = np.ones((np.shape(x_booms_nr)[0], np.size(self.y))) * Bi_initial
         sigma = np.ones(np.shape(self.x)) * n * sigma_ult
 
