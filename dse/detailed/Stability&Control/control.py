@@ -25,7 +25,7 @@ Vclimb = 2
 
 #simulation
 duration = 20 #duration of simulation in seconds
-dt = 0.01 #time increment in seconds
+dt = 0.1 #time increment in seconds
 Tangvel = np.radians(3*dt) #3 deg/s ang vel of thrust
 
 def add_force(F,pos_vector):
@@ -46,11 +46,12 @@ def thrust_force(mode, Faero, W, ang):
     elif mode == 2:
         T = -1 * W - np.array([0, 0, Faero[2]])
         newang = ang + Tangvel
+        Told = T[0]
         T[0] = T[2] / np.tan(newang)
         if abs(Tmax) > np.linalg.norm(T):
             return T, newang
         else:
-            T[0] = - T[2] / np.tan(abs(ang))
+            T[0] = Told
             return T, newang
 
     elif mode == 3:
@@ -216,7 +217,7 @@ def run_simulation(duration, dt):
     while Tang<0:
         i = i + 1
         mode = 2
-        alpha = np.radians(8)
+
         W = np.array([-W0 * np.sin(pitch), 0, W0 * np.cos(pitch)])
         Fw, Fh = aerodynamic_force(V[i - 1], alpha, beta, alphah, S)
         T, Tang = thrust_force(mode, Fw + Fh, W, Tang)

@@ -41,6 +41,13 @@ class Controller2:
         T = self.PID_thrust(error_velocity, self.dt)
         return T/2, T/2
 
+class Controller3:
+    def __init__(self, dt=0.01, Kp=1., Ki=1., Kd=1.):
+        self.PID_rudder = PID(Kp=Kp, Ki=Ki, Kd=Kd)
+        self.dt = dt
+
+    def __call__(self, error_phi):
+        return self.PID_rudder(error_phi, self.dt)
 
 
 

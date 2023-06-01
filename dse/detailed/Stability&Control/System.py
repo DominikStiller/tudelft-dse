@@ -9,7 +9,7 @@ class System:
         self.rho = 0.01
 
         # previous state
-        self.euler_prev = np.array([0, np.radians(-5), 0.])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
+        self.euler_prev = np.array([0, np.radians(-5), np.radians(5)])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
         self.velocity_linear_prev = np.array([105, 0, 0.])
         self.velocity_angular_prev = np.array([0, 0, 0.])
 
@@ -29,7 +29,7 @@ class System:
         aoawings = np.arctan2(self.velocity_linear[2] - self.velocity_angular[1], self.velocity_linear[0])
         aoatail = np.arctan2(self.velocity_linear[2] + self.velocity_angular[1]*10, self.velocity_linear[0])
         # aoa = np.arctan2(self.velocity_linear[2], self.velocity_linear[0])  # if you are ambitious, go do something
-        # velocitywings = np.array([self.velocity_linear[0], self.velocity_linear[0], self.velocity_linear[0]]) # if you are ambitious, go do something
+        # change this later to include all the fancy matrices and everything
         velocitywings = np.array([self.velocity_linear[0] - self.velocity_angular[1], self.velocity_linear[0] - self.velocity_angular[1], self.velocity_linear[0] + self.velocity_angular_prev[1] * 10])
         wl, wr, h = self.aero_forces(aoawings, aoatail, velocitywings, self.euler[2], self.euler[1])
         W = np.array([-self.W0 * np.sin(self.euler[1]), 0, self.W0 * np.cos(self.euler[1])])
