@@ -2,7 +2,7 @@ import pandas as pd
 from tabulate import tabulate, SEPARATING_LINE
 
 from dse.detailed.communication import from_db, to_db, k
-from dse.detailed.communication.waves import calculate_free_space_loss
+from dse.detailed.communication.waves import calculate_free_space_loss, wavelength
 
 
 def calculate_line_temp(line_loss: float, T0: float = 290):
@@ -161,6 +161,11 @@ class LinkBudget:
             columns=["Component", "Value [dB]", "Unit"],
         )
 
+    def print_configuration(self):
+        print(f"Transmitter power: {self.tx_power:.0f} W")
+        print(f"Frequency: {self.frequency / 1e6:.0f} MHz")
+        print(f"Wavelength: {wavelength(self.frequency) * 100:.2f} cm")
+
     def print_table(self):
         budget = list(self.budget.itertuples(index=False, name=None))
         snr = list(self.snr.itertuples(index=False, name=None))
@@ -168,11 +173,14 @@ class LinkBudget:
 
 
 if __name__ == "__main__":
+    aircraft_gain = 6
+
+    print("UPLINK (RELAY)")
     budget_uplink_relay = LinkBudget(
         frequency=440e6,
         tx_power=100,
         tx_loss=0.7,
-        tx_gain=0,
+        tx_gain=aircraft_gain,
         tx_pointing_loss=-2,
         tx_rx_distance=8000e3,
         loss_environment=-0.5,
@@ -186,4 +194,28 @@ if __name__ == "__main__":
         bit_error_rate=1e-6,
         coding="conv-7-1/2",
     )
+    budget_uplink_relay.print_configuration()
     budget_uplink_relay.print_table()
+
+    print()
+    print("UPLINK (SKYWAVE)")
+    budget_uplink_skywave = LinkBudget(
+        frequency=15.5e6,
+        tx_power=100,
+        tx_loss=0.7,
+        tx_gain=aircraft_gain,
+        tx_pointing_loss=-2,
+        tx_rx_distance=933e3,
+        loss_environment=-0.5,
+        rx_pointing_loss=-2,
+        rx_gain=0,
+        rx_loss=0.7,
+        line_loss=from_db(-1),
+        noise_figure=from_db(4.9),
+        temperature_antenna=155,
+        data_rate=calculate_uplink_data_rate(),
+        bit_error_rate=1e-6,
+        coding="conv-7-1/2",
+    )
+    budget_uplink_skywave.print_configuration()
+    budget_uplink_skywave.print_table()
