@@ -91,7 +91,7 @@ class Force:
 
 
 class Beam:
-    def __init__(self, width, length, height, cross_section, material):
+    def __init__(self, width, length, height, cross_section, material, fixing_points):
         # Beam dimensions
         if type(length) == int or type(length) == float:
             self.y = np.linspace(-length, 0, 100)
@@ -140,8 +140,14 @@ class Beam:
 
         # Internal moments
         self.m_loading = np.zeros((len(self.y), 3, 1))
-
         self.mat = material
+
+        if np.shape(fixing_points) == (2, 1) and cross_section == 'constant':
+            self.fix = fixing_points * np.ones(np.size(self.y))
+        elif np.shape(fixing_points) == (2, np.size(self.y)):
+            self.fix = fixing_points
+        else:
+            raise ValueError('Fixing points needs to be a 2x1 array with constant cross section or 2xn array')
 
         # Parameters to be calulated later
         self.t = None
@@ -152,7 +158,6 @@ class Beam:
     def unload(self):
         self.f_loading = np.zeros((len(self.y), 3, 1))
         self.m_loading = np.zeros((len(self.y), 3, 1))
-
 
     def add_loading(self, force):
         # Locate where in the beam are the loads located
@@ -170,6 +175,13 @@ class Beam:
                 self.m_loading[y_point + j] += np.reshape(
                     np.cross(force.F[:, i], distance.T), (3, 1)
                 )
+
+    def add_moment(self, arr, y):
+        for i in range(np.shape(arr)[1]):
+            y_point = (np.abs(self.y -y)).argmin()
+
+            # Add step loads
+            self.m_loading[y_point:] += np.reshape(arr, (3, 1))
 
     def AirfoilArea(self):
         # Locating the leading edge.
@@ -215,10 +227,9 @@ class Beam:
 
     def MoI(self, boomArea_nr, x_booms_nr, z_booms_nr):
         # Moment of Inertia calculations
-        NAx, NAz = self.NeutralAxis(boomArea_nr, x_booms_nr, z_booms_nr)
-        Ixx = np.sum(boomArea_nr * (z_booms_nr - NAz) ** 2, 0)
-        Izz = np.sum(boomArea_nr * (x_booms_nr - NAx) ** 2, 0)
-        Ixz = np.sum(boomArea_nr * (x_booms_nr - NAx) * (z_booms_nr - NAz), 0)
+        Ixx = np.sum(boomArea_nr * (z_booms_nr - self.fix[1]) ** 2, 0)
+        Izz = np.sum(boomArea_nr * (x_booms_nr - self.fix[0]) ** 2, 0)
+        Ixz = np.sum(boomArea_nr * (x_booms_nr - self.fix[0]) * (z_booms_nr - self.fix[1]), 0)
         return Ixx, Izz, Ixz
 
     def StressCalculations(self, boomArea_nr):
@@ -235,7 +246,7 @@ class Beam:
         z_booms = z_booms.T
 
         # Call the neutral & moments of inertia
-        NAx, NAz = self.NeutralAxis(boomArea_nr, x_booms, z_booms)
+        NAx, NAz = self.fix
         Ixx, Izz, Ixz = self.MoI(boomArea_nr, x_booms, z_booms)
         # Stress calculations
         sigma_nr = (
@@ -332,7 +343,7 @@ class Beam:
         br = False
         while np.any(np.abs(sigma - sigma_ult / n) / (sigma_ult / n) > 0.1):
             diff = np.ones(np.shape(boomArea_nr)[1])
-            while np.any(np.abs(diff) > 0.0001):
+            while np.any(np.abs(diff) > 0.01):
                 # Stress Calculations
                 sigma_nr = self.StressCalculations(boomArea_nr)
 
@@ -355,12 +366,13 @@ class Beam:
 
             if br:
                 break
-            indx = 0
+            indx = list()
             for k in range(np.shape(sigma)[1]):
-                if np.max(abs(sigma[:, k])) >= sigma_ult/n:
-                    indx += 1
-            if indx != 0:
-                tSkin[:, -indx:] += 0.001
+                if np.max(abs(sigma[:, k])) >= sigma_ult:
+                    indx.append(k)
+            if len(indx) > 0:
+                for col in indx:
+                    tSkin[:, col] += 0.001
             else:
                 break
             if np.any(np.isnan(sigma)):
@@ -411,12 +423,16 @@ if __name__ == "__main__":
     chord = 3.35
     Airfoil = pd.read_csv("S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
     l = np.linspace(-16.8, 0, 100)
+    Xac = np.max(Airfoil['x']) * chord / 4
+    Zac = 0.077 * chord
+
     wing = Beam(
         width=Airfoil["x"].to_numpy() * chord,
         height=Airfoil["z"].to_numpy() * chord,
         length=l,
         cross_section="constant",
-        material=materials['CFRP']
+        material=materials['CFRP'],
+        fixing_points=np.array([[Xac], [Zac]])
     )
 
     fuselage_height = 2
