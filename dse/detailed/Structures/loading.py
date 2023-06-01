@@ -171,9 +171,7 @@ class Beam:
                     np.cross(force.F[:, i], distance.T), (3, 1)
                 )
 
-    def AirfoilBoom(self):
-        ## The initial guess of the skin thickness follows from the inful percentage of the wingbox, and  circumference
-        Infill = 0.10  # The percentage infull of the wingbox area
+    def AirfoilArea(self):
         # Locating the leading edge.
         IndxSplit = np.where(self.x == np.min(self.x))
         # Calculating the area for the top skin and the bottom skin
@@ -181,38 +179,26 @@ class Beam:
             np.flip(self.x[: IndxSplit[0][0] + 1]), np.flip(self.z[: IndxSplit[0][0] + 1])
         )
         Airfoil_bot = InterpolatedUnivariateSpline(
-            self.x[IndxSplit[0][0] :], self.z[IndxSplit[0][0] :]
+            self.x[IndxSplit[0][0]:], self.z[IndxSplit[0][0]:]
         )
 
         A_airfoil = (Airfoil_top.integral(0, 1) - Airfoil_bot.integral(0, 1)) * max(
             self.x
         )  # The Area of the airfoil
+        return A_airfoil
 
+    def InitialBoom(self, i):
+        Infill = 0.10
         ## Reshapes the x and z coordinates to the correct shapes, one with repeating first node, and one without (_nr)
         x_booms = np.reshape(self.x, (len(self.x), 1))
         z_booms = np.reshape(self.z, (len(self.z), 1))
         x_booms_nr = x_booms[:-1]
         z_booms_nr = z_booms[:-1]
-
+        if i == 0:
+            A_airfoil = self.AirfoilArea()
+        else:
+            A_airfoil = 1
         Bi_initial = A_airfoil / len(x_booms_nr) * Infill
-
-        return Bi_initial
-
-    def unitSquareBoom(self):
-        ### Calculates the initial guess for the boom areas for a square wingbox of unit length
-        ## The initial guess of the skin thickness follows from the inful percentage of the wingbox, and  circumference
-
-        Infill = 0.10  # The percentage infull of the wingbox area
-        A_airfoil = 1
-
-        ## Reshapes the x and z coordinates to the correct shapes, one with repeating first node, and one without (_nr)
-        x_booms = np.reshape(self.x, (len(self.x), 1))
-        z_booms = np.reshape(self.z, (len(self.z), 1))
-        x_booms_nr = x_booms[:-1]
-        z_booms_nr = z_booms[:-1]
-
-        Bi_initial = A_airfoil / len(x_booms_nr) * Infill
-
         return Bi_initial
 
     def DesignConstraints(self):
@@ -256,6 +242,29 @@ class Beam:
                            (Mx * Izz - Mz * Ixz) * (z_booms - NAz) + (Mz * Ixx - Mx * Ixz) * (x_booms - NAx)
                    ) / (Ixx * Izz - Ixz**2) - (Fy / np.sum(boomArea_nr, 0)) * np.ones(np.shape(boomArea_nr))
         return sigma_nr
+
+    def TorsionStress(self, tSkin, boomArea_nr):
+        Vx = np.reshape(self.f_loading[:, 0], np.size(self.y))
+        Vz = np.reshape(self.f_loading[:, 2], np.size(self.y))
+        My = np.reshape(self.m_loading[:, 1], np.size(self.y))
+        A_Airfoil = self.AirfoilArea()
+        tau = My / (2 * tSkin * A_Airfoil)
+        x_booms, z_booms = np.split(np.reshape(self.section, (np.size(self.y), 2 * np.shape(self.x)[0])), 2, 1)
+        if np.all(x_booms[:, 0] == x_booms[:, -1]):
+            x_booms = x_booms[:, :-1]
+            z_booms = z_booms[:, :-1]
+
+        x_booms = x_booms.T
+        z_booms = z_booms.T
+
+        # Call the neutral & moments of inertia
+        NAx, NAz = self.NeutralAxis(boomArea_nr, x_booms, z_booms)
+        Ixx, Izz, Ixz = self.MoI(boomArea_nr, x_booms, z_booms)
+
+        C = -(Vz * Izz - Vx * Ixz)/(Ixx * Izz - Ixz ** 2)
+        D = -(Vx * Ixx - Vz * Ixz) / (Ixx * Izz - Ixz ** 2)
+
+        return tau
 
     def BoomArea(self, boomAreaCopy, tSkin, boomDistance, sigma):
         # Update the boom areas for the given stress.
@@ -312,6 +321,7 @@ class Beam:
                 # Stress with repeating column for the first node for easy calculations for the boom areas
                 sigma = np.vstack((sigma_nr, sigma_nr[0]))
                 sigma[np.where(np.abs(sigma) <= 0.01)] = 0.1
+                tau = self.TorsionStress(tSkin)
 
                 if np.any(np.abs(sigma) > sigma_ult):
                     # Boom area calculations
