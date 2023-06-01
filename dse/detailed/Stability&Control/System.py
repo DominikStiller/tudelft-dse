@@ -4,14 +4,13 @@ import Aircraft
 
 class System:
     def __init__(self):
-        self.theta_previous = 0.
         self.geometry = Aircraft.define_geometry()
         self.area, self.imain, self.itail, self.m, self.I, self.W0 = Aircraft.define_areas()
         self.rho = 0.01
 
         # previous state
-        self.euler_prev = np.array([0, 0, 0.])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
-        self.velocity_linear_prev = np.array([110, 0, 0.])
+        self.euler_prev = np.array([0, np.radians(-5), 0.])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
+        self.velocity_linear_prev = np.array([105, 0, 0.])
         self.velocity_angular_prev = np.array([0, 0, 0.])
 
         # current state
@@ -25,15 +24,15 @@ class System:
     def __call__(self, exc_sig, dt):
         # Fal = [0, 0, 0]
         # Far = [0, 0, 0]
-        # Fe = [0, 0, 0]
         # Fr = [0, 0, 0]
         Fal, Far, Fe, Fr, Tlx, Trx = exc_sig
-
-        aoa = np.arctan2(self.velocity_linear[2], self.velocity_linear[0])  # if you are ambitious, go do something
-        velocitywings = np.array([self.velocity_linear[0], self.velocity_linear[0], self.velocity_linear[0]]) # if you are ambitious, go do something
-
-        wl, wr, h = self.aero_forces(aoa, velocitywings, self.euler[2], self.euler[1])
-        W = np.array([-self.W0 * np.sin(np.radians(self.euler[1])), 0, self.W0 * np.cos(np.radians(self.euler[1]))])
+        aoawings = np.arctan2(self.velocity_linear[2] - self.velocity_angular[1], self.velocity_linear[0])
+        aoatail = np.arctan2(self.velocity_linear[2] + self.velocity_angular[1]*10, self.velocity_linear[0])
+        # aoa = np.arctan2(self.velocity_linear[2], self.velocity_linear[0])  # if you are ambitious, go do something
+        # velocitywings = np.array([self.velocity_linear[0], self.velocity_linear[0], self.velocity_linear[0]]) # if you are ambitious, go do something
+        velocitywings = np.array([self.velocity_linear[0] - self.velocity_angular[1], self.velocity_linear[0] - self.velocity_angular[1], self.velocity_linear[0] + self.velocity_angular_prev[1] * 10])
+        wl, wr, h = self.aero_forces(aoawings, aoatail, velocitywings, self.euler[2], self.euler[1])
+        W = np.array([-self.W0 * np.sin(self.euler[1]), 0, self.W0 * np.cos(self.euler[1])])
         F = np.array([wl, wr, h, np.array(Fal), np.array(Far), np.array([0, 0, Fe]), np.array(Fr), np.array([Tlx, 0, 0]),
                       np.array([Trx, 0, 0]), W])
 
@@ -53,11 +52,12 @@ class System:
 
         return self.euler, self.velocity_linear, self.velocity_angular
 
-    def aero_forces(self, aoa, v, beta, pitch):
+    def aero_forces(self, aoaw, aoah, v, beta, pitch):
         '''
 
             Args:
-                aoa: angle of attack of the left wing, right wing and horizontal stabilizer
+                aoaw: angle of attack of the left wing, right wing
+                aoah: angle of attack horizontal stabilizer
                 v: speed of left wing, right wing and horizontal stabilizer
                 beta: sideslip angle
 
@@ -68,7 +68,7 @@ class System:
             '''
 
         # aoa includes the effective angle of attack due to the pitch and angular velocity
-        clwl, clwr, clh, cdwl, cdwr, cdh = Aircraft.get_coefficients(aoa + self.imain, aoa + self.imain, aoa + self.itail)
+        clwl, clwr, clh, cdwl, cdwr, cdh = Aircraft.get_coefficients(aoaw + self.imain, aoaw + self.imain, aoah + self.itail)
         Lwl = 0.5 * self.rho * self.area[0] * clwl * v[0] ** 2
         Lwr = 0.5 * self.rho * self.area[1] * clwr * v[1] ** 2
         Lh = 0.5 * self.rho * self.area[2] * clh * v[2] ** 2
@@ -76,13 +76,17 @@ class System:
         Dwr = 0.5 * self.rho * self.area[1] * cdwr * v[1] ** 2
         Dh = 0.5 * self.rho * self.area[2] * cdh * v[2] ** 2
 
+        # Dwl = Dwl + 0.5 * self.rho * self.area[0] * 1 * self.velocity_linear[2] ** 2
+        # Dwr = Dwr + 0.5 * self.rho * self.area[1] * 1 * self.velocity_linear[2] ** 2
+        # Dh = Dh + 0.5 * self.rho * self.area[2] * 1 * self.velocity_linear[2] ** 2
+
         wl = np.array([-Dwl, 0, -Lwl])
         wr = np.array([-Dwr, 0, -Lwr])
         h = np.array([-Dh, 0, -Lh])
 
-        wl = np.matmul(self.aero_to_body(pitch, beta), wl).T
-        wr = np.matmul(self.aero_to_body(pitch, beta), wr).T
-        h = np.matmul(self.aero_to_body(pitch, beta), h).T
+        wl = np.matmul(self.aero_to_body(pitch, beta), wl)
+        wr = np.matmul(self.aero_to_body(pitch, beta), wr)
+        h = np.matmul(self.aero_to_body(pitch, beta), h)
 
         return wl, wr, h
 
@@ -120,7 +124,7 @@ class System:
             M[i] = np.cross(R[i], F[i])
         M = np.array([sum(M.T[0]), sum(M.T[1]), sum(M.T[2])])
         Fnet = np.array([sum(F.T[0]), sum(F.T[1]), sum(F.T[2])])
-
+        #Rwingleft, Rwingright, Rstabilizer, Raileronleft, Raileronright, Relevator, Rrudder, Rthrustleft, Rthrustright, Cg])
         return M, Fnet
 
     def accelerations(self, F, M):
@@ -129,22 +133,23 @@ class System:
         Args:
              F: force vector
              M: moment vector
-             I: moment of inertia vecotr
         Returns:
             a: acceleration vecotor
             ang: angular acceleration vector
         '''
-        a = np.array([sum(F.T[0]) / self.m, sum(F.T[1]) / self.m, sum(F.T[2]) / self.m])
-        ang = np.array([M[0] / self.I[0], M[1] / self.I[1], M[2] / self.I[2]])
-        return a, ang
+
+        inv = np.linalg.inv(np.copy(self.I))
+        temp = np.matmul(self.I, self.velocity_angular)
+        rest = M - np.cross(self.velocity_angular, temp)
+        dang_dt = np.matmul(inv, rest)
+        temp2 = np.cross(self.velocity_angular, self.velocity_linear)
+        a = np.array([sum(F.T[0]) / self.m, sum(F.T[1]) / self.m, sum(F.T[2]) / self.m]) - temp2
+        return a, dang_dt
 
     def body_to_inertial(self):
         '''
 
         Args:
-            theta: rotation around X axis
-            gamma: rotation around Z axis
-            psi: rotation around Y axis
         Returns:
             T: the transformation matrix
         '''

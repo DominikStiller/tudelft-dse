@@ -8,7 +8,7 @@ def define_geometry():
 
     Rwingleft = np.array([1, -10, -1])
     Rwingright = np.array([1, 10, -1])
-    Rstabilizer = np.array([-10, 0, -1])
+    Rstabilizer = np.array([-10, 0, -2])
     Raileronleft = np.array([0, -16, -1])
     Raileronright = np.array([0, 16, -1])
     Relevator = np.array([-10, 0, -2])
@@ -26,10 +26,10 @@ def define_areas():
     instalation = 0  # in deg
     aoastall = 15  # in deg
     area = [56, 56, 15]  # left wing, right wing, stabilizer
-    imain = 4  # angle of incidence main
-    itail = 4  # angle of incidence tail
+    imain = np.radians(4)  # angle of incidence main
+    itail = np.radians(4)  # angle of incidence tail
     m = 3000
-    I = [81250, 19750, 91500]  # mass moments of inertia ixx, iyy, izz
+    I = np.array([[81250, 0, 0], [0, 19750, 0], [0, 0, 91500]])  # mass moments of inertia ixx, iyy, izz
     W0 = m * 3.71
     return area, imain, itail, m, I, W0
 
@@ -57,12 +57,24 @@ def get_coefficients(aoal, aoar, aoah):
     cllisth = aoalisth * 2 * np.pi   # will later be a csv file
     cldivcdw = np.ones(len(aoalistw)) * 20   # will later be a csv file
     cldivcdh = np.ones(len(aoalisth)) * 20   # will later be a csv file
-    clwl = np.interp(aoal, aoalistw, cllistw)
-    clwr = np.interp(aoar, aoalistw, cllistw)
-    clh = np.interp(aoah, aoalisth, cllisth)
-    cdwl = clwl / np.interp(aoal, aoalistw, cldivcdw)
-    cdwr = clwr / np.interp(aoar, aoalistw, cldivcdw)
-    cdh = clh / np.interp(aoah, aoalisth, cldivcdh)
-    # add the fuselage contribution later here and add s fuselage
+    if np.radians(-5) <= aoal <= np.radians(15):
+        clwl = np.interp(aoal, aoalistw, cllistw)
+        cdwl = clwl / np.interp(aoal, aoalistw, cldivcdw)
+    else:
+        clwl = 0
+        cdwl = 1 * abs(aoal%(2*np.pi)/(0.5*np.pi))
+    if np.radians(-5) <= aoar <= np.radians(15):
+        clwr = np.interp(aoar, aoalistw, cllistw)
+        cdwr = clwr / np.interp(aoar, aoalistw, cldivcdw)
+    else:
+        clwr = 0
+        cdwr = 1 * abs(aoar%(2*np.pi)/(0.5*np.pi))
+    if np.radians(-5) <= aoal <= np.radians(15):
+        clh = np.interp(aoah, aoalistw, cllisth)
+        cdh = clh / np.interp(aoah, aoalisth, cldivcdh)
+    else:
+        clh = 0
+        cdh = 1 * abs(aoah%(2*np.pi)/(0.5*np.pi))
+    # add the fuselage contribution later and add s fuselage
     return clwl, clwr, clh, cdwl, cdwr, cdh
 
