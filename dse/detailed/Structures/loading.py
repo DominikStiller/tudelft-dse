@@ -297,14 +297,15 @@ class Beam:
         n, sigma_ult, tSkin_min = self.DesignConstraints()
 
         ## Initial guess for the boom area and skin thickness and stress
+        tSkin = np.ones(np.shape(boomDistance)) * tSkin_min
         if i == 0:
-            Bi_initial = self.AirfoilBoom()
+            # Bi_initial = self.AirfoilBoom()
+            Bi_initial = np.sum(boomDistance, 0) * tSkin_min / np.shape(boomDistance)[0] * np.ones(np.shape(boomDistance))
         elif i == 1:
             Bi_initial = self.unitSquareBoom()
         else:
             Bi_initial = 0.001 * np.ones(np.shape(x_booms_nr))
         boomArea_nr = np.ones((np.shape(x_booms_nr)[0], np.size(self.y))) * Bi_initial
-        tSkin = np.ones(np.shape(boomDistance)) * tSkin_min
         sigma = np.ones(np.shape(self.x)) * n * sigma_ult
 
         br = False
@@ -354,7 +355,7 @@ class Beam:
     def calculate_mass(self):
         dy = self.y[1:] - self.y[:-1]
         volume = dy * self.Bi[:, :-1]
-        self.m = np.sum(volume * self.mat.rho)
+        self.m = np.sum(volume) * self.mat.rho
 
     def plot_internal_loading(self):
         fig, (axs1, axs2) = plt.subplots(2, 1)
@@ -495,6 +496,7 @@ if __name__ == "__main__":
     wing.plot_internal_loading()
     wing.InternalStress(0, 0, 0)
     thickness = wing.t
+    B1 = wing.Bi
 
     wing.unload()
     wing.add_loading(engine_and_rotor_weight)
@@ -504,6 +506,10 @@ if __name__ == "__main__":
     wing.plot_internal_loading()
     wing.InternalStress(0, 0, 0)
     thickness2 = wing.t
+    B2 = wing.Bi
+
+    wing.t = np.maximum(thickness, thickness2)
+    wing.Bi = np.maximum(B1, B2)
 
     wing.calculate_mass()
     print(wing.m)
