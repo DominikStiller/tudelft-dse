@@ -6,26 +6,11 @@ import numpy as np
 
 
 
-if __name__ == '__main__':
-    # Constants
-    R = 10.4
-    MTOM = 3000
-    g = 3.71
-    rpm = 183 * 2 * np.pi / 60
-    rotorMass = 250 / 9
-    q = 0.5 * 0.01 * 112 ** 2
-    chord = 3.35
-    b = 16.8
-    fuselage_height = 2
-    m_e = 50
-    
-    ### Rotor sizing ###
-    
+def size_rotor_blades():
     # Define the blade
     bladeTwist = np.flip(np.radians(np.array([5.72821286, 5.29796352, 4.97731679, 4.74279731, 4.58226976,
                                               4.49233726, 4.47898847, 4.56296873, 4.79802654, 5.34554722])))
 
-    Airfoil = pd.read_csv("S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
     l = np.linspace(-R, -R / 3, np.size(bladeTwist))
 
     sect = np.vstack((Airfoil['x'], Airfoil['z']))
@@ -43,7 +28,7 @@ if __name__ == '__main__':
         material=materials['CFRP'],
         fixing_points=np.array([[Xac], [Zac]]) * np.ones(np.size(l))
     )
-    
+
     # Define the applied forces
     liftOffperBlade = np.ones(np.shape(bladeTwist)) * 1.1 * MTOM * g / 24 / np.size(bladeTwist)
     application = np.ones(np.shape(bladeTwist)) * np.array([[1.603 / 3.35 * R / 20], [-R], [0.1742 / 3.35 * R / 20]])
@@ -59,8 +44,9 @@ if __name__ == '__main__':
         ),
         point_of_application=application
     )
-    
+
     diff = 100
+    rotorMass = 250 / 9
     while diff > 0.01:
         blade.unload()
 
@@ -102,11 +88,12 @@ if __name__ == '__main__':
     print(f'Each blade weights {np.round(blade.m, 2) + 10} kg, including {np.round(rod_weight, 2)} kg of rod and '
           f'{np.round(10 - rod_weight, 2)} kg for other reinforcements')
     print(f'Total rotor mass = {np.round(24 * (blade.m + 10), 2)} kg')
-    
-    m_r = (rotorMass + 10) * 24
 
-    ### Size the wing ###
-    
+    m_r = (rotorMass + 10) * 24
+    return blade, m_r
+
+
+def size_wing():
     # Define the geometry
     Xac = np.max(Airfoil['x']) * chord / 4
     Zac = 0.077 * chord
@@ -121,9 +108,9 @@ if __name__ == '__main__':
         fixing_points=np.array([[Xac], [Zac]])
     )
     theta = np.arctan(fuselage_height / b)
-    
+
     # Define the forces during TO
-    bracing_TO_mag = g / np.sin(theta) * (1.1 * MTOM / 2 - (m_r + m_e))
+    bracing_TO_mag = g / np.sin(theta) * (1.1 * MTOM / 2 - (mr + m_e))
     bracing_TO = Force(
         magnitude=bracing_TO_mag * np.array(
             [
@@ -145,7 +132,7 @@ if __name__ == '__main__':
             [
                 [0],
                 [0],
-                [-(m_r + m_e) * g]
+                [-(mr + m_e) * g]
             ]
         ),
         point_of_application=np.array(
@@ -188,7 +175,7 @@ if __name__ == '__main__':
             ]
         )
     )
-    
+
     # Apply loads and size
     wing.add_loading(liftOffLoad)
     wing.add_loading(engine_and_rotor_weight)
@@ -197,13 +184,13 @@ if __name__ == '__main__':
     wing.InternalStress(0, 0, 0)
     thickness = wing.t
     B1 = wing.Bi
-    
+
     # Define loads during cruise
     wing.unload()
     aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, b)
-    
+
     liftMoment = np.dot(aerodynamic_forces.F[2], aerodynamic_forces.application[1])
-    bracing_cr_mag = 1 / (b * np.sin(theta)) * (liftMoment - b * g * (m_r + m_e))
+    bracing_cr_mag = 1 / (b * np.sin(theta)) * (liftMoment - b * g * (mr + m_e))
     bracing_cruise = Force(
         magnitude=bracing_cr_mag * np.array(
             [
@@ -237,4 +224,23 @@ if __name__ == '__main__':
 
     wing.calculate_mass()
     print(f'Mass of each wing = {np.round(wing.m, 2)}kg')
+    return wing
+
+
+if __name__ == '__main__':
+    # Constants
+    R = 10.4
+    MTOM = 3000
+    g = 3.71
+    rpm = 183 * 2 * np.pi / 60
+    q = 0.5 * 0.01 * 112 ** 2
+    chord = 3.35
+    b = 16.8
+    fuselage_height = 2
+    m_e = 50
+
+    Airfoil = pd.read_csv("S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
+
+    rotorBlade, mr = size_rotor_blades()
+    wing = size_wing()
     
