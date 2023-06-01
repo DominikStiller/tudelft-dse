@@ -4,8 +4,6 @@ import numpy as np
 
 class TestFuselageLogic(unittest.TestCase):
 
-    # material.py (Material class)
-
     def test_layer1_object_creation(self):
 
         cabin_diameter = 8/3
