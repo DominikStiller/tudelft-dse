@@ -248,22 +248,40 @@ class Beam:
         Vz = np.reshape(self.f_loading[:, 2], np.size(self.y))
         My = np.reshape(self.m_loading[:, 1], np.size(self.y))
         A_Airfoil = self.AirfoilArea()
-        tau = My / (2 * tSkin * A_Airfoil)
+        q_torsion = My / (2* A_Airfoil)
         x_booms, z_booms = np.split(np.reshape(self.section, (np.size(self.y), 2 * np.shape(self.x)[0])), 2, 1)
         if np.all(x_booms[:, 0] == x_booms[:, -1]):
-            x_booms = x_booms[:, :-1]
-            z_booms = z_booms[:, :-1]
+            x_booms_nr = x_booms[:, :-1]
+            z_booms_nr = z_booms[:, :-1]
+        else:
+            x_booms_nr = np.cpoy(x_booms)
+            z_booms_nr = np.copy(z_booms)
+            x_booms = np.hstack((x_booms_nr, np.reshape(x_booms_nr[:, 0], (np.shape(x_booms_nr)[0], 1))))
+            z_booms = np.hstack((z_booms_nr, np.reshape(z_booms_nr[:, 0], (np.shape(z_booms_nr)[0], 1))))
 
+
+        x_booms_nr = x_booms_nr.T
+        z_booms_nr = z_booms_nr.T
         x_booms = x_booms.T
         z_booms = z_booms.T
 
         # Call the neutral & moments of inertia
-        NAx, NAz = self.NeutralAxis(boomArea_nr, x_booms, z_booms)
-        Ixx, Izz, Ixz = self.MoI(boomArea_nr, x_booms, z_booms)
+        NAx, NAz = self.NeutralAxis(boomArea_nr, x_booms_nr, z_booms_nr)
+        Ixx, Izz, Ixz = self.MoI(boomArea_nr, x_booms_nr, z_booms_nr)
 
         C = -(Vz * Izz - Vx * Ixz)/(Ixx * Izz - Ixz ** 2)
         D = -(Vx * Ixx - Vz * Ixz) / (Ixx * Izz - Ixz ** 2)
 
+        qb = np.zeros(np.shape(boomArea_nr))
+
+        for i in range(1, len(qb[:,0])):
+            qb[i] = qb[i-1] + C * boomArea_nr[i] * (z_booms_nr[i] - NAz) + D * boomArea_nr[i] * (x_booms_nr[i] - NAx)
+        qs0 = (np.sum((
+                qb * ((x_booms[1:] - x_booms_nr) * (z_booms_nr - NAz) +
+                      (z_booms[1:] - z_booms_nr) * (x_booms_nr - NAx))), 0)) / (2 * A_Airfoil)
+        q_shear = qb + np.ones(np.shape(qb)) * qs0
+        q_total = q_shear + q_torsion
+        tau = q_total / tSkin
         return tau
 
     def BoomArea(self, boomAreaCopy, tSkin, boomDistance, sigma):
@@ -321,9 +339,9 @@ class Beam:
                 # Stress with repeating column for the first node for easy calculations for the boom areas
                 sigma = np.vstack((sigma_nr, sigma_nr[0]))
                 sigma[np.where(np.abs(sigma) <= 0.01)] = 0.1
-                tau = self.TorsionStress(tSkin)
+                tau = self.TorsionStress(tSkin, boomArea_nr)
 
-                if np.any(np.abs(sigma) > sigma_ult):
+                if np.any(np.abs(sigma) > sigma_ult/n):
                     # Boom area calculations
                     boomAreaCopy = np.copy(boomArea_nr)
                     boomAreaCopy = self.BoomArea(boomAreaCopy, tSkin, boomDistance, sigma)
@@ -339,7 +357,7 @@ class Beam:
                 break
             indx = 0
             for k in range(np.shape(sigma)[1]):
-                if np.max(abs(sigma[:, k])) >= sigma_ult:
+                if np.max(abs(sigma[:, k])) >= sigma_ult/n:
                     indx += 1
             if indx != 0:
                 tSkin[:, -indx:] += 0.001
@@ -350,6 +368,7 @@ class Beam:
 
         self.t = tSkin
         self.sigma = sigma_nr
+        self.tau = tau
         self.Bi = boomArea_nr
         # plt.axhline(sigma_ult)
         # plt.axhline(-sigma_ult)
