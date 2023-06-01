@@ -146,6 +146,8 @@ class Beam:
         # Parameters to be calulated later
         self.t = None
         self.sigma = None
+        self.Bi = None
+        self.m = None
 
     def unload(self):
         self.f_loading = np.zeros((len(self.y), 3, 1))
@@ -215,7 +217,7 @@ class Beam:
 
     def DesignConstraints(self):
         n = 1.5  # [-] Safety factor
-        sigma_yield = self.mat.sigmay  # [MPa] The yield strength
+        sigma_yield = self.mat.compressive  # [MPa] The yield strength
         tSkin_min = 0.001  # [m] The minimal allowable thickness
         return n, sigma_yield, tSkin_min
 
@@ -252,7 +254,7 @@ class Beam:
         # Stress calculations
         sigma_nr = (
                            (Mx * Izz - Mz * Ixz) * (z_booms - NAz) + (Mz * Ixx - Mx * Ixz) * (x_booms - NAx)
-                   ) / (Ixx * Izz - Ixz**2) + (Fy / np.shape(boomArea_nr)[0]) / (boomArea_nr)
+                   ) / (Ixx * Izz - Ixz**2) - (Fy / np.sum(boomArea_nr, 0)) * np.ones(np.shape(boomArea_nr))
         return sigma_nr
 
     def BoomArea(self, boomAreaCopy, tSkin, boomDistance, sigma):
@@ -305,6 +307,7 @@ class Beam:
         tSkin = np.ones(np.shape(boomDistance)) * tSkin_min
         sigma = np.ones(np.shape(self.x)) * n * sigma_ult
 
+        br = False
         while np.any(np.abs(sigma - sigma_ult / n) / (sigma_ult / n) > 0.1):
             diff = np.ones(np.shape(boomArea_nr)[1])
             while np.any(np.abs(diff) > 0.0001):
@@ -315,14 +318,20 @@ class Beam:
                 sigma = np.vstack((sigma_nr, sigma_nr[0]))
                 sigma[np.where(np.abs(sigma) <= 0.01)] = 0.1
 
-                # Boom area calculations
-                boomAreaCopy = np.copy(boomArea_nr)
-                boomAreaCopy = self.BoomArea(boomAreaCopy, tSkin, boomDistance, sigma)
+                if np.any(np.abs(sigma) > sigma_ult):
+                    # Boom area calculations
+                    boomAreaCopy = np.copy(boomArea_nr)
+                    boomAreaCopy = self.BoomArea(boomAreaCopy, tSkin, boomDistance, sigma)
 
-                # Calculating the difference between the new and old boom areas.
-                diff = np.mean((boomAreaCopy - boomArea_nr) / boomArea_nr, 0)
-                boomArea_nr = np.copy(boomAreaCopy)
+                    # Calculating the difference between the new and old boom areas.
+                    diff = np.mean((boomAreaCopy - boomArea_nr) / boomArea_nr, 0)
+                    boomArea_nr = np.copy(boomAreaCopy)
+                else:
+                    br = True
+                    break
 
+            if br:
+                break
             indx = 0
             for k in range(np.shape(sigma)[1]):
                 if np.max(abs(sigma[:, k])) >= sigma_ult:
@@ -336,10 +345,16 @@ class Beam:
 
         self.t = tSkin
         self.sigma = sigma_nr
+        self.Bi = boomArea_nr
         # plt.axhline(sigma_ult)
         # plt.axhline(-sigma_ult)
         plt.plot(self.y, sigma.transpose())
         plt.show()
+
+    def calculate_mass(self):
+        dy = self.y[1:] - self.y[:-1]
+        volume = dy * self.Bi[:, :-1]
+        self.m = np.sum(volume * self.mat.rho)
 
     def plot_internal_loading(self):
         fig, (axs1, axs2) = plt.subplots(2, 1)
@@ -377,34 +392,24 @@ if __name__ == "__main__":
         height=Airfoil["z"].to_numpy() * chord,
         length=l,
         cross_section="constant",
-        material=materials['Al/Si']
+        material=materials['CFRP']
     )
-    # wing.add_loading(aerodynamic_forces)
-    # thrust = Force(
-    #     magnitude=np.array(
-    #         [[739.5/2],
-    #          [0],
-    #          [0]]
-    #     ),
-    #     point_of_application=np.array(
-    #         [[0],
-    #          [-16.8],
-    #          [0]]
-    #     )
-    # )
+
     fuselage_height = 2
-    theta = np.arctan(fuselage_height/16.8)
+    b = 16.8
+    theta = np.arctan(fuselage_height/b)
 
     MTOM = 3000
     m_r = 910 / 2
     m_e = 100 / 2
 
+    bracing_TO_mag = g / np.sin(theta) * (1.1 * MTOM / 2 - (m_r + m_e))
     bracing_TO = Force(
-        magnitude=np.array(
+        magnitude=bracing_TO_mag * np.array(
             [
                 [0],
-                [g / np.tan(theta) * (1.1 * MTOM / 2 - (m_r + m_e))],
-                [-g * (1.1 * MTOM / 2 - (m_r + m_e))]
+                [np.cos(theta)],
+                [-np.sin(theta)]
             ]
         ),
         point_of_application=np.array(
@@ -447,20 +452,66 @@ if __name__ == "__main__":
             ]
         )
     )
+    cruiseThrust = Force(
+        magnitude=np.array(
+            [
+                [790/2],
+                [0],
+                [0]
+            ]
+        ),
+        point_of_application=np.array(
+            [
+                [1.603],
+                [-16.8],
+                [0.1742]
+            ]
+        )
+    )
+
+    liftMoment = np.dot(aerodynamic_forces.F[2], aerodynamic_forces.application[1])
+    bracing_cr_mag = 1 / (b * np.sin(theta)) * (liftMoment - b * g * (m_r + m_e))
+    bracing_cruise = Force(
+        magnitude=bracing_cr_mag * np.array(
+            [
+                [0],
+                [np.cos(theta)],
+                [-np.sin(theta)]
+            ]
+        ),
+        point_of_application=np.array(
+            [
+                [1.603],
+                [-16.8],
+                [0.1742]
+            ]
+        )
+    )
+
+
     wing.add_loading(liftOffLoad)
-    wing.plot_internal_loading()
-
     wing.add_loading(engine_and_rotor_weight)
-    wing.plot_internal_loading()
-
     wing.add_loading(bracing_TO)
     wing.plot_internal_loading()
-
     wing.InternalStress(0, 0, 0)
+    thickness = wing.t
 
-    plt.plot(wing.y, np.max(wing.t, 0) * 1000, label='Max thickness')
-    plt.plot(wing.y, np.min(wing.t, 0) * 1000, label='Min thickness')
-    plt.xlabel('Span [m]')
-    plt.ylabel('Thickness [mm]')
-    plt.legend()
-    plt.show()
+    wing.unload()
+    wing.add_loading(engine_and_rotor_weight)
+    wing.add_loading(cruiseThrust)
+    wing.add_loading(bracing_cruise)
+    wing.add_loading(aerodynamic_forces)
+    wing.plot_internal_loading()
+    wing.InternalStress(0, 0, 0)
+    thickness2 = wing.t
+
+    wing.calculate_mass()
+    print(wing.m)
+
+
+    # plt.plot(wing.y, np.max(wing.t, 0) * 1000, label='Max thickness')
+    # plt.plot(wing.y, np.min(wing.t, 0) * 1000, label='Min thickness')
+    # plt.xlabel('Span [m]')
+    # plt.ylabel('Thickness [mm]')
+    # plt.legend()
+    # plt.show()
