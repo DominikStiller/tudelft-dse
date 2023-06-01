@@ -1,5 +1,6 @@
 import unittest
 from body_drag_calculations import Fuselage
+import numpy as np
 
 class TestFuselageLogic(unittest.TestCase):
 
@@ -66,14 +67,24 @@ class TestFuselageLogic(unittest.TestCase):
         self.assertEqual(round(drag, 3), 130.185, "The final drag force calculation does not return the correct value")
 
 
+    def test_static_methods(self):
+
+        sphere_diameter = 4
+        cylinder_diameter = 2
+        cylinder_length = 10
+
+        self.assertEqual(Fuselage.area_cylinder(cylinder_diameter, cylinder_length), 22*np.pi, "Test related to static methods failed")
+        self.assertEqual(Fuselage.volume_cylinder(cylinder_diameter, cylinder_length), 10*np.pi, "Test related to static methods failed")
+        self.assertEqual(Fuselage.area_sphere(sphere_diameter), 16*np.pi, "Test related to static methods failed")
+        self.assertEqual(Fuselage.volume_sphere(sphere_diameter), np.pi*32/3, "Test related to static methods failed")
+
+
 if __name__ == '__main__':
     unittest.main()
 
 
 """
 #  --------------------------------  TO DO  --------------------------------  #
-
--> Implement tests for static methods
 
 
 """
