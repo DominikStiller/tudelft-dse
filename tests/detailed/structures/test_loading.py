@@ -1,13 +1,13 @@
 from unittest import TestCase
 import numpy as np
 import os
-from dse.detailed.Structures.loading import *
+from dse.detailed.Structures.StructureClasses import *
 from dse.detailed.Structures.material_properties import materials
 
 
 class Test(TestCase):
     def test_xflr_forces(self):
-        from dse.detailed.Structures.loading import xflr_forces
+        from dse.detailed.Structures.StructureClasses import xflr_forces
 
         if os.getcwd().split("\\")[-1] == "structures":
             os.chdir("..\\..\\..\\dse\\detailed\\Structures")
@@ -31,7 +31,7 @@ class Test(TestCase):
             assert np.all(force.fy == 0)
 
     def test_xflr_forces_file_type(self):
-        from dse.detailed.Structures.loading import xflr_forces
+        from dse.detailed.Structures.StructureClasses import xflr_forces
 
         try:
             Forces = xflr_forces(5, q=0.5 * 0.01 * 112 ** 2, b=16.8)
@@ -41,7 +41,7 @@ class Test(TestCase):
         self.assertTrue(a)
 
     def test_xflr_forces_q_type(self):
-        from dse.detailed.Structures.loading import xflr_forces
+        from dse.detailed.Structures.StructureClasses import xflr_forces
 
         if os.getcwd().split("\\")[-1] == "structures":
             os.chdir("..\\..\\..\\dse\\detailed\\Structures")
@@ -56,7 +56,7 @@ class Test(TestCase):
         self.assertTrue(a)
 
     def test_xflr_forces_b_type(self):
-        from dse.detailed.Structures.loading import xflr_forces
+        from dse.detailed.Structures.StructureClasses import xflr_forces
 
         if os.getcwd().split("\\")[-1] == "structures":
             os.chdir("..\\..\\..\\dse\\detailed\\Structures")
@@ -75,7 +75,7 @@ class Test(TestCase):
 
 class TestForce(TestCase):
     def test_concatenate_two_forces(self):
-        from dse.detailed.Structures.loading import Force
+        from dse.detailed.Structures.StructureClasses import Force
 
         dummy = Force(
             magnitude=np.array([[3, 3, 3]]).T, point_of_application=np.array([[1, 0, 0]]).T
@@ -88,7 +88,7 @@ class TestForce(TestCase):
         assert np.shape(dummy.F) == (3, 2)
 
     def test_concatenate_functions_list(self):
-        from dse.detailed.Structures.loading import Force
+        from dse.detailed.Structures.StructureClasses import Force
 
         dummy = Force(
             magnitude=np.array([[3, 3, 3]]).T, point_of_application=np.array([[1, 0, 0]]).T
@@ -105,7 +105,7 @@ class TestForce(TestCase):
         assert np.shape(dummy.F) == (3, 3)
 
     def test_separate_forces_number(self):
-        from dse.detailed.Structures.loading import Force
+        from dse.detailed.Structures.StructureClasses import Force
 
         mag = np.array([[1, 5], [0, 0], [0, 0]])
         app = np.array([[1, 3], [0, 0], [0, 0]])
@@ -129,7 +129,7 @@ class TestBeam(TestCase):
     #    BoomArea
     #    plot_internal_loading
     def test_add_loading_point_load(self):
-        from dse.detailed.Structures.loading import Beam, Force
+        from dse.detailed.Structures.StructureClasses import Beam, Force
 
         x = np.linspace(0, 0.1, 10)
         y = np.linspace(-2, 0, 100)
@@ -155,7 +155,7 @@ class TestBeam(TestCase):
             assert np.all(wing.f_loading[y_index:] == np.array([[0, 1, 0]]).T)
 
     def test_add_loading_distributed_load(self):
-        from dse.detailed.Structures.loading import Beam, Force
+        from dse.detailed.Structures.StructureClasses import Beam, Force
 
         x = np.linspace(0, 0.1, 10)
         y = np.linspace(-2, 0, 100)
@@ -328,7 +328,7 @@ class TestBeam(TestCase):
         assert np.all(abs(sigma_nr[:,-1] - sigma_hand.T)/sigma_hand.T < 0.01), 'The stresses are wrong'
 
     def test_neutral_axis(self):
-        from dse.detailed.Structures.loading import Beam
+        from dse.detailed.Structures.StructureClasses import Beam
         x = np.hstack(
             (np.linspace(-1, 0, 25)[:-1],
              np.linspace(0, 1, 25)[:-1],
@@ -368,7 +368,7 @@ class TestBeam(TestCase):
         assert np.all(np.abs(NAz) <= 0.001), 'Neutral axis is not along the axis for a symmetric shape'
 
     def test_mo_i(self):
-        from dse.detailed.Structures.loading import Beam
+        from dse.detailed.Structures.StructureClasses import Beam
         x = np.hstack(
             (np.linspace(-1, 0, 25)[:-1],
              np.linspace(0, 1, 25)[:-1],
@@ -409,7 +409,7 @@ class TestBeam(TestCase):
         assert np.all(Ixz <= 0.001), 'Symmetrical shape does not have Ixz = 0'
 
     def test_stress_calculations(self):
-        from dse.detailed.Structures.loading import Beam, Force
+        from dse.detailed.Structures.StructureClasses import Beam, Force
         x = np.hstack(
             (np.linspace(-1, 0, 25)[:-1],
              np.linspace(0, 1, 25)[:-1],
@@ -493,7 +493,7 @@ class TestBeam(TestCase):
         assert np.max(stress) == np.abs(np.min(stress)), 'The maximum tensile and compressive stresses are not the same'
 
     def test_internal_stress(self):
-        from dse.detailed.Structures.loading import Beam, Force
+        from dse.detailed.Structures.StructureClasses import Beam, Force
         x = np.hstack(
             (np.linspace(-1, 0, 25)[:-1],
              np.linspace(0, 1, 25)[:-1],
