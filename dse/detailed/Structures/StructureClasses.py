@@ -101,7 +101,7 @@ class Beam:
             raise TypeError("Length needs to be either a constant float/int or a 1D array")
 
         if type(width) == int or type(width) == float:
-            self.x = np.reshape(np.linspace(-width/2, width, 100), (100, 1)) * np.size(self.y)
+            self.x = np.reshape(np.linspace(-width/2, width, 100), (100, 1)) * np.ones(np.size(self.y))
         elif type(width) == np.ndarray:
             self.x = width
         else:
@@ -185,18 +185,35 @@ class Beam:
 
     def AirfoilArea(self):
         # Locating the leading edge.
-        IndxSplit = np.where(self.x == np.min(self.x))
-        # Calculating the area for the top skin and the bottom skin
-        Airfoil_top = InterpolatedUnivariateSpline(
-            np.flip(self.x[: IndxSplit[0][0] + 1]), np.flip(self.z[: IndxSplit[0][0] + 1])
-        )
-        Airfoil_bot = InterpolatedUnivariateSpline(
-            self.x[IndxSplit[0][0]:], self.z[IndxSplit[0][0]:]
-        )
+        if len(np.shape(self.x)) == 1:
+            IndxSplit = np.where(self.x == np.min(self.x))
+            # Calculating the area for the top skin and the bottom skin
+            Airfoil_top = InterpolatedUnivariateSpline(
+                np.flip(self.x[: IndxSplit[0][0] + 1]), np.flip(self.z[: IndxSplit[0][0] + 1])
+            )
+            Airfoil_bot = InterpolatedUnivariateSpline(
+                self.x[IndxSplit[0][0]:], self.z[IndxSplit[0][0]:]
+            )
+            A_airfoil = (Airfoil_top.integral(0, 1) - Airfoil_bot.integral(0, 1)) * max(
+                self.x
+            )  # The Area of the airfoil
+        elif len(np.shape(self.x)) == 2:
+            A_airfoil = np.zeros(np.shape(self.x)[1])
+            for i in range(np.shape(self.x)[1]):
+                IndxSplit = np.where(self.x[:, i] == np.min(self.x[:, i]))
+                # Calculating the area for the top skin and the bottom skin
+                Airfoil_top = InterpolatedUnivariateSpline(
+                    np.flip(self.x[:, i][: IndxSplit[0][0] + 1]), np.flip(self.z[:, i][: IndxSplit[0][0] + 1])
+                )
+                Airfoil_bot = InterpolatedUnivariateSpline(
+                    self.x[:, i][IndxSplit[0][0]:], self.z[:, i][IndxSplit[0][0]:]
+                )
+                A_airfoil[i] = (Airfoil_top.integral(0, 1) - Airfoil_bot.integral(0, 1)) * max(
+                    self.x[:, i]
+                )  # The Area of the airfoil
+        else:
+            raise TypeError('self.x is not a 1D or 2D array')
 
-        A_airfoil = (Airfoil_top.integral(0, 1) - Airfoil_bot.integral(0, 1)) * max(
-            self.x
-        )  # The Area of the airfoil
         return A_airfoil
 
     def InitialBoom(self, i):
@@ -332,7 +349,7 @@ class Beam:
                 # Stress with repeating column for the first node for easy calculations for the boom areas
                 sigma = np.vstack((sigma_nr, sigma_nr[0]))
                 sigma[np.where(np.abs(sigma) <= 0.01)] = 0.1
-                tau = self.TorsionStress(tSkin)
+                tau = self.TorsionStress(tSkin, boomArea_nr)
 
                 if np.any(np.abs(sigma) > sigma_ult):
                     # Boom area calculations
