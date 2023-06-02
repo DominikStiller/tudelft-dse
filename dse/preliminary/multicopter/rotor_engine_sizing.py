@@ -1,3 +1,4 @@
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
@@ -226,20 +227,22 @@ def rollingmoment():
 
 
 def plot_radius_rpm_range():
-    plt.subplots(figsize=(10, 3.5))
+    plt.subplots(figsize=(9, 2.5))
 
     RR = np.arange(0.2, 10.5, 0.1)
-    rpms = np.hstack([[200, 250, 350], np.arange(500, 2501, 1000)])
+    rpms = np.array([200, 250, 350])
+
+    cmap = mpl.colormaps["Blues"](np.linspace(1, 0.3, len(rpms)))
 
     R_maxs = []
     T_max = []
     omegas = []
-    for rpm in rpms:
+    for rpm, color in zip(rpms, cmap):
         T = []
         omega = omega_from_rpm(rpm)
         for R in RR:
             T.append(solve_thrust_hover(R, omega))
-        plt.plot(RR, T, label=f"{rpm} rpm")
+        plt.plot(RR, T, label=f"{rpm} rpm", color=color)
 
         R_max = M_max * speed_of_sound / omega
         R_maxs.append(R_max)
@@ -247,12 +250,17 @@ def plot_radius_rpm_range():
         T_max.append(solve_thrust_hover(R_max, omega))
 
     plt.scatter(R_maxs, T_max, marker="x", c="black", label="Max. radius for $M \leq 0.85$")
+    plt.axhline(mass * g_mars, c="darkslategray", ls=":", label="Weight at 3000 kg")
+
     plt.xlabel("Blade radius [m]")
     plt.ylabel("Total thrust [N]")
     plt.yscale("log")
-    plt.axhline(mass * g_mars, c="black", label="Weight at 3000 kg")
-    plt.legend()
-    format_plot()
+    plt.xlim([0.5, plt.xlim()[1]])
+    plt.ylim([10, plt.ylim()[1]])
+
+    plt.legend(loc="lower right", ncol=2)
+
+    format_plot(ygrid=False)
     save_plot(".", "multicopter_radius_rpm")
 
     plt.show()
