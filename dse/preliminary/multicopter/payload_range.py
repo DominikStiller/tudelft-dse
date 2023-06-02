@@ -44,7 +44,7 @@ if __name__ == "__main__":
     max_range_at_no_payload = max_fuel_at_no_payload * km_per_kg
     print(f"{max_range_at_no_payload=}")
 
-    fig, ax = plt.subplots(figsize=(10, 3))
+    fig, ax = plt.subplots(figsize=(9, 2.5))
     secax = ax.secondary_yaxis("right", functions=(payload2fuel, fuel2payload))
     secax.set_ylabel("Fuel mass [kg]")
 
