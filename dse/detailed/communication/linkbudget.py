@@ -136,10 +136,10 @@ class LinkBudget:
                 ("Tx power", to_db(self.tx_power), "dBW"),
                 ("Tx loss factor", to_db(self.tx_loss), "dB"),
                 ("Tx antenna pointing loss", self.tx_pointing_loss, "dB"),
-                ("Tx antenna gain", self.tx_gain, "dB"),
+                ("Tx antenna gain", self.tx_gain, "dBi"),
                 ("Free space loss", loss_free_space, "dB"),
                 ("Environment loss", self.loss_environment, "dB"),
-                ("Rx antenna gain", self.rx_gain, "dB"),
+                ("Rx antenna gain", self.rx_gain, "dBi"),
                 ("Rx antenna pointing loss", self.rx_pointing_loss, "dB"),
                 ("Rx loss factor", to_db(self.rx_loss), "dB"),
                 ("Required data rate", to_db(1 / self.data_rate), "dB(bit/s)"),
@@ -163,8 +163,12 @@ class LinkBudget:
 
     def print_configuration(self):
         print(f"Transmitter power: {self.tx_power:.0f} W")
-        print(f"Frequency: {self.frequency / 1e6:.0f} MHz")
-        print(f"Wavelength: {wavelength(self.frequency) * 100:.2f} cm")
+        print(f"Frequency: {self.frequency / 1e6:.1f} MHz")
+        print(f"Wavelength: {wavelength(self.frequency):.3g} m")
+        print(f"1/4 Wavelength: {wavelength(self.frequency)/4:.3g} m")
+
+        g_over_t = self.rx_gain - to_db(self.temperature_system_noise)
+        print(f"G/T: {g_over_t:.1f} dB/K")
 
     def print_table(self):
         budget = list(self.budget.itertuples(index=False, name=None))
@@ -173,14 +177,15 @@ class LinkBudget:
 
 
 if __name__ == "__main__":
-    aircraft_gain = 6
+    aircraft_gain_uhf = 6
+    aircraft_gain_hf = 0
 
     print("UPLINK (RELAY)")
     budget_uplink_relay = LinkBudget(
         frequency=440e6,
         tx_power=100,
         tx_loss=0.7,
-        tx_gain=aircraft_gain,
+        tx_gain=aircraft_gain_uhf,
         tx_pointing_loss=-2,
         tx_rx_distance=8000e3,
         loss_environment=-0.5,
@@ -200,10 +205,10 @@ if __name__ == "__main__":
     print()
     print("UPLINK (SKYWAVE)")
     budget_uplink_skywave = LinkBudget(
-        frequency=15.5e6,
-        tx_power=100,
+        frequency=10e6,
+        tx_power=20,
         tx_loss=0.7,
-        tx_gain=aircraft_gain,
+        tx_gain=aircraft_gain_hf,
         tx_pointing_loss=-2,
         tx_rx_distance=933e3,
         loss_environment=-0.5,
@@ -217,5 +222,9 @@ if __name__ == "__main__":
         bit_error_rate=1e-6,
         coding="conv-7-1/2",
     )
+    # TODO check if losses are correct
     budget_uplink_skywave.print_configuration()
     budget_uplink_skywave.print_table()
+
+    # TODO downlink
+    # TODO calculate max data rate
