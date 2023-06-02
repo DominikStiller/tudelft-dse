@@ -1,3 +1,4 @@
+import glob
 import os
 from pathlib import Path
 from typing import Union
@@ -5,6 +6,11 @@ from typing import Union
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sb
+from matplotlib.font_manager import fontManager
+
+# Load fonts
+for f in glob.glob(os.path.abspath(os.path.dirname(__file__)) + "/../fonts/*.ttf"):
+    fontManager.addfont(f)
 
 sb.set(
     context="paper",
@@ -13,11 +19,11 @@ sb.set(
     rc={
         "lines.linewidth": 1.2,
         "axes.titleweight": "bold",
-        "font.serif": "Latin Modern Roman",
+        "font.serif": "Bookman Old Style",
         "mathtext.fontset": "custom",
-        "mathtext.it": "Latin Modern Math:italic",
-        "mathtext.cal": "Latin Modern Math",
-        "mathtext.rm": "Latin Modern Math",
+        "mathtext.it": "Cambria Math:italic",
+        "mathtext.cal": "Cambria Math",
+        "mathtext.rm": "Cambria Math",
     },
 )
 
