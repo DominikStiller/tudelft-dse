@@ -101,7 +101,7 @@ class Beam:
             raise TypeError("Length needs to be either a constant float/int or a 1D array")
 
         if type(width) == int or type(width) == float:
-            self.x = np.reshape(np.linspace(-width/2, width, 100), (100, 1)) * np.size(self.y)
+            self.x = np.reshape(np.linspace(-width/2, width, 100), (100, 1)) * np.ones(np.size(self.y))
         elif type(width) == np.ndarray:
             self.x = width
         else:
@@ -185,18 +185,35 @@ class Beam:
 
     def AirfoilArea(self):
         # Locating the leading edge.
-        IndxSplit = np.where(self.x == np.min(self.x))
-        # Calculating the area for the top skin and the bottom skin
-        Airfoil_top = InterpolatedUnivariateSpline(
-            np.flip(self.x[: IndxSplit[0][0] + 1]), np.flip(self.z[: IndxSplit[0][0] + 1])
-        )
-        Airfoil_bot = InterpolatedUnivariateSpline(
-            self.x[IndxSplit[0][0]:], self.z[IndxSplit[0][0]:]
-        )
+        if len(np.shape(self.x)) == 1:
+            IndxSplit = np.where(self.x == np.min(self.x))
+            # Calculating the area for the top skin and the bottom skin
+            Airfoil_top = InterpolatedUnivariateSpline(
+                np.flip(self.x[: IndxSplit[0][0] + 1]), np.flip(self.z[: IndxSplit[0][0] + 1])
+            )
+            Airfoil_bot = InterpolatedUnivariateSpline(
+                self.x[IndxSplit[0][0]:], self.z[IndxSplit[0][0]:]
+            )
+            A_airfoil = (Airfoil_top.integral(0, 1) - Airfoil_bot.integral(0, 1)) * max(
+                self.x
+            )  # The Area of the airfoil
+        elif len(np.shape(self.x)) == 2:
+            A_airfoil = np.zeros(np.shape(self.x)[1])
+            for i in range(np.shape(self.x)[1]):
+                IndxSplit = np.where(self.x[:, i] == np.min(self.x[:, i]))
+                # Calculating the area for the top skin and the bottom skin
+                Airfoil_top = InterpolatedUnivariateSpline(
+                    np.flip(self.x[:, i][: IndxSplit[0][0] + 1]), np.flip(self.z[:, i][: IndxSplit[0][0] + 1])
+                )
+                Airfoil_bot = InterpolatedUnivariateSpline(
+                    self.x[:, i][IndxSplit[0][0]:], self.z[:, i][IndxSplit[0][0]:]
+                )
+                A_airfoil[i] = (Airfoil_top.integral(0, 1) - Airfoil_bot.integral(0, 1)) * max(
+                    self.x[:, i]
+                )  # The Area of the airfoil
+        else:
+            raise TypeError('self.x is not a 1D or 2D array')
 
-        A_airfoil = (Airfoil_top.integral(0, 1) - Airfoil_bot.integral(0, 1)) * max(
-            self.x
-        )  # The Area of the airfoil
         return A_airfoil
 
     def InitialBoom(self, i):
@@ -416,147 +433,4 @@ class Beam:
 
 
 if __name__ == "__main__":
-    g = 3.71
-    q = 0.5 * 0.01 * 112 ** 2
-    aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, 16.8)
-
-    chord = 3.35
-    Airfoil = pd.read_csv("S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
-    l = np.linspace(-16.8, 0, 100)
-    Xac = np.max(Airfoil['x']) * chord / 4
-    Zac = 0.077 * chord
-
-    wing = Beam(
-        width=Airfoil["x"].to_numpy() * chord,
-        height=Airfoil["z"].to_numpy() * chord,
-        length=l,
-        cross_section="constant",
-        material=materials['CFRP'],
-        fixing_points=np.array([[Xac], [Zac]])
-    )
-
-    fuselage_height = 2
-    b = 16.8
-    theta = np.arctan(fuselage_height/b)
-
-    MTOM = 3000
-    m_r = 910 / 2
-    m_e = 100 / 2
-
-    bracing_TO_mag = g / np.sin(theta) * (1.1 * MTOM / 2 - (m_r + m_e))
-    bracing_TO = Force(
-        magnitude=bracing_TO_mag * np.array(
-            [
-                [0],
-                [np.cos(theta)],
-                [-np.sin(theta)]
-            ]
-        ),
-        point_of_application=np.array(
-            [
-                [1.603],
-                [-16.8],
-                [0.1742]
-            ]
-        )
-    )
-    engine_and_rotor_weight = Force(
-        magnitude=np.array(
-            [
-                [0],
-                [0],
-                [-(m_r + m_e) * g]
-            ]
-        ),
-        point_of_application=np.array(
-            [
-                [1.603],
-                [-16.8],
-                [0.1742]
-            ]
-        )
-    )
-    liftOffLoad = Force(
-        magnitude=np.array(
-            [
-                [0],
-                [0],
-                [1.1 * MTOM * g / 2]
-            ]
-        ),
-        point_of_application=np.array(
-            [
-                [1.603],
-                [-16.8],
-                [0.1742]
-            ]
-        )
-    )
-    cruiseThrust = Force(
-        magnitude=np.array(
-            [
-                [790/2],
-                [0],
-                [0]
-            ]
-        ),
-        point_of_application=np.array(
-            [
-                [1.603],
-                [-16.8],
-                [0.1742]
-            ]
-        )
-    )
-
-    liftMoment = np.dot(aerodynamic_forces.F[2], aerodynamic_forces.application[1])
-    bracing_cr_mag = 1 / (b * np.sin(theta)) * (liftMoment - b * g * (m_r + m_e))
-    bracing_cruise = Force(
-        magnitude=bracing_cr_mag * np.array(
-            [
-                [0],
-                [np.cos(theta)],
-                [-np.sin(theta)]
-            ]
-        ),
-        point_of_application=np.array(
-            [
-                [1.603],
-                [-16.8],
-                [0.1742]
-            ]
-        )
-    )
-
-
-    wing.add_loading(liftOffLoad)
-    wing.add_loading(engine_and_rotor_weight)
-    wing.add_loading(bracing_TO)
-    wing.plot_internal_loading()
-    wing.InternalStress(0, 0, 0)
-    thickness = wing.t
-    B1 = wing.Bi
-
-    wing.unload()
-    wing.add_loading(engine_and_rotor_weight)
-    wing.add_loading(cruiseThrust)
-    wing.add_loading(bracing_cruise)
-    wing.add_loading(aerodynamic_forces)
-    wing.plot_internal_loading()
-    wing.InternalStress(0, 0, 0)
-    thickness2 = wing.t
-    B2 = wing.Bi
-
-    wing.t = np.maximum(thickness, thickness2)
-    wing.Bi = np.maximum(B1, B2)
-
-    wing.calculate_mass()
-    print(wing.m)
-
-
-    # plt.plot(wing.y, np.max(wing.t, 0) * 1000, label='Max thickness')
-    # plt.plot(wing.y, np.min(wing.t, 0) * 1000, label='Min thickness')
-    # plt.xlabel('Span [m]')
-    # plt.ylabel('Thickness [mm]')
-    # plt.legend()
-    # plt.show()
+    ...
