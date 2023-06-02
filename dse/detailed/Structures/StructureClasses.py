@@ -46,11 +46,14 @@ def xflr_forces(filename, q, b):
             abs(application[1][1:] - application[1][:-1]),
         )
     )
+    margin = 500
+    cd = (xflr_data["ICd"] + xflr_data["PCd"])
+    lift_drag_ratio = xflr_data["Cl"] / cd
     mag = np.zeros((3, len(xflr_data["  y-span"])))  # [N] (3 x n) where n is the length of y_lst
     mag[0] = (
-        -(xflr_data["ICd"] + xflr_data["PCd"]) * q * S_array
+        -cd * q * S_array + margin/lift_drag_ratio * cd / np.sum(cd)
     )  # [N] Forces in x-direction due to drag
-    mag[2] = xflr_data["Cl"] * q * S_array  # [N] Forces in z-direction due to lift
+    mag[2] = xflr_data["Cl"] * q * S_array + margin * xflr_data["Cl"]/np.sum(xflr_data["Cl"])  # [N] Forces in z-direction due to lift
 
     return Force(magnitude=mag, point_of_application=application)
 
