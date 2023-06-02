@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     print(f"Best design is {design_names[np.argmax(expected_scores)]}")
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(9, 5))
 
     ax.scatter(design_names, best_scores, marker="v", s=70, label="Best case", color="#70AD47")
     ax.scatter(design_names, expected_scores, marker="x", s=70, label="Expected", color="black")
@@ -107,8 +107,9 @@ if __name__ == "__main__":
         upper = 100 * upper / maximum_score
         ax.axhspan(lower, upper, color=f"#{color}", alpha=0.3)
 
+    ax.set_xlim([-0.5, len(design_names) - 0.5])
     ax.set_ylim([0, 100])
-    ax.set_ylabel("Total weighted score")
+    ax.set_ylabel("Total score")
     ax.set_yticks([0, 25, 50, 75, 100])
     # ax.set_xticklabels(ax.get_xticklabels(), rotation=15, ha="right")
 
