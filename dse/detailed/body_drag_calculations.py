@@ -105,7 +105,7 @@ class Fuselage:
 
 # Testing
 
-cabin_diameter = 8/3
+cabin_diameter = 1.66
 cabin_length = 2
 L_D_nose = 1.5
 L_D_tail = 1
