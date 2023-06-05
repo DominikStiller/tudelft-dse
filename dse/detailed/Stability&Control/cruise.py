@@ -17,7 +17,7 @@ system = System()
 controller_pitch = Controller(dt=dt, Kp=25000., Ki=6000., Kd=5000.)
 controller_thrust = Controller2(dt=dt, Kp=1000., Ki=5., Kd=0.)
 controller_yaw = Controller3(dt=dt, Kp=-15000., Ki=-50., Kd=-15000.)
-controller_roll = Controller4(dt=dt, Kp=1000., Ki=0., Kd=-0.)
+controller_roll = Controller4(dt=dt, Kp=-4000., Ki=-1., Kd=-7500.)
 
 euler_ref = np.array([0, 0, 0.])
 velocity_linear_ref = np.array([400/3.6, 0, 0.])
@@ -37,10 +37,8 @@ for i in range(int(1e4)):
     Tlx, Trx = controller_thrust(error_velocity_linear[0]) #think about if we control just x velocity or everything
     rud = controller_yaw(error_euler[2])
     Fal, Far = controller_roll(error_euler[0])
-    print(Fal)
 
-
-    exc_sig = np.array([Fal, 0, 0.]), np.array([Far, 0, 0.]), elev, np.array([0, rud, 0.]), Tlx, Trx
+    exc_sig = [0, 0, Fal], [0, 0, Far], elev, [0, rud, 0.], Tlx, Trx
 
 
     system(exc_sig, dt)
