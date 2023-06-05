@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-mpl.use("TkAgg")
+mpl.use("MacOSX")
 
 def define_geometry():
     """
@@ -144,20 +144,20 @@ class System:
 
         # aoa includes the effective angle of attack due to the pitch and angular velocity
         clwl, clwr, clh, cdwl, cdwr, cdh = get_coefficients(aoaw + self.imain, aoaw + self.imain, aoah + self.itail)
-        Lwl = 0.5 * self.rho * self.area[0] * clwl * v[0] ** 2
-        Lwr = 0.5 * self.rho * self.area[1] * clwr * v[1] ** 2
-        Lh = 0.5 * self.rho * self.area[2] * clh * v[2] ** 2
-        Dwl = 0.5 * self.rho * self.area[0] * cdwl * v[0] ** 2
-        Dwr = 0.5 * self.rho * self.area[1] * cdwr * v[1] ** 2
-        Dh = 0.5 * self.rho * self.area[2] * cdh * v[2] ** 2
+        # Lwl = 0.5 * self.rho * self.area[0] * clwl * v[0] ** 2
+        # Lwr = 0.5 * self.rho * self.area[1] * clwr * v[1] ** 2
+        # Lh = 0.5 * self.rho * self.area[2] * clh * v[2] ** 2
+        # Dwl = 0.5 * self.rho * self.area[0] * cdwl * v[0] ** 2
+        # Dwr = 0.5 * self.rho * self.area[1] * cdwr * v[1] ** 2
+        # Dh = 0.5 * self.rho * self.area[2] * cdh * v[2] ** 2
 
-        # Dwl = Dwl + 0.5 * self.rho * self.area[0] * 1 * self.velocity_linear[2] ** 2
-        # Dwr = Dwr + 0.5 * self.rho * self.area[1] * 1 * self.velocity_linear[2] ** 2
-        # Dh = Dh + 0.5 * self.rho * self.area[2] * 1 * self.velocity_linear[2] ** 2
+        Dwl = 0.5 * self.rho * self.area[0] * cdwl * self.velocity_linear[2] ** 2 * -np.sign(self.velocity_linear[2])
+        Dwr = 0.5 * self.rho * self.area[1] * cdwr * self.velocity_linear[2] ** 2 * -np.sign(self.velocity_linear[2])
+        Dh = 0.5 * self.rho * self.area[2] * cdh * self.velocity_linear[2] ** 2 * -np.sign(self.velocity_linear[2])
 
-        wl = np.array([-Dwl, 0, -Lwl])
-        wr = np.array([-Dwr, 0, -Lwr])
-        h = np.array([-Dh, 0, -Lh])
+        wl = np.array([0, 0, Dwl])
+        wr = np.array([0, 0, Dwr])
+        h = np.array([0, 0, Dh])
 
         wl = np.matmul(self.aero_to_body(pitch, beta), wl)
         wr = np.matmul(self.aero_to_body(pitch, beta), wr)
@@ -282,7 +282,7 @@ class ZieglerNicholsGains:
 
 dt = 0.01
 system = System()
-controller_thrust = ZieglerNicholsGains(dt=dt, Kp=1280, Ki=0., Kd=0.)
+controller_thrust = ZieglerNicholsGains(dt=dt, Kp=2000., Ki=10., Kd=200.)
 
 
 euler_ref = np.array([0, 0, 0.])
@@ -302,7 +302,7 @@ for i in range(int(1e4)):
 
     error_euler = euler_ref - euler
     error_velocity_linear = velocity_linear_ref - velocity_linear
-    print(error_velocity_linear)
+    # print(error_velocity_linear)
 
     Tl, Tr = controller_thrust(error_velocity_linear, define_areas()[5])
     thrust_in_time.append(np.copy(Tl+Tr))
