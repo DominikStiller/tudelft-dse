@@ -5,17 +5,23 @@ import pandas as pd
 import numpy as np
 
 
-
 def size_rotor_blades():
     # Define the blade
-    bladeTwist = np.flip(np.radians(np.array([5.72821286, 5.29796352, 4.97731679, 4.74279731, 4.58226976,
-                                              4.49233726, 4.47898847, 4.56296873, 4.79802654, 5.34554722])))
+    bladeTwist = np.flip(np.radians(np.array([14.32000402, 10.29123294,  8.32003476,  7.12117696,  6.31005798,
+                                              5.72821286, 5.29796352,  4.97731679,  4.74279731,  4.58226976,
+                                              4.49233726,  4.47898847, 4.56296873,  4.79802654, 5.34554722])))
+    discretization = 10
+    twist = np.zeros(discretization*(np.size(bladeTwist)-1))
+    for i in range(np.size(bladeTwist)-1):
+        twist[i*discretization:i*discretization+discretization] = np.linspace(bladeTwist[i], bladeTwist[i+1], discretization)
 
-    l = np.linspace(-R, -R / 3, np.size(bladeTwist))
+    cutout = 0.43
+    twist = twist[:np.size(twist)-round(cutout*np.size(twist))]
+    l = np.linspace(-R, -R * cutout, np.size(twist))
 
     sect = np.vstack((Airfoil['x'], Airfoil['z']))
-    sect = np.ones((np.size(bladeTwist), 2, np.size(Airfoil['x']))) * sect
-    sect = y_transformation(bladeTwist, sect) * R / 20
+    sect = np.ones((np.size(twist), 2, np.size(Airfoil['x']))) * sect
+    sect = y_transformation(twist, sect) * R / 20
 
     Xac = np.max(Airfoil['x']) * R / 20 / 4
     Zac = 0.077 * R / 20
@@ -30,8 +36,8 @@ def size_rotor_blades():
     )
 
     # Define the applied forces
-    liftOffperBlade = np.ones(np.shape(bladeTwist)) * 1.1 * MTOM * g / 24 / np.size(bladeTwist)
-    application = np.ones(np.shape(bladeTwist)) * np.array([[1.603 / 3.35 * R / 20], [-R], [0.1742 / 3.35 * R / 20]])
+    liftOffperBlade = np.ones(np.shape(twist)) * 1.1 * MTOM * g / 24 / np.size(twist)
+    application = np.ones(np.shape(twist)) * np.array([[1.603 / 3.35 * R / 20], [-R], [0.1742 / 3.35 * R / 20]])
     application[1] = l
 
     liftOffForce = Force(
@@ -62,12 +68,11 @@ def size_rotor_blades():
 
         blade.InternalStress(0, 0, 0)
         blade.calculate_mass()
-        print(blade.m)
 
         diff = np.abs(rotorMass - blade.m - 10) / (rotorMass - 10)
         rotorMass = blade.m + 10
 
-    boomMoments = blade.m_loading[-1] + R/3 * np.array(
+    boomMoments = blade.m_loading[-1] + R*cutout * np.array(
         [
             [blade.f_loading[-1][2][0]],
             [0],
@@ -365,6 +370,32 @@ def size_tail():
     return hStabilizer, vStabilizer, tailPoleMass
 
 
+def size_body(fuselage_height=1.67, cabin_length=2, full_length=6.15):
+    r = fuselage_height/2
+    aft_cone_length = full_length - cabin_length - rootChord  # [m], assumed
+    mat = materials['CFRP']
+    t = 0.001
+    margin = 200
+
+    # From https://dr.ntu.edu.sg/bitstream/10356/152917/2/Damage%20Severity%20Prediction%20of%20Helicopter%20Windshield.pdf
+    windshieldMaterial = materials['Polycarbonate']
+    windshieldThickness = 0.005
+
+    cabin_SA = np.pi/6 * (r/cabin_length**2) * ((r**2 + 4*cabin_length**2)**1.5 - r**3)
+    main_body_SA = 2 * np.pi * r * rootChord
+    aft_connection_SA = np.pi/6 * (r/aft_cone_length**2) * ((r**2 + 4*aft_cone_length**2)**1.5 - r**3)
+
+    bodySkinMass = (main_body_SA + aft_connection_SA) * t * mat.rho + \
+                   cabin_SA * windshieldThickness * windshieldMaterial.rho + margin
+
+    print(f'Cabin mass = {cabin_SA * windshieldThickness * windshieldMaterial.rho} [kg]')
+    print(f'Body mass = {(main_body_SA + aft_connection_SA) * t * mat.rho} [kg]')
+    print(f'Margin = {margin} [kg]')
+
+    return bodySkinMass
+
+
+
 if __name__ == '__main__':
     # Constants
     R = 10.4
@@ -382,3 +413,5 @@ if __name__ == '__main__':
     rotorBlade, mr = size_rotor_blades()
     wing = size_wing()
     hStabilizer, vStabilizer, tailPoleMass = size_tail()
+    bodyMass = size_body()
+    print(bodyMass)
