@@ -3,6 +3,8 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 
+from dse.plotting import format_plot, save_plot
+
 filenameArray = [
     "Flying_Wing_Data_AoA=9_3.csv",
     "Bi_Wing_1_a=14.00_v=111.00ms.csv",
@@ -102,6 +104,7 @@ def IxxCalcUnit(WingboxArray, NA):  # Multiply by c^3 to gain the moment of iner
         IxxPart[i] + WingboxArray[2, i] * WingboxArray[3, i] * (WingboxArray[5, i] - NA[1]) ** 2
         for i in range(len(IxxPart))
     )
+    print(Ixx)
     return Ixx
 
 
@@ -192,6 +195,7 @@ def ConstructDataCB(n):
     ICd_lst = np.zeros(len(y_lst))
     Data = np.zeros((8, len(y_lst)))
     Data[0] = np.array(y_lst)
+
     Data[1] = np.array(c_lst)
     Data[2] = np.zeros(n)
     Data[3] = np.zeros(n)
@@ -316,9 +320,23 @@ def InternalStress(Loads, WingboxArray, Data, NA):
     Stress[5] = tauxz
     return Stress
 
+def analyticalSol(Data):
+    b2 = Data[0, 0]
+    b = 1
+    h = 1
+    t = 0.001
+    Ixx = ((b + t) * (h + t)**3 - (b - t) * (h - t)**3)/12
+    w = 300
+    Mx = w/2 * (b2 - Data[0]) ** 2
+    z_booms = np.ones((4, np.size(Data[0]))) * .5
+    z_booms[2:] *= -1.
+    sigmaA = Mx * z_booms / Ixx *10**-6
+    print('k')
+    print(Ixx)
+    return Mx, sigmaA
 
 def MakePlots0(indx, WingboxArray, Data, Loads, NA):
-    fig, ax1 = plt.subplots()
+    fig, ax1 = plt.subplots(figsize=(8, 4))
 
     color = "tab:red"
     ax1.set_xlabel("Span [m]")
@@ -333,12 +351,13 @@ def MakePlots0(indx, WingboxArray, Data, Loads, NA):
     ax2.plot(-Data[0], Loads[4], color=color, linestyle="--")
     ax2.tick_params(axis="y", labelcolor=color)
 
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    format_plot()
+    save_plot(".", "AppliedLoadsFlyingWing")
     plt.show()
 
     # Making the internal loads plots
 
-    fig, ax1 = plt.subplots()
+    fig, ax1 = plt.subplots(figsize=(8, 4))
 
     color = "tab:red"
     ax1.set_xlabel("Span [m]")
@@ -353,11 +372,13 @@ def MakePlots0(indx, WingboxArray, Data, Loads, NA):
     ax2.plot(-Data[0], Loads[1], color=color, linestyle="--")
     ax2.tick_params(axis="y", labelcolor=color)
 
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    format_plot()
+    save_plot(".", "InternalLoadsFlyingwing")
     plt.show()
 
     # # Internal stress diagram
     # sigmaz_1_lst, sigmaz_2_lst, sigmaz_3_lst, sigmaz_4_lst = InternalStress()
+    plt.figure(figsize=(8, 4))
     plt.plot(-Data[0], Stress[1, 0], label="Stress distribution in point 1")
     plt.plot(-Data[0], Stress[1, 1], label="Stress distribution in point 2")
     plt.plot(-Data[0], Stress[1, 2], label="Stress distribution in point 3")
@@ -365,16 +386,18 @@ def MakePlots0(indx, WingboxArray, Data, Loads, NA):
     plt.legend()
     plt.ylabel("Stress [Mpa]")
     plt.xlabel("Span [m]")
+    format_plot()
+    save_plot(".", "StressesFlyingWing")
     plt.show()
 
     # Plot the wingbox structure
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8,4))
     # xbar, NA[1] = NeutralAxisUnit()
 
     ax.axhline(NA[1], linestyle="--", color="darkgrey", zorder=1)
     ax.axvline(NA[0], linestyle="--", color="darkgrey", zorder=2)
     if indx != 2:
-        ax.plot(*list(zip(*Airfoilcoordinates)), color="lightgrey", zorder=3)
+        ax.plot(*list(zip(*Airfoilcoordinates)), color="darkslategrey", zorder=3)
     ax.plot(WingboxArray[0], WingboxArray[1], color="black", zorder=4)
     ax.plot(
         [WingboxArray[0, 0], WingboxArray[0, -1]],
@@ -390,11 +413,13 @@ def MakePlots0(indx, WingboxArray, Data, Loads, NA):
     plt.gca().axis("equal")
     plt.ylabel("z/MAC [-]")
     plt.xlabel("x/MAC [-]")
+    format_plot()
+    save_plot(".", "WingboxStructure")
     plt.show()
 
 
 def MakePlots1(indx, WingboxArray, Data1, Data2, Loads1, loads2, NA):
-    fig, ax1 = plt.subplots()
+    fig, ax1 = plt.subplots(figsize=(8, 4))
 
     color = "tab:red"
     ax1.set_xlabel("Span [m]")
@@ -411,13 +436,13 @@ def MakePlots1(indx, WingboxArray, Data1, Data2, Loads1, loads2, NA):
     ax2.plot(-Data2[0], Loads2[4], color=color, linestyle="--", label="Lower wing")
     ax2.tick_params(axis="y", labelcolor=color)
 
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    fig.legend()
+    format_plot()
+    save_plot(".", "AppliedLoadsBiplane")
     plt.show()
 
     # Making the internal loads plots
 
-    fig, ax1 = plt.subplots()
+    fig, ax1 = plt.subplots(figsize=(8,4))
 
     color = "tab:red"
     ax1.set_xlabel("Span [m]")
@@ -434,13 +459,13 @@ def MakePlots1(indx, WingboxArray, Data1, Data2, Loads1, loads2, NA):
     ax2.plot(-Data2[0], Loads2[1], color=color, linestyle="--", label="Lower wing")
     ax2.tick_params(axis="y", labelcolor=color)
 
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    fig.legend()
+    format_plot()
+    save_plot(".", "InternalLoadsBiplane")
     plt.show()
 
     # # Internal stress diagram
     # sigmaz_1_lst, sigmaz_2_lst, sigmaz_3_lst, sigmaz_4_lst = InternalStress()
-    fig, (ax1, ax2) = plt.subplots(2, 1)
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8,6))
     ax1.set_title("Upper wing")
     ax1.plot(-Data1[0], Stress1[1, 0], label="Stress distribution in point 1")
     ax1.plot(-Data1[0], Stress1[1, 1], label="Stress distribution in point 2")
@@ -458,6 +483,8 @@ def MakePlots1(indx, WingboxArray, Data1, Data2, Loads1, loads2, NA):
 
     ax2.set_ylabel("Stress [Mpa]")
     ax2.set_xlabel("Span [m]")
+    format_plot()
+    save_plot(".", "StressesBiwing")
     plt.show()
 
     # Plot the wingbox structure
@@ -487,41 +514,60 @@ def MakePlots1(indx, WingboxArray, Data1, Data2, Loads1, loads2, NA):
 
 
 def MakePlots2(indx, WingboxArray, Data, Loads, NA):
+
+    Mx, sigmaA = analyticalSol(Data)
+    Stress = InternalStress(Loads, WingboxArray, Data, NA)
+    plt.figure(figsize=(8, 4))
     color = "tab:red"
     plt.xlabel("Span [m]")
     plt.ylabel("Lift [N]")
     plt.plot(-Data[0], Loads[3], color=color)
+    format_plot()
+    save_plot(".", "AppliedLoadsBeam")
 
     plt.show()
 
+    plt.figure(figsize=(8, 4))
     color = "tab:red"
     plt.xlabel("Span [m]")
     plt.ylabel("Mx [Nm]")
-    plt.plot((Data[0]) * -1, Loads[0], color=color)
+    plt.plot((Data[0]) * -1, Loads[0], color=color, label='Model solution', linewidth=3)
+    plt.plot((Data[0]) * -1, Mx, color='blue', label='Analytical solution', linewidth=3)
+    plt.legend()
+    format_plot()
+    save_plot(".", "InternalBeam")
     plt.show()
 
     # # Internal stress diagram
-    plt.plot(-Data[0], Stress[1, 0], label="Stress distribution in point 1")
-    plt.plot(-Data[0], Stress[1, 1], label="Stress distribution in point 2")
-    plt.plot(-Data[0], Stress[1, 2], label="Stress distribution in point 3")
-    plt.plot(-Data[0], Stress[1, 3], label="Stress distribution in point 4")
+    plt.figure(figsize=(8, 4))
+    plt.plot(-Data[0], Stress[1, 0], label="Model stress distribution in point 1", linewidth=3)
+    plt.plot(-Data[0], Stress[1, 1], label="Model stress distribution in point 2", linewidth=3)
+    plt.plot(-Data[0], Stress[1, 2], label="Model stress distribution in point 3", linewidth=3)
+    plt.plot(-Data[0], Stress[1, 3], label="Model stress distribution in point 4", linewidth=3)
+    plt.plot(-Data[0], sigmaA[0], label="Analytical stress distribution in point 1", linewidth=3)
+    plt.plot(-Data[0], sigmaA[ 1], label="Analytical stress distribution in point 2", linewidth=3)
+    plt.plot(-Data[0], sigmaA[2], label="Analytical stress distribution in point 3", linewidth=3)
+    plt.plot(-Data[0], sigmaA[3], label="Analytical stress distribution in point 4", linewidth=3)
     plt.legend()
     plt.ylabel("Stress [Mpa]")
     plt.xlabel("Span [m]")
+
+    format_plot()
+    save_plot(".", "StressBeam")
     plt.show()
 
     # Plot the wingbox structure
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8,6))
     ax.axhline(NA[1], linestyle="--", color="darkgrey", zorder=1)
     ax.axvline(NA[0], linestyle="--", color="darkgrey", zorder=2)
     if indx != 2:
-        ax.plot(*list(zip(*Airfoilcoordinates)), color="lightgrey", zorder=3)
-    ax.plot(WingboxArray[0], WingboxArray[1], color="black", zorder=4)
+        ax.plot(*list(zip(*Airfoilcoordinates)), color="lightgrey", zorder=3, linewidth=3)
+    ax.plot(WingboxArray[0], WingboxArray[1], color="black", zorder=4, linewidth=3)
     ax.plot(
         [WingboxArray[0, 0], WingboxArray[0, -1]],
         [WingboxArray[1, 0], WingboxArray[1, -1]],
         color="black",
-        zorder=4,
+        zorder=4, linewidth=3
     )
     n = [1, 2, 3, 4]
 
@@ -531,11 +577,13 @@ def MakePlots2(indx, WingboxArray, Data, Loads, NA):
     plt.gca().axis("equal")
     plt.ylabel("z/MAC [-]")
     plt.xlabel("x/MAC [-]")
+    format_plot()
+    save_plot(".", "WingboxBeam")
     plt.show()
 
 
 n = 1000
-indx = 0
+indx = 2
 
 if indx == 0:
     Airfoilcoordinates = GetAirfoil(filenameArray[-1])
@@ -561,5 +609,7 @@ else:
     WingboxArray = GetWingbox(indx)
     NA = NeutralAxisUnit(WingboxArray)
     Loads = AppliedLoadsCB(Data)
-    Stress = InternalStress(Loads, WingboxArray, Data, NA)
+    Loads1 = AppliedLoads(Data)
+
+
     MakePlots2(indx, WingboxArray, Data, Loads, NA)
