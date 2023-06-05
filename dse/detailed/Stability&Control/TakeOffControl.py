@@ -78,20 +78,22 @@ class System:
     def __init__(self):
         self.geometry = define_geometry()
         self.area, self.imain, self.itail, self.m, self.I, self.W0 = define_areas()
-        self.rho = 0.01
+        self.rho = 0.015
 
         # previous state
         self.euler_prev = np.array([0, 0, 0.])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
         self.velocity_linear_prev = np.array([0, 0, 0.])
         self.velocity_angular_prev = np.array([0, 0, 0.])
+        self.position_prev = np.array([0, 0, 0])
 
         # current state
         self.euler = np.copy(self.euler_prev)
         self.velocity_linear = np.copy(self.velocity_linear_prev)
         self.velocity_angular = np.copy(self.velocity_angular_prev)
+        self.position = np.copy(self.position_prev)
 
     def get_state(self):
-        return self.euler, self.velocity_linear, self.velocity_angular
+        return self.euler, self.velocity_linear, self.velocity_angular, self.position
 
     def __call__(self, exc_sig, dt):
         # Fal = [0, 0, 0]
@@ -118,11 +120,14 @@ class System:
         self.euler = self.euler_prev + d_euler*dt
         self.velocity_linear = self.velocity_linear_prev + a*dt
         self.velocity_angular = self.velocity_angular_prev + anga*dt
+        self.position = self.position_prev + self.velocity_linear*dt
+
         self.euler_prev = np.copy(self.euler)
         self.velocity_linear_prev = np.copy(self.velocity_linear)
         self.velocity_angular_prev = np.copy(self.velocity_angular)
+        self.position_prev = np.copy(self.position)
 
-        return self.euler, self.velocity_linear, self.velocity_angular
+        return self.euler, self.velocity_linear, self.velocity_angular, self.position
 
     def aero_forces(self, aoaw, aoah, v, beta, pitch):
         '''
@@ -253,62 +258,80 @@ class PID:
 
         return self.Kp * error + self.Ki * self.integral + self.Kd * derivative
 
-
 class Controller:
-    def __init__(self, dt=0.01, Kp=1., Ki=1., Kd=1.):
-        self.PID_theta = PID(Kp=Kp, Ki=Ki, Kd=Kd)
-        self.dt = dt
-
-    def __call__(self, error_theta):
-        return self.PID_theta(error_theta, self.dt)
-
-class Controller2:
     def __init__(self, dt=0.01, Kp=1., Ki=1., Kd=1.):
         self.PID_thrust = PID(Kp=Kp, Ki=Ki, Kd=Kd)
         self.dt = dt
 
-    def __call__(self, error_velocity):
+    def __call__(self, error_velocity, W0):
         T = self.PID_thrust(error_velocity, self.dt)
+        if np.linalg.norm(T) < W0:
+            T = np.array([0, 0, -W0])
+        return T/2, T/2
+
+class ZieglerNicholsGains:
+    def __init__(self, dt=0.01, Kp=0., Ki=0., Kd=0.):
+        self.PID_thrust = PID(Kp=Kp, Ki=Ki, Kd=Kd)
+        self.dt = dt
+
+    def __call__(self, error_velocity, W0):
+        T = self.PID_thrust(error_velocity, self.dt)
+        if np.linalg.norm(T) < W0:
+            T = np.array([0, 0, -W0])
         return T/2, T/2
 
 dt = 0.01
 system = System()
-controller_theta = Controller(dt=dt, Kp=25000., Ki=4000., Kd=500.)
-controller_thrust = Controller2(dt=dt, Kp=1000., Ki=100., Kd=0.)
+controller_thrust = ZieglerNicholsGains(dt=dt, Kp=1280, Ki=0., Kd=0.)
 
 
 euler_ref = np.array([0, 0, 0.])
 velocity_linear_ref = np.array([0, 0, -2.])
+# Tl, Tr = np.array([0, 0, 0]), np.array([0, 0, 0])
 euler_in_time = []
 velocity_linear_in_time = []
+position_in_time = []
+thrust_in_time = []
 
 for i in range(int(1e4)):
-    euler, velocity_linear, velocity_angular = system.get_state()
+    euler, velocity_linear, velocity_angular, position = system.get_state()
 
     euler_in_time.append(np.copy(euler))
     velocity_linear_in_time.append(np.copy(velocity_linear))
+    position_in_time.append(np.copy(position))
 
     error_euler = euler_ref - euler
     error_velocity_linear = velocity_linear_ref - velocity_linear
     print(error_velocity_linear)
 
-    Tl, Tr = controller_thrust(error_velocity_linear)
+    Tl, Tr = controller_thrust(error_velocity_linear, define_areas()[5])
+    thrust_in_time.append(np.copy(Tl+Tr))
     # if Tlx>430:
     #     Tlx= 430
     #     Trx= 430
     print(Tl, Tr)
+    # thrust_in_time.append([list(Tl+Tr),i])
     exc_sig = Tl, Tr
 
     system(exc_sig, dt)
 
 euler_in_time = np.array(euler_in_time)
 velocity_linear_in_time = np.array(velocity_linear_in_time)
+position_in_time = np.array(position_in_time)
+thrust_in_time = np.array(thrust_in_time)
+# print(thrust_in_time[::][0][0][2])
 
 # plt.plot(velocity_linear_in_time[:, 0])
 # plt.ylabel("velocity in the x direction")
 # plt.show()
 plt.plot(velocity_linear_in_time[:, 2])
 plt.ylabel("velocity in the z direction")
+plt.show()
+plt.plot(position_in_time[:, 2])
+plt.ylabel("position in the z direction")
+plt.show()
+plt.plot(thrust_in_time[:,2])
+plt.ylabel("total thrust")
 plt.show()
 # plt.plot(velocity_linear_in_time[:, 1])
 # plt.ylabel("velocity in the y direction")
