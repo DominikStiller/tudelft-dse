@@ -2,9 +2,16 @@ import unittest
 from body_drag_calculations import Fuselage
 import numpy as np
 
-class TestFuselageLogic(unittest.TestCase):
+"""
+Note the name of the tests, e.g. "test_layer1_object_creation".
+Layer 1 means how fundamental the functionality that is being testes is, 
+in such a way that if a layer 3 test works, all the lower layer tests 
+(2 and 1 in this case) are guaranteed to work. So, if a layer 3 fails,
+it might no be too hard to fix, but if a layer 1 fails, something really 
+fundamental might be broken.
+"""
 
-    # material.py (Material class)
+class TestFuselageLogic(unittest.TestCase):
 
     def test_layer1_object_creation(self):
 
