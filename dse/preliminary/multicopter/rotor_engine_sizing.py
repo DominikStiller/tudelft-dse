@@ -227,7 +227,7 @@ def rollingmoment():
 
 
 def plot_radius_rpm_range():
-    plt.subplots(figsize=(9, 2.5))
+    plt.subplots(figsize=(8, 3.5))
 
     RR = np.arange(0.2, 10.5, 0.1)
     rpms = np.array([200, 250, 350])

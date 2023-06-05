@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     print(f"Best design is {design_names[np.argmax(expected_scores)]}")
 
-    fig, ax = plt.subplots(figsize=(9, 5))
+    fig, ax = plt.subplots(figsize=(8, 2.8))
 
     ax.scatter(design_names, best_scores, marker="v", s=70, label="Best case", color="#70AD47")
     ax.scatter(design_names, expected_scores, marker="x", s=70, label="Expected", color="black")

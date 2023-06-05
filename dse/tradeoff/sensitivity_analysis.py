@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
         print(f"  - {design_name}: {median:.0f} ({q1:.0f} – {q3:.0f}, IQR = {iqr:.0f})")
 
-    fix, ax = plt.subplots(figsize=(9, 5), sharey="all", sharex="all")
+    fix, ax = plt.subplots(figsize=(8, 2.8), sharey="all", sharex="all")
 
     ax.boxplot(scores_perturbed, labels=design_names)
 
