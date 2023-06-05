@@ -3,6 +3,7 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
+from scipy import integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
 
 warnings.filterwarnings("ignore") #TODO: DELETE THIS!!!
@@ -35,6 +36,7 @@ const = {
 }
 
 rotorParameters = {
+    "maxEnginePower": 52000,
     "Radius": 10.4,
     'chord': 10.4/20,
     "cutout": 0.1,
@@ -336,8 +338,8 @@ def TakeoffRotor(V_tip, prnt, n_elements = rotorParameters["n_elements"]):
     DCQ_I = 1 / Ct * funcPratio.integral(np.sqrt(2 * Ct), 1) * CQ_induced
 
     Cq = (CQ_profile + CQ_induced + DCQ_I) / 0.95
-
-    T = rho * A * (omega * R) ** 2 * Ct
+    Vblade = omega*R
+    T = rho * A * (Vblade) ** 2 * Ct
 
     pow = rho * A * V_tip**3 * Cq / 550 / 1.341 * 1000
     torque = rho * A * (omega * R) ** 2 * Cq
@@ -580,6 +582,7 @@ def SecondRotor(vtipmax, thetaRotor1, T_Rotor1, n_elements = rotorParameters["n_
     PitchDiam = r2R * np.pi * np.arctan(thetaRotor1)
     Ftilde = T_Rotor1 * 2.64 / (R - R * x0)
     rHAT = (r2R * R - x0 * R) / (R - x0 * R)
+    rHAT = rHAT.clip(min=0)
     m = 1
     a_f = 1
     n = 0.2
@@ -699,133 +702,6 @@ def TipVortex(Ct, sigma):
 
     print(f"Vortex tip Reynolds Number: {Re_vortex}")
 
-def RotorThrust(N_blades, R, V_tip, coaxial, cutout):
-    # Rename constants
-    gm = const["gravityMars"]
-    rho = const["airDensity"]
-    V_m = const["soundSpeed"]
-
-    alpha = rotorParameters["alpha_data"]
-    CL = rotorParameters["CL_data"]
-    CD = rotorParameters["CD_data"]
-
-    CL2alpha = InterpolatedUnivariateSpline(alpha, CL)
-    CD2alpha = InterpolatedUnivariateSpline(alpha, CD)
-
-    # if N_rotors <= 0:
-    #     return "N_rotors has to be greater than zero.",0,0,0
-    # elif N_blades <= 0:
-    #     return "N_blades has to be greater than zero.",0,0,0
-
-    b = N_blades
-    v_tip = V_tip
-
-    c = R / 20  # Update the chord
-
-    x0 = cutout  # Distance from the blade's base to the centre of rotation
-    omega = v_tip / R * 0.92  # Angular velocity
-
-    n_elements = rotorParameters["n_elements"]  # Split up blade into set of elements
-    a0 = 6
-    alpha0 = -np.radians(5)
-    A = np.pi * R**2
-
-    r2R = np.arange(1, n_elements + 1) / n_elements  # Local radius to total rotor
-
-    c2R = c / R
-
-    M_local = (r2R) * (omega * R / V_m)  # Local Mach number (omega*R = V_tip which is constant)
-
-    a = a0 / (np.sqrt(1 - M_local**2))  # Lift curve slope corrected for mach number
-
-    def v12Omegar(theta):
-        return (
-            (a * b * c2R)
-            / (16 * np.pi * r2R)
-            * (-1 + np.sqrt(1 + (32 * np.pi * theta * r2R) / (a * b * c2R)))
-        )
-
-    alpha = np.radians(6) * np.ones(n_elements)
-
-    def func(x):
-        return alpha - (x - np.arctan(v12Omegar(x)))
-
-    theta = scipy.optimize.fsolve(
-        func,
-        0.1
-        * np.ones(
-            n_elements,
-        ),
-    )
-    Dcollective = np.radians(np.linspace(-15, 5, 100))
-    T_list = np.empty(np.shape(Dcollective))
-    Torque_list = np.empty(np.shape(Dcollective))
-    i = 0
-    for Dtheta in Dcollective:
-        theta_local = theta + Dtheta
-        aoa = theta_local - np.arctan(v12Omegar(theta_local))
-        cl_loc = CL2alpha(np.degrees(aoa))
-        cd_loc = CD2alpha(np.degrees(aoa))
-
-        DctDr2R = b * r2R**2 * c2R * cl_loc / (2 * np.pi)
-        # Create spline of data points in order
-        funCT = InterpolatedUnivariateSpline(r2R, DctDr2R)
-        Ct_lossless = funCT.integral(x0, 1)
-        # Loss of lift from the tip of the rotor
-        if Ct_lossless < 0.006:
-            B = 1 - 0.06 / b
-        else:
-            B = 1 - np.sqrt(2.27 * Ct_lossless - 0.01) / b
-
-        Ct = Ct_lossless - funCT.integral(B, 1)
-
-        Dcq0Dr2R = b * r2R ** 3 * c2R * cd_loc / (2 * np.pi)
-        funCQ0 = InterpolatedUnivariateSpline(r2R, Dcq0Dr2R)
-        CQ_profile = funCQ0.integral(x0, 1)
-        DcqiDr2R = b * r2R ** 3 * c2R * cl_loc * v12Omegar(theta) / (2 * np.pi)
-        funCQi = InterpolatedUnivariateSpline(r2R, DcqiDr2R)
-        CQ_induced = funCQi.integral(B, 1)
-
-        Pratiofunc = r2R ** 3 * (1 - np.sqrt(1 - (2 * Ct / (r2R ** 2)))) ** 2
-        ii = np.isfinite(Pratiofunc)
-        if any(ii)==True:
-            funcPratio = InterpolatedUnivariateSpline(r2R[ii], Pratiofunc[ii])
-
-            DCQ_I = 1 / Ct * funcPratio.integral(np.sqrt(2 * Ct), 1) * CQ_induced
-        else:
-            DCQ_I=0
-
-        Cq = (CQ_profile + CQ_induced + DCQ_I) / 0.95
-
-        T_list[i] = rho * A * (omega * R) ** 2 * Ct
-        if coaxial:
-            T_list[i] *= 0.88
-        Torque_list[i] = rho * A * (omega * R) ** 2 * Cq
-        i+=1
-    return V_tip * np.ones(np.shape(Dcollective)), Dcollective, T_list, Torque_list
-
-def RPMCollective(x0):
-    V = []
-    theta = []
-    thrust = []
-    torque = []
-    for V_tip in np.linspace(10, 220, 210):
-        v, th, thrst, trq = RotorThrust(6, 10.4, V_tip, coaxial=True, cutout=x0)
-        V = np.append(V, v)
-        theta = np.append(theta, th)
-        thrust = np.append(thrust, thrst)
-        torque = np.append(torque, trq)
-    plt.scatter((V/10.4)*9.5492968, np.degrees(theta), c=thrust, cmap=plt.get_cmap("plasma"))
-    plt.xlabel('Rotation speed [RPM]')
-    plt.ylabel('Collective Angle [deg]')
-    plt.colorbar(label="Thrust [N]")
-    plt.show()
-    plt.scatter((V/10.4)*9.5492968, np.degrees(theta), c=torque, cmap=plt.get_cmap("plasma"))
-    plt.xlabel('Rotation speed [RPM]')
-    plt.ylabel('Collective Angle [deg]')
-    plt.colorbar(label="Torque [Nm]")
-    plt.show()
-
 def DetermineCutout(MTOM, tipspeed, plot=False):
     T = 4000*3.71*np.ones(100)
     Torque = np.zeros(100)
@@ -839,6 +715,7 @@ def DetermineCutout(MTOM, tipspeed, plot=False):
         T[i]= 2*(T_1+T_2)
         Torque[i]=2*(Torque_1+Torque_2)
         i += 1
+    rotorParameters["cutout"] = np.round(rotorParameters["cutout"], 2)
     T=T[:i]
     Torque = Torque[:i]
     if plot==True:
@@ -941,7 +818,7 @@ def OptimizeCruise(Drag, Vcr, plot=False):
             plt.show()
 
         return T, pow
-    def SecondRotorThrustAndPower(x,T_1, V_c, aoa,plot=False):
+    def SecondRotorThrustAndPower(x ,T_1, V_c, aoa,plot=False):
         gm = const["gravityMars"]
         rho = const["airDensity"]
         V_m = const["soundSpeed"]
@@ -973,6 +850,7 @@ def OptimizeCruise(Drag, Vcr, plot=False):
         PitchDiam = r2R * np.pi * np.arctan(theta0)
         Ftilde = T_1 * 2.64 / (R - R * x0)
         rHAT = (r2R * R - x0 * R) / (R - x0 * R)
+        rHAT = rHAT.clip(min=0)
         m = 1
         a_f = 1
         n = 0.2
@@ -993,9 +871,9 @@ def OptimizeCruise(Drag, Vcr, plot=False):
         a = a0(aoa) / (np.sqrt(1 - M_local ** 2))  # Lift curve slope corrected for mach number
         V_c += np.mean(Vix)
         def v12Omegar(theta):
-            v_1cr = ((-omega / 2 * a * c * b + 4 * np.pi * V_c) + np.sqrt(
-                (omega / 2 * a * c * b + 4 * np.pi * V_c) ** 2 + 8 * np.pi * b * omega ** 2 * a * c * r2R * (
-                        theta - V_c / (omega * r2R)))) / (8 * np.pi * omega * r2R)
+            v_1cr = ((-omega_actual / 2 * a * c * b + 4 * np.pi * V_c) + np.sqrt(
+                (omega_actual / 2 * a * c * b + 4 * np.pi * V_c) ** 2 + 8 * np.pi * b * omega_actual ** 2 * a * c * r2R * (
+                        theta - V_c / (omega_actual * r2R)))) / (8 * np.pi * omega_actual * r2R)
 
             return v_1cr
 
@@ -1019,7 +897,7 @@ def OptimizeCruise(Drag, Vcr, plot=False):
 
         Dcq0Dr2R = b * r2R ** 3 * c2R * cd / (2 * np.pi)
         funCQ0 = InterpolatedUnivariateSpline(r2R, Dcq0Dr2R)
-        CQ_profile = funCQ0.integral(x0, 1)
+        CQ_profile = funCQ0.integral(x0 , 1)
 
         DcqiDr2R = b * r2R ** 3 * c2R * cl * v12Omegar(theta) / (2 * np.pi)
 
@@ -1068,33 +946,33 @@ def OptimizeCruise(Drag, Vcr, plot=False):
             x=[x0, x1]
             T_1calc, pow_1calc = FirstRotorThrustAndPower(x, Vcr, rotorParameters["cruise_AoA"])
             Tmax_1calc, powmaxcalc_1 = FirstRotorThrustAndPower(x, Vcr, rotorParameters["takeoff_AoA"])
-            if pow_1calc >=0 and pow_1calc < powmin_1 and T_1calc>Drag:
+            if pow_1calc >0 and pow_1calc < powmin_1 and T_1calc>Drag:
                 powmin_1 = pow_1calc
                 xmin_1 = x
                 Tmin_1 = T_1calc
-            if powmaxcalc_1>0 and powmaxcalc_1 <= 52000 and Tmax_1calc>Tmax_1 and Tmax_1calc>Drag:
+            if powmaxcalc_1>0 and powmaxcalc_1 <= 52000 and Tmax_1calc>Tmax_1 and Tmax_1calc>Drag :
                 powmax_1 = powmaxcalc_1
                 xmax_1 = x
                 Tmax_1 = Tmax_1calc
 
-    for x0 in np.linspace(0, 220, 220):
-        for x1 in np.linspace(0, 2, 220):
-            x=[x0, x1]
+    for x2 in np.linspace(0, 200, 200):
+        for x3 in np.linspace(0, 2, 200):
+            x=[x2, x3]
             T_2calc, pow_2calc = SecondRotorThrustAndPower(x, Tmin_1, Vcr, rotorParameters["cruise_AoA"])
-            Tmax_2calc, powmaxcalc_2 = np.nan_to_num( SecondRotorThrustAndPower(x, Tmax_1, Vcr , rotorParameters["takeoff_AoA"]), nan=0)
+            Tmax_2calc, powmaxcalc_2 = SecondRotorThrustAndPower(x, Tmax_1, Vcr, rotorParameters["takeoff_AoA"])
 
-            if pow_2calc >=0 and pow_2calc < powmin_2 and T_2calc>Drag:
+            if pow_2calc >0 and pow_2calc < powmin_2 and T_2calc>Drag:
                 powmin_2 = pow_2calc
                 xmin_2 = x
                 Tmin_2 = T_2calc
-            if powmaxcalc_2 >=0 and powmaxcalc_2 <= 52000 and Tmax_2calc>Drag:
+            if powmaxcalc_2 >0 and powmaxcalc_2 <= 52000 and Tmax_2calc>Tmax_2 and Tmax_2calc>Drag:
             #if powmaxcalc_2 >= 0 and Tmax_2calc > Tmax_2 and Tmax_2calc > Drag:
                 powmax_2 = powmaxcalc_2
                 xmax_2 = x
                 Tmax_2 = Tmax_2calc
 
-    FirstRotorThrustAndPower(xmin_1, Vcr, rotorParameters["cruise_AoA"], plot=plot)
-    SecondRotorThrustAndPower(xmin_2, Tmin_1, Vcr, rotorParameters["cruise_AoA"], plot=plot)
+    FirstRotorThrustAndPower(xmin_1, Vcr, rotorParameters["cruise_AoA"], plot=True)
+    SecondRotorThrustAndPower(xmin_2, Tmin_1, Vcr, rotorParameters["cruise_AoA"], plot=True)
 
 
     print(f"###################################")
@@ -1119,9 +997,40 @@ def OptimizeCruise(Drag, Vcr, plot=False):
     print(f"Power per rotor: {powmax_2 / 1000} [kW]")
     print(f"Max RPM: {xmax_2[0] / 10.4 * 2 * np.pi / 60}")
     print(f"Max Collective: {np.degrees(xmax_2[1])}")
-    print(f"###################################")
 
     return powmin_1, powmax_1, powmin_2, powmax_2, Tmin_1, Tmax_1, Tmin_2, Tmax_2
+
+def TransitionSimple(V, tilt):
+    #SOURCE: PRouty
+    R = rotorParameters["Radius"]
+    rho = const["airDensity"]
+    b= rotorParameters["N_blades"]
+    Vmax = const["soundSpeed"]*0.92
+    Vtang = V*np.cos(tilt)
+    omega = (Vmax-Vtang)/R
+    mu = V/(omega*R) * np.cos(tilt)
+    cl = 1
+    c = R/20
+    func = lambda r, phi: (omega * R * (r / R + mu * np.sin(phi)))**2 *rho/2 * cl* c
+    T = b/(2*np.pi)* integrate.dblquad(func, 0, 2*np.pi, 0, R)[0]
+    powmax = rotorParameters['maxEnginePower']
+    if T*Vtang>powmax:
+        T = powmax/Vtang
+
+    return T
+
+def PlotTransition():
+    V = np.linspace(0, 150, 90)
+    tilt = np.radians(np.linspace(0, 90, 90))
+    T = np.array([TransitionSimple(i, j) for i in V for j in tilt])
+    T=T.reshape(90, 90)
+    plt.pcolormesh(V, np.degrees(tilt), T, cmap='RdBu', shading='gouraud')
+    plt.colorbar()
+    plt.xlabel("Velocity")
+    plt.ylabel("Tilt Angle")
+    plt.xlim(left = 0)
+    plt.ylim(bottom = 0)
+    plt.show()
 
 
 def AdditionalClimbPower(Drag, V_c):
@@ -1141,6 +1050,7 @@ def AdditionalClimbPower(Drag, V_c):
 DetermineCutout(3000, 200, plot=False)
 Trot1, Torquerot1, powrot1, addhprot1 = TakeoffRotor(200, True)
 Trot2, Torquerot2, powrot2, addhprot2 = SecondRotor(200, rotorParameters["blade_twist"], Trot1, prnt=True)
+#PlotTransition()
 powmin_1, powmax_1, powmin_2, powmax_2, Tmin_1, Tmax_1, Tmin_2, Tmax_2 = OptimizeCruise(200, 112)
 print(f"########TOTAL AIRCRAFT########")
 print(f"Total Lifting Capacity: {2*(Trot1+Trot2)/3.71} [kg]")
