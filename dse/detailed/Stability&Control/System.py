@@ -169,3 +169,24 @@ class System:
 
         return T
 
+
+class SecondOrderSystem:
+    def __init__(self):
+        self.m = 1.
+        self.c = 0.1
+        self.k = 0.1
+        self.A = np.array([[0., 1.],
+                           [-self.k/self.m, -self.c/self.m]])
+        self.B = np.array([[0.],
+                           [1/self.m]])
+        self.x = np.array([1., -0.5])
+
+    @property
+    def F_c(self):
+        # return np.array([np.cos(self.x[0])])
+        return np.array([0.78])
+
+    def step(self, F_u, dt):
+        dx_dt = np.matmul(self.A, self.x) + np.matmul(self.B, F_u + self.F_c)
+        self.x = self.x + dx_dt*dt
+        return self.x
