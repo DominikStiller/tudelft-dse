@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-mpl.use("MacOSX")
+mpl.use("TkAgg")
 
 def define_geometry():
     """
@@ -269,21 +269,32 @@ class Controller:
             T = np.array([0, 0, -W0])
         return T/2, T/2
 
-class ZieglerNicholsGains:
+class Controller:
     def __init__(self, dt=0.01, Kp=0., Ki=0., Kd=0.):
         self.PID_thrust = PID(Kp=Kp, Ki=Ki, Kd=Kd)
         self.dt = dt
 
     def __call__(self, error_velocity, W0):
         T = self.PID_thrust(error_velocity, self.dt)
-        if np.linalg.norm(T) < W0:
-            T = np.array([0, 0, -W0])
+        # if abs(T) < W0:
+        #     T = -W0
+
         return T/2, T/2
+
+
+class Controller2:
+    def __init__(self, dt=0.01, Kp=0., Ki=0., Kd=0.):
+        self.PID_thrust = PID(Kp=Kp, Ki=Ki, Kd=Kd)
+        self.dt = dt
+
+    def __call__(self, pitch, W0):
+        T = self.PID_thrust(pitch, self.dt)
+        return T / 2, T / 2
 
 dt = 0.01
 system = System()
-controller_thrust = ZieglerNicholsGains(dt=dt, Kp=2000., Ki=10., Kd=200.)
-
+controller_thrust = Controller(dt=dt, Kp=6000., Ki=400., Kd=2000.)
+controller_pitch = Controller2(dt=dt, Kp=-25000., Ki=-5000., Kd=-25000.)
 
 euler_ref = np.array([0, 0, 0.])
 velocity_linear_ref = np.array([0, 0, -2.])
@@ -304,12 +315,15 @@ for i in range(int(1e4)):
     error_velocity_linear = velocity_linear_ref - velocity_linear
     # print(error_velocity_linear)
 
-    Tl, Tr = controller_thrust(error_velocity_linear, define_areas()[5])
+    Tlz, Trz = controller_thrust(error_velocity_linear[2], define_areas()[5])
+    Tlx, Trx = controller_pitch(error_euler[1], define_areas()[5])
+    Tl = [Tlx, 0, Tlz]
+    Tr = [Trx, 0, Trz]
+
+
     thrust_in_time.append(np.copy(Tl+Tr))
-    # if Tlx>430:
-    #     Tlx= 430
-    #     Trx= 430
-    print(Tl, Tr)
+
+    print(Tl, Tr, error_velocity_linear)
     # thrust_in_time.append([list(Tl+Tr),i])
     exc_sig = Tl, Tr
 
@@ -327,17 +341,17 @@ thrust_in_time = np.array(thrust_in_time)
 plt.plot(velocity_linear_in_time[:, 2])
 plt.ylabel("velocity in the z direction")
 plt.show()
-plt.plot(position_in_time[:, 2])
-plt.ylabel("position in the z direction")
-plt.show()
-plt.plot(thrust_in_time[:,2])
-plt.ylabel("total thrust")
-plt.show()
-# plt.plot(velocity_linear_in_time[:, 1])
+# plt.plot(position_in_time[:, 2])
+# plt.ylabel("position in the z direction")
+# plt.show()
+# plt.plot(thrust_in_time[:,2])
+# plt.ylabel("total thrust")
+# plt.show()
+# # plt.plot(velocity_linear_in_time[:, 1])
 # plt.ylabel("velocity in the y direction")
 # plt.show()
-# plt.plot(euler_in_time[:, 2], color='b')
-# plt.plot(euler_in_time[:, 1], color='g')
-# plt.plot(euler_in_time[:, 0], color='r')
-# plt.legend('ypr')
-# plt.show()
+plt.plot(euler_in_time[:, 2], color='b')
+plt.plot(euler_in_time[:, 1], color='g')
+plt.plot(euler_in_time[:, 0], color='r')
+plt.legend('ypr')
+plt.show()
