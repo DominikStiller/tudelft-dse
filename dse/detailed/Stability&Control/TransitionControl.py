@@ -319,6 +319,7 @@ for i in range(int(1e4)):
 
     error_euler = euler_ref - euler
     error_velocity_linear = velocity_linear_ref - velocity_linear
+    error_ithrust = ithrust_ref - ithrust
     # print(error_velocity_linear)
 
     Tlz, Trz = controller_thrust(error_velocity_linear[2])
