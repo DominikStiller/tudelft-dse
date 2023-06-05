@@ -9,7 +9,7 @@ class System:
         self.rho = 0.01
 
         # previous state
-        self.euler_prev = np.array([0, np.radians(-5), np.radians(5)])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
+        self.euler_prev = np.array([np.radians(10), np.radians(-5), np.radians(5)])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
         self.velocity_linear_prev = np.array([105, 0, 0.])
         self.velocity_angular_prev = np.array([0, 0, 0.])
 

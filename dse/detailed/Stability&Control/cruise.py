@@ -1,5 +1,5 @@
 from System import System
-from Controllers import Controller, Controller2, Controller3
+from Controllers import Controller, Controller2, Controller3, Controller4
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -14,16 +14,15 @@ mpl.use("TkAgg")
 
 dt = 0.01
 system = System()
-controller_theta = Controller(dt=dt, Kp=25000., Ki=6000., Kd=500.)
+controller_pitch = Controller(dt=dt, Kp=25000., Ki=6000., Kd=5000.)
 controller_thrust = Controller2(dt=dt, Kp=1000., Ki=5., Kd=0.)
-controller_phi = Controller3(dt=dt, Kp=-1000., Ki=5., Kd=-5000.)
+controller_yaw = Controller3(dt=dt, Kp=-15000., Ki=-50., Kd=-15000.)
+controller_roll = Controller4(dt=dt, Kp=1000., Ki=0., Kd=-0.)
 
 euler_ref = np.array([0, 0, 0.])
 velocity_linear_ref = np.array([400/3.6, 0, 0.])
 euler_in_time = []
 velocity_linear_in_time = []
-#Tlx, Trx = 200, 200
-# velprev = 110
 
 for i in range(int(1e4)):
     euler, velocity_linear, velocity_angular = system.get_state()
@@ -34,16 +33,15 @@ for i in range(int(1e4)):
     error_euler = euler_ref - euler
     error_velocity_linear = velocity_linear_ref - velocity_linear
 
+    elev = controller_pitch(error_euler[1])
     Tlx, Trx = controller_thrust(error_velocity_linear[0]) #think about if we control just x velocity or everything
-    if Tlx > 430:
-        Tlx = 430
-        Trx = 430
-    rud = controller_phi(error_euler[2])
-    print(rud)
-    elev = controller_theta(error_euler[1])
-    exc_sig = np.array([0, 0, 0.]), np.array([0, 0, 0.]), elev, np.array([0, rud, 0.]), Tlx, Trx
+    rud = controller_yaw(error_euler[2])
+    Fal, Far = controller_roll(error_euler[0])
+    print(Fal)
 
-    #print(controller_theta(error_euler[1]), error_euler[1])
+
+    exc_sig = np.array([Fal, 0, 0.]), np.array([Far, 0, 0.]), elev, np.array([0, rud, 0.]), Tlx, Trx
+
 
     system(exc_sig, dt)
 
