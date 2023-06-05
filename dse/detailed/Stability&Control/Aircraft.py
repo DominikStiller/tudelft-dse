@@ -29,7 +29,8 @@ def define_areas():
     imain = np.radians(4)  # angle of incidence main
     itail = np.radians(4)  # angle of incidence tail
     m = 3000
-    I = np.array([[81250, 0, 0], [0, 19750, 0], [0, 0, 91500]])  # mass moments of inertia ixx, iyy, izz
+    #I = np.array([[81250, 0, 0], [0, 19750, 0], [0, 0, 91500]])  # mass moments of inertia ixx, iyy, izz
+    I = np.array([[98156, 0, 0], [0, 5645, 0], [0, 0, 98310]])
     W0 = m * 3.71
     return area, imain, itail, m, I, W0
 
@@ -62,19 +63,19 @@ def get_coefficients(aoal, aoar, aoah):
         cdwl = clwl / np.interp(aoal, aoalistw, cldivcdw)
     else:
         clwl = 0
-        cdwl = 1 * abs(aoal%(2*np.pi)/(0.5*np.pi))
+        cdwl = 1
     if np.radians(-5) <= aoar <= np.radians(15):
         clwr = np.interp(aoar, aoalistw, cllistw)
         cdwr = clwr / np.interp(aoar, aoalistw, cldivcdw)
     else:
         clwr = 0
-        cdwr = 1 * abs(aoar%(2*np.pi)/(0.5*np.pi))
+        cdwr = 1
     if np.radians(-5) <= aoal <= np.radians(15):
         clh = np.interp(aoah, aoalistw, cllisth)
         cdh = clh / np.interp(aoah, aoalisth, cldivcdh)
     else:
         clh = 0
-        cdh = 1 * abs(aoah%(2*np.pi)/(0.5*np.pi))
+        cdh = 1
     # add the fuselage contribution later and add s fuselage
     return clwl, clwr, clh, cdwl, cdwr, cdh
 

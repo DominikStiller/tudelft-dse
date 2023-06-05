@@ -24,6 +24,7 @@ velocity_linear_ref = np.array([400/3.6, 0, 0.])
 euler_in_time = []
 velocity_linear_in_time = []
 
+
 for i in range(int(1e4)):
     euler, velocity_linear, velocity_angular = system.get_state()
 
@@ -40,8 +41,9 @@ for i in range(int(1e4)):
 
     exc_sig = [0, 0, Fal], [0, 0, Far], elev, [0, rud, 0.], Tlx, Trx
 
-
     system(exc_sig, dt)
+
+
 
 euler_in_time = np.array(euler_in_time)
 velocity_linear_in_time = np.array(velocity_linear_in_time)
@@ -55,9 +57,9 @@ plt.show()
 plt.plot(velocity_linear_in_time[:, 1])
 plt.ylabel("velocity in the y direction")
 plt.show()
-plt.plot(euler_in_time[:, 2], color='b')
-plt.plot(euler_in_time[:, 1], color='g')
-plt.plot(euler_in_time[:, 0], color='r')
+plt.plot(np.degrees(euler_in_time[:, 2]), color='b')
+plt.plot(np.degrees(euler_in_time[:, 1]), color='g')
+plt.plot(np.degrees(euler_in_time[:, 0]), color='r')
 plt.legend('ypr')
 plt.show()
 

@@ -9,9 +9,12 @@ class System:
         self.rho = 0.01
 
         # previous state
+        # self.euler_prev = np.array([0, np.radians(10), 0])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
+        # self.velocity_linear_prev = np.array([110, 0, 0.])
+        # self.velocity_angular_prev = np.array([0, 0, 0.])
         self.euler_prev = np.array([np.radians(5), np.radians(-5), np.radians(5)])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
         self.velocity_linear_prev = np.array([105, 0, 0.])
-        self.velocity_angular_prev = np.array([0, 0, 0.])
+        self.velocity_angular_prev = np.array([0.1, 0, 0.])
 
         # current state
         self.euler = np.copy(self.euler_prev)
@@ -22,9 +25,6 @@ class System:
         return self.euler, self.velocity_linear, self.velocity_angular
 
     def __call__(self, exc_sig, dt):
-        # Fal = [0, 0, 0]
-        # Far = [0, 0, 0]
-        # Fr = [0, 0, 0]
         Fal, Far, Fe, Fr, Tlx, Trx = exc_sig
         aoawings = np.arctan2(self.velocity_linear[2] - self.velocity_angular[1], self.velocity_linear[0])
         aoatail = np.arctan2(self.velocity_linear[2] + self.velocity_angular[1]*10, self.velocity_linear[0])
@@ -36,6 +36,7 @@ class System:
 
         M, Fnet = self.moments(self.geometry, F)
         a, anga = self.accelerations(F, M)
+
 
         matrix = np.array([[np.cos(self.euler[1]), np.sin(self.euler[0]) * np.sin(self.euler[1]), np.cos(self.euler[0]) * np.sin(self.euler[1])],
                            [0, np.cos(self.euler[0]) * np.cos(self.euler[1]), -np.sin(self.euler[0]) * np.cos(self.euler[1])],
@@ -73,10 +74,6 @@ class System:
         Dwl = 0.5 * self.rho * self.area[0] * cdwl * v[0] ** 2
         Dwr = 0.5 * self.rho * self.area[1] * cdwr * v[1] ** 2
         Dh = 0.5 * self.rho * self.area[2] * cdh * v[2] ** 2
-
-        # Dwl = Dwl + 0.5 * self.rho * self.area[0] * 1 * self.velocity_linear[2] ** 2
-        # Dwr = Dwr + 0.5 * self.rho * self.area[1] * 1 * self.velocity_linear[2] ** 2
-        # Dh = Dh + 0.5 * self.rho * self.area[2] * 1 * self.velocity_linear[2] ** 2
 
         wl = np.array([-Dwl, 0, -Lwl])
         wr = np.array([-Dwr, 0, -Lwr])
@@ -119,8 +116,10 @@ class System:
         M = np.zeros((len(R), 3))
         for i in range(len(R)):
             M[i] = np.cross(R[i], F[i])
+
         M = np.array([sum(M.T[0]), sum(M.T[1]), sum(M.T[2])])
         Fnet = np.array([sum(F.T[0]), sum(F.T[1]), sum(F.T[2])])
+
         #Rwingleft, Rwingright, Rstabilizer, Raileronleft, Raileronright, Relevator, Rrudder, Rthrustleft, Rthrustright, Cg])
         return M, Fnet
 
