@@ -1,5 +1,5 @@
 import unittest
-from body_drag_calculations import Fuselage
+from body_drag_calculations_v1 import Fuselage  # Change to V2 later
 import numpy as np
 
 """

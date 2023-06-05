@@ -82,6 +82,14 @@ class Fuselage:
         return area
 
     @staticmethod
+    def area_cabin(d, l):
+        """ Returns cabin's area. Inputs are d = diameter and l = length, both in [m]. Output is in [m^2] """
+        r = d / 2
+        area = 2 * np.pi * r * l
+        return area
+
+
+    @staticmethod
     def volume_cylinder(d, l):
         """ Returns cylinder's volume. Inputs are d = diameter and l = length, both in [m]. Output is in [m^3] """
         r = d / 2
@@ -112,7 +120,7 @@ L_D_tail = 1
 
 fuselage = Fuselage(cabin_diameter, cabin_length, L_D_nose, L_D_tail)
 
-print(f'{fuselage.cab_d}         {fuselage.d_main}         {fuselage.length}       {round(fuselage.s, 3)}        {round(fuselage.cd, 5)}')
+print(f' D:{fuselage.cab_d}        L:{fuselage.length}       S:{round(fuselage.s, 3)}        cd:{round(fuselage.cd, 5)}')
 
 v = 111
 rho = 0.015
@@ -123,5 +131,16 @@ print("drag force: ", drag)
 """
 #  --------------------------------  TO DO  --------------------------------  #
 
+-> Fix calculations and results based on the new excel sheet
+-> Apply changes to the unit tests.
 
 """
+print()
+
+nose_area = Fuselage.area_sphere(2.075)/2
+cabin_area = Fuselage.area_cabin(1.66, 2)
+rear_area = Fuselage.area_sphere(1.66)/2
+
+total_area = nose_area + cabin_area + rear_area
+print(f'Nose area: {nose_area}  \n  cabin area: {cabin_area} \n  rear area: {rear_area}  \n  total area: {total_area}')
+
