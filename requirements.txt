@@ -109,3 +109,4 @@ websocket-client==1.5.1
 y-py==0.5.9
 ypy-websocket==0.8.2
 salib==1.4.7
+vibration-toolbox==0.6.10
