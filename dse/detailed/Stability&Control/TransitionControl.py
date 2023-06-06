@@ -49,36 +49,27 @@ def get_coefficients(aoal, aoar, aoah):
         cdwr: drag coefficient of right wing
         cdh: drag coefficient of horizontal stabilizer
     '''
-    aoalistw = np.radians(np.arange(-5, 15, 0.1))
-    aoalisth = np.radians(np.arange(-5, 15, 0.1))
-    cllistw = aoalistw * 2 * np.pi   # will later be a csv file
-    cllisth = aoalisth * 2 * np.pi   # will later be a csv file
-    cldivcdw = np.ones(len(aoalistw)) * 20   # will later be a csv file
-    cldivcdh = np.ones(len(aoalisth)) * 20   # will later be a csv file
-    if np.radians(-5) <= aoal <= np.radians(15):
-        clwl = np.interp(aoal, aoalistw, cllistw)
-        cdwlx = clwl / np.interp(aoal, aoalistw, cldivcdw)
-        cdwlz = 0
-    else:
-        clwl = 0
-        cdwlx = 0
-        cdwlz = 1.28
-    if np.radians(-5) <= aoar <= np.radians(15):
-        clwr = np.interp(aoar, aoalistw, cllistw)
-        cdwrx = clwr / np.interp(aoar, aoalistw, cldivcdw)
-        cdwrz = 0
-    else:
-        clwr = 0
-        cdwrx = 0
-        cdwrz = 1.28
-    if np.radians(-5) <= aoal <= np.radians(15):
-        clh = np.interp(aoah, aoalistw, cllisth)
-        cdhx = clh / np.interp(aoah, aoalisth, cldivcdh)
-        cdhz = 0
-    else:
-        clh = 0
-        cdhx = 0
-        cdhz = 1.28
+    aoalistw = np.radians(np.arange(-180, 181, 5))
+    aoalisth = np.radians(np.arange(-180, 181, 5))
+    cllistw = np.array(
+        [0.15, 0.4, 0.6, 0.65, 0.2, 0.4, 0.7, 0.9, 1.1, 1.2, 1.1, 1.0, 0.95, 0.8, 0.7, 0.55, 0.3, 0.0, -0.3, -0.45,
+         -0.65, -0.75, -0.85, -0.95, -1.05, -1.1, -1.15, -1.2, -1.0, -0.8, -0.6, -0.3, 0, -0.6, -0.8, -0.1, 0.2, 0.6,
+         1.2, 1.9, 0.8, 0.4, 0.6, 0.8, 0.9, 1, 1.1, 1.15, 1.1, 1.0, 0.8, 0.6, 0.4, 0.2, 0, -0.3, -0.45, -0.65, -0.75,
+         -0.85, -0.95, -1.05, -1.1, -1.15, -1.2, -1.0, -0.8, -0.6, -0.3, 0, -0.3, -0.5, -0.1])
+    cllisth = np.array(
+        [-0.1, 0.15, 0.4, 0.6, 0.65, 0.2, 0.4, 0.7, 0.9, 1.1, 1.2, 1.1, 1.0, 0.95, 0.8, 0.7, 0.55, 0.3, 0.0, -0.3, -0.45,
+         -0.65, -0.75, -0.85, -0.95, -1.05, -1.1, -1.15, -1.2, -1.0, -0.8, -0.6, -0.3, 0, -0.6, -0.8, -0.1, 0.2, 0.6,
+         1.2, 1.9, 0.8, 0.4, 0.6, 0.8, 0.9, 1, 1.1, 1.15, 1.1, 1.0, 0.8, 0.6, 0.4, 0.2, 0, -0.3, -0.45, -0.65, -0.75,
+         -0.85, -0.95, -1.05, -1.1, -1.15, -1.2, -1.0, -0.8, -0.6, -0.3, 0, -0.3, -0.5])
+
+    cdwr = 0.65 - 0.64 * np.cos(2 * np.radians(aoar))
+    cdwl = 0.65 - 0.64 * np.cos(2 * np.radians(aoal))
+    cdh = 0.64 - 0.64 * np.cos(2 * np.radians(aoah))
+
+    clwl = np.interp(aoal, aoalistw, cllistw)
+    clwr = np.interp(aoar, aoalistw, cllistw)
+    clh = np.interp(aoah, aoalisth, cllisth)
+
     # add the fuselage contribution later and add s fuselage
     return clwl, clwr, clh, cdwlx, cdwlz, cdwrx, cdwrz, cdhx, cdhz
 
