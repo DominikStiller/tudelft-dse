@@ -5,13 +5,6 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.use("TkAgg")
 
-# state_now
-# reference_now
-# send error to controller
-# get controller's control signal
-# send control signal to system
-# update new state
-
 dt = 0.01
 system = System()
 controller_pitch = Controller(dt=dt, Kp=25000., Ki=6000., Kd=5000.)

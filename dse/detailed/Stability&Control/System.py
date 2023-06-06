@@ -75,9 +75,6 @@ class System:
         Dwl = 0.5 * self.rho * self.area[0] * cdwl * v[0] ** 2
         Dwr = 0.5 * self.rho * self.area[1] * cdwr * v[1] ** 2
         Dh = 0.5 * self.rho * self.area[2] * cdh * v[2] ** 2
-        # print(np.degrees(aoaw + self.imain), np.degrees(aoah + self.itail), "aoas")
-        # print(clwl, clh, "cls")
-        # print(Lwl, Lh)
 
         wl = np.array([-Dwl, 0, -Lwl])
         wr = np.array([-Dwr, 0, -Lwr])

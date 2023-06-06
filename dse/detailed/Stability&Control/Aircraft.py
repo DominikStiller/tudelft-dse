@@ -76,7 +76,6 @@ def get_coefficients(aoal, aoar, aoah):
     # else:
     #     clh = 0
     #     cdh = 1
-    # # add the fuselage contribution later and add s fuselage
 
     aoalistw = np.radians(np.arange(-180, 181, 5))
     aoalisth = np.radians(np.arange(-180, 181, 5))
@@ -98,5 +97,6 @@ def get_coefficients(aoal, aoar, aoah):
     clwl = np.interp(aoal, aoalistw, cllistw)
     clwr = np.interp(aoar, aoalistw, cllistw)
     clh = np.interp(aoah, aoalisth, cllisth)
+    # add the fuselage contribution later and add s fuselage
     return clwl, clwr, clh, cdwl, cdwr, cdh
 
