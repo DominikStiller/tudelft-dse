@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-mpl.use("TkAgg")
+mpl.use("MacOSX")
 
 def define_geometry(ithrust):
     """
@@ -15,8 +15,9 @@ def define_geometry(ithrust):
     Relevator = np.array([-10, 0, -2])
     Rrudder = np.array([-10, 0, -3])
     Cg = np.array([0, 0, 0])
-    Rthrustleft = np.array([0+np.cos(ithrust), -17, -3*np.sin(ithrust)])
-    Rthrustright = np.array([0+np.cos(ithrust), 17, -3*np.sin(ithrust)])
+    print(f"{np.degrees(ithrust)}---------")
+    Rthrustleft = np.array([0+3*np.cos(ithrust[-1]), -17, -3*np.sin(ithrust[-1])])
+    Rthrustright = np.array([0+3*np.cos(ithrust[-1]), 17, -3*np.sin(ithrust[-1])])
     R = np.array([Rwingleft, Rwingright, Rstabilizer, Raileronleft, Raileronright, Relevator, Rrudder, Rthrustleft, Rthrustright, Cg])
     return R
 
@@ -86,11 +87,11 @@ class System:
         self.ithrust_prev = np.array([np.radians(90)])
         self.geometry = define_geometry(self.ithrust_prev)
         self.area, self.imain, self.itail, self.m, self.I, self.W0, self.max_thrust = define_areas()
-        self.rho = 0.015
+        self.rho = 0.01
 
         # previous state
         self.euler_prev = np.array([0, 0, 0.])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
-        self.velocity_linear_prev = np.array([0, 0, 0.])
+        self.velocity_linear_prev = np.array([0, 0, -2.])
         self.velocity_angular_prev = np.array([0, 0, 0.])
         self.position_prev = np.array([0, 0, 0])
 
@@ -108,7 +109,19 @@ class System:
         # Fal = [0, 0, 0]
         # Far = [0, 0, 0]
         # Fr = [0, 0, 0]
-        Tl, Tr = exc_sig
+        Tl, Tr, Fele = exc_sig
+
+        ithrust_prev = self.ithrust_prev
+        ithrust_current = np.array([np.arctan2(self.velocity_linear[2], self.velocity_linear[0])])
+        print(f"Difference in thrust angle = {np.degrees(ithrust_prev-ithrust_current)}")
+        if ithrust_prev - ithrust_current > np.radians(3) * dt:
+            self.ithrust = ithrust_prev - np.radians(3) * dt
+
+            Tl[0] = (Tl[2] / np.tan(self.ithrust))[0]
+            Tr[0] = (Tr[2] / np.tan(self.ithrust))[0]
+        else:
+            self.ithrust = ithrust_current
+        self.geometry = define_geometry(self.ithrust)
         aoawings = np.arctan2(self.velocity_linear[2] - self.velocity_angular[1], self.velocity_linear[0])
         aoatail = np.arctan2(self.velocity_linear[2] + self.velocity_angular[1]*10, self.velocity_linear[0])
         # aoa = np.arctan2(self.velocity_linear[2], self.velocity_linear[0])  # if you are ambitious, go do something
@@ -116,7 +129,18 @@ class System:
         velocitywings = np.array([self.velocity_linear[0] - self.velocity_angular[1], self.velocity_linear[0] - self.velocity_angular[1], self.velocity_linear[0] + self.velocity_angular_prev[1] * 10])
         wl, wr, h = self.aero_forces(aoawings, aoatail, velocitywings, self.euler[2], self.euler[1])
         W = np.array([-self.W0 * np.sin(self.euler[1]), 0, self.W0 * np.cos(self.euler[1])])
-        F = np.array([wl, wr, h, np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, 0]), Tl,
+        if np.sqrt((2*Tl[0])**2 + (2*Tl[1])**2 + (2*Tl[2])**2) > abs(system.max_thrust):
+            Tl[2] = (W[2] + wl[2] + wr[2] + h[2]) / 2
+            Tr[2] = (W[2] + wl[2] + wr[2] + h[2]) / 2
+            Tl[0] = np.sqrt(system.max_thrust**2 - Tl[2]**2)
+            Tr[0] = np.sqrt(system.max_thrust ** 2 - Tr[2] ** 2)
+        # print(f"Lift force of wing = {wl+wr}")
+        # print(f"Lift force of horizontal stabilizer = {h}")
+        # print(f"Elevator force = {Fele}")
+        # print(f"Thrust force = {Tl+Tr}")
+        # print(f"{np.sqrt((2*Tl[0])**2 + (2*Tl[1])**2 + (2*Tl[2])**2)}---------")
+
+        F = np.array([wl, wr, h, np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, Fele]), np.array([0, 0, 0]), Tl,
                       Tr, W])
 
         M, Fnet = self.moments(self.geometry, F)
@@ -130,10 +154,6 @@ class System:
         self.velocity_linear = self.velocity_linear_prev + a*dt
         self.velocity_angular = self.velocity_angular_prev + anga*dt
         self.position = self.position_prev + self.velocity_linear*dt
-
-
-        self.ithrust = self.ithrust_prev - np.radians(3)
-
 
         self.euler_prev = np.copy(self.euler)
         self.velocity_linear_prev = np.copy(self.velocity_linear)
@@ -169,9 +189,9 @@ class System:
         Dwrz = 0.5 * self.rho * self.area[1] * cdwrz * self.velocity_linear[2] ** 2 * -np.sign(self.velocity_linear[2])
         Dhz = 0.5 * self.rho * self.area[2] * cdhz * self.velocity_linear[2] ** 2 * -np.sign(self.velocity_linear[2])
 
-        wl = np.array([Dwlx, 0, Lwl + Dwlz])
-        wr = np.array([Dwrx, 0, Lwr + Dwrz])
-        h = np.array([Dhx, 0, Lh + Dhz])
+        wl = np.array([Dwlx, 0, -Lwl + Dwlz])
+        wr = np.array([Dwrx, 0, -Lwr + Dwrz])
+        h = np.array([Dhx, 0, -Lh + Dhz])
 
         wl = np.matmul(self.aero_to_body(pitch, beta), wl)
         wr = np.matmul(self.aero_to_body(pitch, beta), wr)
@@ -279,14 +299,14 @@ class Controller:
 
     def __call__(self, error_velocity):
         T = self.PID_thrust(error_velocity, self.dt)
-        if T < system.max_thrust:
-            T = system.max_thrust
-            return T / 2, T / 2
-        elif T > 0:
-            T = 0
-            return T / 2, T / 2
-        else:
-            return T / 2, T / 2
+        # if T < system.max_thrust:
+        #     T = system.max_thrust
+        #     return T / 2, T / 2
+        # elif T > 0:
+        #     T = 0
+        #     return T / 2, T / 2
+        # else:
+        return T / 2, T / 2
 
 class Controller2:
     def __init__(self, dt=0.01, Kp=0., Ki=0., Kd=0.):
@@ -297,10 +317,32 @@ class Controller2:
         T = self.PID_thrust(pitch, self.dt)
         return T / 2, T / 2
 
+class Controller3:
+    def __init__(self, dt=0.01, Kp=0., Ki=0., Kd=0.):
+        self.PID_ithrust = PID(Kp=Kp, Ki=Ki, Kd=Kd)
+        self.dt = dt
+
+    def __call__(self, ithrust):
+        ithrust = self.PID_ithrust(ithrust, self.dt)
+        # if np.sqrt(ithrust**2 + zthrust**2) > abs(system.max_thrust):
+
+        return ithrust / 2, ithrust / 2
+
+class Controller4:
+    def __init__(self, dt=0.01, Kp=1., Ki=1., Kd=1.):
+        self.PID_theta = PID(Kp=Kp, Ki=Ki, Kd=Kd)
+        self.dt = dt
+
+    def __call__(self, error_theta):
+        ele = self.PID_theta(error_theta, self.dt)
+        return ele
+
 dt = 0.01
 system = System()
-controller_thrust = Controller(dt=dt, Kp=0., Ki=0., Kd=0.)
-controller_pitch = Controller2(dt=dt, Kp=0., Ki=0., Kd=0.)
+controller_thrust = Controller(dt=dt, Kp=2000., Ki=0., Kd=300.)
+# controller_pitch = Controller2(dt=dt, Kp=0., Ki=0., Kd=0.)
+controller_ithrust = Controller3(dt=dt, Kp=2000., Ki=0., Kd=300.)
+controller_elevator = Controller4(dt=dt, Kp=3000., Ki=400., Kd=1500.)
 
 euler_ref = np.array([0, 0, 0.])
 velocity_linear_ref = np.array([400/3.6, 0, 0])
@@ -326,16 +368,16 @@ for i in range(int(1e4)):
     # print(error_velocity_linear)
 
     Tlz, Trz = controller_thrust(error_velocity_linear[2])
-    Tlx, Trx = controller_pitch(error_euler[1])
+    Tlx, Trx = controller_ithrust(velocity_linear[0])
+    Fele = controller_elevator(error_euler[1])
     Tl = [Tlx, 0, Tlz]
     Tr = [Trx, 0, Trz]
-
 
     thrust_in_time.append(np.copy(Tl+Tr))
 
     print(Tl, Tr, error_velocity_linear)
     # thrust_in_time.append([list(Tl+Tr),i])
-    exc_sig = Tl, Tr
+    exc_sig = Tl, Tr, Fele
 
     system(exc_sig, dt)
 
@@ -345,21 +387,29 @@ position_in_time = np.array(position_in_time)
 thrust_in_time = np.array(thrust_in_time)
 # print(thrust_in_time[::][0][0][2])
 
-# plt.plot(velocity_linear_in_time[:, 0])
-# plt.ylabel("velocity in the x direction")
+plt.plot(velocity_linear_in_time[:, 0])
+plt.ylabel("velocity in the x direction")
+plt.show()
+# plt.plot(velocity_linear_in_time[:, 1])
+# plt.ylabel("velocity in the y direction")
 # plt.show()
 plt.plot(velocity_linear_in_time[:, 2])
 plt.ylabel("velocity in the z direction")
 plt.show()
+
 # plt.plot(position_in_time[:, 2])
 # plt.ylabel("position in the z direction")
 # plt.show()
-# plt.plot(thrust_in_time[:,2])
-# plt.ylabel("total thrust")
-# plt.show()
-# # plt.plot(velocity_linear_in_time[:, 1])
-# plt.ylabel("velocity in the y direction")
-# plt.show()
+
+plt.plot(thrust_in_time[:,2], label="z-thrust")
+plt.plot(thrust_in_time[:,0], label="x-thrust")
+plt.legend()
+plt.show()
+
+plt.plot(np.degrees(ithrust_in_time[:]))
+plt.ylabel("thrust angle [deg]")
+plt.show()
+
 plt.plot(euler_in_time[:, 2], color='b')
 plt.plot(euler_in_time[:, 1], color='g')
 plt.plot(euler_in_time[:, 0], color='r')
