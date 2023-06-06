@@ -61,5 +61,3 @@ print(L_interpolated, corrective_constant)
 
 L_needed = 3000 * 3.71
 print(L_needed / L_interpolated)
-
-
