@@ -82,7 +82,6 @@ class Fuselage:
         area = 2 * np.pi * r * l
         return area
 
-
     @staticmethod
     def volume_cylinder(d, l):
         """ Returns cylinder's volume. Inputs are d = diameter and l = length, both in [m]. Output is in [m^3] """
@@ -125,8 +124,7 @@ print("drag force: ", drag)
 """
 #  --------------------------------  TO DO  --------------------------------  #
 
--> Fix calculations and results based on the new excel sheet
--> Apply changes to the unit tests.
+-> Finish implementing the tests
 
 """
 print()

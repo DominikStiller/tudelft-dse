@@ -15,13 +15,12 @@ class TestFuselageLogic(unittest.TestCase):
 
     def test_layer1_object_creation(self):
 
-        cabin_diameter = 8/3
+        cabin_diameter = 1.66
         cabin_length = 2
         L_D_nose = 1.5
         L_D_tail = 1
 
         fus = Fuselage(cabin_diameter, cabin_length, L_D_nose, L_D_tail)
-
         self.assertIsInstance(fus, Fuselage, "It appears the class assignment is not working")
 
 
@@ -93,5 +92,6 @@ if __name__ == '__main__':
 """
 #  --------------------------------  TO DO  --------------------------------  #
 
+-> Finish implementing the tests
 
 """
