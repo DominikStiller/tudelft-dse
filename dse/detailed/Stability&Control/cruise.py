@@ -24,7 +24,6 @@ velocity_linear_ref = np.array([400/3.6, 0, 0.])
 euler_in_time = []
 velocity_linear_in_time = []
 
-
 for i in range(int(1e4)):
     euler, velocity_linear, velocity_angular = system.get_state()
 
@@ -40,7 +39,6 @@ for i in range(int(1e4)):
     Fal, Far = controller_roll(error_euler[0])
 
     exc_sig = [0, 0, Fal], [0, 0, Far], elev, [0, rud, 0.], Tlx, Trx
-
     system(exc_sig, dt)
 
 

@@ -9,7 +9,7 @@ class System:
         self.rho = 0.01
 
         # previous state
-        # self.euler_prev = np.array([0, np.radians(10), 0])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
+        # self.euler_prev = np.array([0, np.radians(0), 0])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
         # self.velocity_linear_prev = np.array([110, 0, 0.])
         # self.velocity_angular_prev = np.array([0, 0, 0.])
         self.euler_prev = np.array([np.radians(5), np.radians(-5), np.radians(5)])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
@@ -30,6 +30,7 @@ class System:
         aoatail = np.arctan2(self.velocity_linear[2] + self.velocity_angular[1]*10, self.velocity_linear[0])
         velocitywings = np.array([self.velocity_linear[0] - self.velocity_angular[1], self.velocity_linear[0] - self.velocity_angular[1], self.velocity_linear[0] + self.velocity_angular_prev[1] * 10])
         wl, wr, h = self.aero_forces(aoawings, aoatail, velocitywings, self.euler[2], self.euler[1])
+
         W = np.array([-self.W0 * np.sin(self.euler[1]), 0, self.W0 * np.cos(self.euler[1])])
         F = np.array([wl, wr, h, np.array(Fal), np.array(Far), np.array([0, 0, Fe]), np.array(Fr), np.array([Tlx, 0, 0]),
                       np.array([Trx, 0, 0]), W])
@@ -74,6 +75,9 @@ class System:
         Dwl = 0.5 * self.rho * self.area[0] * cdwl * v[0] ** 2
         Dwr = 0.5 * self.rho * self.area[1] * cdwr * v[1] ** 2
         Dh = 0.5 * self.rho * self.area[2] * cdh * v[2] ** 2
+        # print(np.degrees(aoaw + self.imain), np.degrees(aoah + self.itail), "aoas")
+        # print(clwl, clh, "cls")
+        # print(Lwl, Lh)
 
         wl = np.array([-Dwl, 0, -Lwl])
         wr = np.array([-Dwr, 0, -Lwr])

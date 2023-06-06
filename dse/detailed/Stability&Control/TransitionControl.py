@@ -130,7 +130,10 @@ class System:
         self.velocity_linear = self.velocity_linear_prev + a*dt
         self.velocity_angular = self.velocity_angular_prev + anga*dt
         self.position = self.position_prev + self.velocity_linear*dt
+
+
         self.ithrust = self.ithrust_prev - np.radians(3)
+
 
         self.euler_prev = np.copy(self.euler)
         self.velocity_linear_prev = np.copy(self.velocity_linear)
