@@ -1,5 +1,8 @@
+from typing import Self
+
 import pandas as pd
 import scipy.optimize
+from matplotlib import pyplot as plt
 from tabulate import tabulate, SEPARATING_LINE
 
 from dse.detailed.communication import from_db, to_db, k
@@ -8,6 +11,7 @@ from dse.detailed.communication.waves import (
     wavelength,
     calculate_travel_time,
 )
+from dse.plotting import format_plot
 
 
 def calculate_line_temp(line_loss: float, T0: float = 290):
@@ -79,6 +83,7 @@ def coding_datarate_factor(coding: str):
 class Link:
     def __init__(
         self,
+        name: str,
         frequency: float,
         tx_power: float,
         tx_loss: float,
@@ -123,6 +128,7 @@ class Link:
             margin_target: [dB]
             latency_factor:
         """
+        self.name = name
         self.frequency = frequency
         self.tx_power = tx_power
         self.tx_loss = tx_loss
@@ -203,6 +209,7 @@ class Link:
         self.max_data_rate = res.x[0]
 
     def print_configuration(self):
+        print(self.name.upper())
         print(f"Transmitter power: {self.tx_power:.0f} W")
         print(f"Frequency: {self.frequency / 1e6:.1f} MHz")
         print(f"System noise temperature: {self.temperature_system_noise:.0f} K")
@@ -225,6 +232,76 @@ class Link:
         snr = list(self.snr.itertuples(index=False, name=None))
         print(tabulate(budget + [SEPARATING_LINE] + snr, numalign="right", floatfmt="+.3f"))
 
+    @classmethod
+    def _make_plotting_df(cls):
+        return pd.DataFrame(
+            [
+                ("Tx power", ["Tx power"], 0),
+                ("Antenna", ["Tx line loss"], 0.15),
+                ("EIRP", ["Tx antenna gain", "Tx antenna pointing loss"], 0.3),
+                ("Received radiation", ["Free space loss", "Environment loss"], 0.7),
+                ("Rx power", ["Rx antenna gain", "Rx antenna pointing loss"], 0.85),
+                ("Rx power 2", ["Rx line loss"], 1),
+            ],
+            columns=["loc_name", "components", "pos"],
+        )
+
+    def plot(self, ax: plt.Axes = None):
+        if ax is None:
+            _, ax = plt.subplots(figsize=(10, 4))
+
+        df = self._make_plotting_df()
+
+        def get_component_value(df: pd.DataFrame, component: str):
+            return df[df["Component"] == component]["Value [dB]"].iloc[0]
+
+        def get_gain(row):
+            gain = 0
+            for component in row["components"]:
+                gain += get_component_value(self.budget, component)
+            return gain
+
+        df["gain"] = df.apply(get_gain, axis=1)
+        df["cum_gain"] = df["gain"].cumsum()
+
+        power_required = (
+            get_component_value(self.snr, "Required Eb/N0")
+            + self.margin_target
+            - get_component_value(self.budget, "Required data rate")
+            - get_component_value(self.budget, "Boltzmann constant")
+            - get_component_value(self.budget, "System noise temperature")
+        )
+
+        for pos in df["pos"]:
+            ax.axvline(pos, color="black", alpha=0.5, ls=":")
+
+        ax.plot(df["pos"], df["cum_gain"], c="black")
+        ax.hlines(
+            power_required,
+            0.95,
+            1.05,
+            ls="--",
+            color="black",
+            label=f"Required power (with {self.margin_target} dB margin)",
+        )
+
+    @classmethod
+    def plot_multiple(cls, links: list[Self]):
+        _, axs = plt.subplots(len(links), figsize=(10, 2 * len(links)), sharex="all", sharey="all")
+
+        df = cls._make_plotting_df()
+
+        for ax, link in zip(axs, links):
+            link.plot(ax)
+            ax.set_title(link.name)
+            ax.set_ylabel("Power [dB]")
+
+        axs[0].legend(loc="upper right")
+        axs[-1].set_xticks(df["pos"], df["loc_name"])
+
+        format_plot()
+        plt.show()
+
 
 if __name__ == "__main__":
     relay_gain_uhf = 0
@@ -238,8 +315,8 @@ if __name__ == "__main__":
     relay_tx_rx_distance = 8000e3
     skywave_tx_rx_distance = 933e3
 
-    print("UPLINK (RELAY)")
     budget_uplink_relay = Link(
+        name="Uplink (relay)",
         frequency=440e6,
         tx_power=55,
         tx_loss=tx_loss,
@@ -260,8 +337,8 @@ if __name__ == "__main__":
     budget_uplink_relay.print_table()
 
     print()
-    print("DOWNLINK (RELAY)")
     budget_downlink_relay = Link(
+        name="Downlink (relay)",
         frequency=420e6,
         tx_power=100,
         tx_loss=tx_loss,
@@ -284,8 +361,8 @@ if __name__ == "__main__":
     budget_downlink_relay.print_table()
 
     print()
-    print("UPLINK (SKYWAVE)")
     budget_uplink_skywave = Link(
+        name="Uplink (skywave)",
         frequency=4e6,
         tx_power=1,
         tx_loss=tx_loss,
@@ -307,8 +384,8 @@ if __name__ == "__main__":
     budget_uplink_skywave.print_table()
 
     print()
-    print("DOWNLINK (SKYWAVE)")
-    budget_downlink_relay = Link(
+    budget_downlink_skywave = Link(
+        name="Downlink (skywave)",
         frequency=4e6,
         tx_power=1,
         tx_loss=tx_loss,
@@ -326,5 +403,8 @@ if __name__ == "__main__":
         bit_error_rate=1e-6,
         coding="ldpc-1/2",
     )
-    budget_downlink_relay.print_configuration()
-    budget_downlink_relay.print_table()
+    budget_downlink_skywave.print_configuration()
+    budget_downlink_skywave.print_table()
+
+    Link.plot_multiple([budget_uplink_relay, budget_uplink_skywave])
+    # Link.plot_multiple([budget_downlink_relay, budget_downlink_skywave])
