@@ -9,7 +9,7 @@ class System:
         self.rho = 0.01
 
         # previous state
-        # self.euler_prev = np.array([0, np.radians(0), 0])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
+        # self.euler_prev = np.array([0, np.radians(10), 0])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
         # self.velocity_linear_prev = np.array([110, 0, 0.])
         # self.velocity_angular_prev = np.array([0, 0, 0.])
         self.euler_prev = np.array([np.radians(5), np.radians(-5), np.radians(5)])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
@@ -34,10 +34,8 @@ class System:
         W = np.array([-self.W0 * np.sin(self.euler[1]), 0, self.W0 * np.cos(self.euler[1])])
         F = np.array([wl, wr, h, np.array(Fal), np.array(Far), np.array([0, 0, Fe]), np.array(Fr), np.array([Tlx, 0, 0]),
                       np.array([Trx, 0, 0]), W])
-
         M, Fnet = self.moments(self.geometry, F)
         a, anga = self.accelerations(F, M)
-
 
         matrix = np.array([[np.cos(self.euler[1]), np.sin(self.euler[0]) * np.sin(self.euler[1]), np.cos(self.euler[0]) * np.sin(self.euler[1])],
                            [0, np.cos(self.euler[0]) * np.cos(self.euler[1]), -np.sin(self.euler[0]) * np.cos(self.euler[1])],
@@ -66,7 +64,6 @@ class System:
                 wr: force vector right wing
                 h: force vector horizontal stabilizer
             '''
-
         # aoa includes the effective angle of attack due to the pitch and angular velocity
         clwl, clwr, clh, cdwl, cdwr, cdh = Aircraft.get_coefficients(aoaw + self.imain, aoaw + self.imain, aoah + self.itail)
         Lwl = 0.5 * self.rho * self.area[0] * clwl * v[0] ** 2
@@ -83,7 +80,6 @@ class System:
         wl = np.matmul(self.aero_to_body(pitch, beta), wl)
         wr = np.matmul(self.aero_to_body(pitch, beta), wr)
         h = np.matmul(self.aero_to_body(pitch, beta), h)
-
         return wl, wr, h
 
     def aero_to_body(self, aoa, b):
@@ -97,10 +93,15 @@ class System:
         '''
         a = np.radians(aoa)
         b = np.radians(b)
-        T = np.array([[np.cos(b) * np.cos(a), np.sin(b), np.cos(b) * np.sin(a)],
-                      [-np.sin(b) * np.cos(a), np.cos(b), -np.sin(b) * np.sin(a)],
-                      [-np.sin(a), 0, np.cos(a)]])
-        T = np.linalg.inv(T)
+        # a = aoa
+        # b = b
+        # T = np.array([[np.cos(b) * np.cos(a), np.sin(b), np.cos(b) * np.sin(a)],
+        #               [-np.sin(b) * np.cos(a), np.cos(b), -np.sin(b) * np.sin(a)],
+        #               [-np.sin(a), 0, np.cos(a)]])
+        # T = np.linalg.inv(T)
+        T = np.array([[np.cos(a) * np.cos(b), -np.cos(a) * np.sin(b), -np.sin(a)],
+                     [np.sin(b), np.cos(b), 0],
+                     [np.sin(a) * np.cos(b), -np.sin(a) * np.sin(b), np.cos(a)]])
 
         return T
 
@@ -141,6 +142,8 @@ class System:
         dang_dt = np.matmul(inv, rest)
         temp2 = np.cross(self.velocity_angular, self.velocity_linear)
         a = np.array([sum(F.T[0]) / self.m, sum(F.T[1]) / self.m, sum(F.T[2]) / self.m]) - temp2
+        # print(self.velocity_angular, self.velocity_linear, "velocities")
+        # print(a, temp2, "acceleration terms")
         return a, dang_dt
 
     def body_to_inertial(self):
@@ -151,7 +154,6 @@ class System:
             T: the transformation matrix
         '''
 
-        # I do not know how to name angles
         theta, gamma, psi = self.euler[1], self.euler[0], self.euler[2]
 
         T = np.array([[np.cos(theta) * np.cos(psi), np.cos(theta) * np.sin(psi), -np.sin(theta)],

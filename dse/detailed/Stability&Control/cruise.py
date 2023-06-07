@@ -19,7 +19,7 @@ velocity_linear_in_time = []
 
 for i in range(int(1e4)):
     euler, velocity_linear, velocity_angular = system.get_state()
-
+    # print(i)
     euler_in_time.append(np.copy(euler))
     velocity_linear_in_time.append(np.copy(velocity_linear))
 
@@ -27,11 +27,12 @@ for i in range(int(1e4)):
     error_velocity_linear = velocity_linear_ref - velocity_linear
 
     elev = controller_pitch(error_euler[1])
-    Tlx, Trx = controller_thrust(error_velocity_linear[0]) #think about if we control just x velocity or everything
+    Tlx, Trx = controller_thrust(error_velocity_linear[0])
     rud = controller_yaw(error_euler[2])
     Fal, Far = controller_roll(error_euler[0])
 
     exc_sig = [0, 0, Fal], [0, 0, Far], elev, [0, rud, 0.], Tlx, Trx
+    # exc_sig = [0, 0, 0], [0, 0, 0], 0, [0, 0, 0], Tlx, Trx
     system(exc_sig, dt)
 
 
