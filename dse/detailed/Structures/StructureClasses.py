@@ -1,6 +1,9 @@
-from dse.detailed.Structures.material_properties import materials
+from dse.detailed.Structures.material_properties import materials, Material
 from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.integrate import odeint
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+import vibration_toolbox as vtb
 import numpy as np
 import pandas as pd
 import csv
@@ -46,11 +49,14 @@ def xflr_forces(filename, q, b):
             abs(application[1][1:] - application[1][:-1]),
         )
     )
+    margin = 500
+    cd = (xflr_data["ICd"] + xflr_data["PCd"])
+    lift_drag_ratio = xflr_data["Cl"] / cd
     mag = np.zeros((3, len(xflr_data["  y-span"])))  # [N] (3 x n) where n is the length of y_lst
     mag[0] = (
-        -(xflr_data["ICd"] + xflr_data["PCd"]) * q * S_array
+        -cd * q * S_array + margin/lift_drag_ratio * cd / np.sum(cd)
     )  # [N] Forces in x-direction due to drag
-    mag[2] = xflr_data["Cl"] * q * S_array  # [N] Forces in z-direction due to lift
+    mag[2] = xflr_data["Cl"] * q * S_array + margin * xflr_data["Cl"]/np.sum(xflr_data["Cl"])  # [N] Forces in z-direction due to lift
 
     return Force(magnitude=mag, point_of_application=application)
 
@@ -140,7 +146,22 @@ class Beam:
 
         # Internal moments
         self.m_loading = np.zeros((len(self.y), 3, 1))
-        self.mat = material
+        mat = dict()
+        self.material_types = dict()
+        for i, k in enumerate(materials):
+            mat[k] = i
+            self.material_types[i] = materials[k]
+
+        if type(material) == str:
+            m = mat[material]
+            self.mat = m * np.ones((np.shape(self.section)[2], np.shape(self.section)[0]), dtype=int)
+        elif type(material) == np.ndarray:
+            if np.shape(material) == (np.shape(self.section)[2], np.shape(self.section)[0]):
+                self.mat = material
+            else:
+                raise TypeError('If material is an array, it must be the same shape as the cross-section')
+        else:
+            raise TypeError('Material needs to be a single Material class or an array')
 
         if np.shape(fixing_points) == (2, 1) and cross_section == 'constant':
             self.fix = fixing_points * np.ones(np.size(self.y))
@@ -154,6 +175,12 @@ class Beam:
         self.sigma = None
         self.Bi = None
         self.m = None
+        self.Ix = None
+        self.Iy = None
+        self.Iz = None
+        self.xcg = None
+        self.ycg = None
+        self.zcg = None
 
     def unload(self):
         self.f_loading = np.zeros((len(self.y), 3, 1))
@@ -232,7 +259,10 @@ class Beam:
 
     def DesignConstraints(self):
         n = 1.5  # [-] Safety factor
-        sigma_yield = self.mat.compressive  # [MPa] The yield strength
+        sigma_yield = np.zeros(np.shape(self.mat))
+        for i in range(np.shape(self.mat)[0]):
+            for j in range(np.shape(self.mat)[1]):
+                sigma_yield[i, j] = self.material_types[self.mat[i, j]].compressive  # [MPa] The yield strength
         tSkin_min = 0.001  # [m] The minimal allowable thickness
         return n, sigma_yield, tSkin_min
 
@@ -355,7 +385,7 @@ class Beam:
         tSkin = np.ones(np.shape(boomDistance)) * tSkin_min
         Bi_initial = np.sum(boomDistance, 0) * tSkin_min / np.shape(boomDistance)[0] * np.ones(np.shape(boomDistance))
         boomArea_nr = np.ones((np.shape(x_booms_nr)[0], np.size(self.y))) * Bi_initial
-        sigma = np.ones(np.shape(self.x)) * n * sigma_ult
+        sigma = n * sigma_ult
 
         br = False
         while np.any(np.abs(sigma - sigma_ult / n) / (sigma_ult / n) > 0.1):
@@ -385,7 +415,7 @@ class Beam:
                 break
             indx = list()
             for k in range(np.shape(sigma)[1]):
-                if np.max(abs(sigma[:, k])) >= sigma_ult:
+                if np.any(np.max(abs(sigma[:, k])) >= sigma_ult):
                     indx.append(k)
             if len(indx) > 0:
                 for col in indx:
@@ -407,7 +437,75 @@ class Beam:
     def calculate_mass(self):
         dy = self.y[1:] - self.y[:-1]
         volume = dy * self.Bi[:, :-1]
-        self.m = np.sum(volume) * self.mat.rho
+        rho = np.zeros(np.shape(volume))
+        for i in range(np.shape(self.mat)[0]-1):
+            for j in range(np.shape(self.mat)[1]-1):
+                rho[i, j] = self.material_types[self.mat[i, j]].rho
+        self.m = np.sum(volume * rho)
+
+    def rho(self):
+        rho = np.zeros(np.shape((self.Bi[:, :-1] * self.y[1:] - self.y[:-1])))
+        for i in range(np.shape(self.mat)[0] - 1):
+            for j in range(np.shape(self.mat)[1] - 1):
+                rho[i, j] = self.material_types[self.mat[i, j]].rho
+        return rho
+
+    def masses(self):
+        dy = self.y[1:] - self.y[:-1]
+        volumes = (self.Bi[:, :-1] * dy)
+        rho = self.rho()
+        return volumes * rho
+
+    def youngs_mod(self):
+        E = np.zeros(np.shape(self.mat))
+        for i in range(np.shape(self.mat)[0]):
+            for j in range(np.shape(self.mat)[1]):
+                E[i, j] = self.material_types[self.mat[i, j]].E
+        return E
+
+    def overall_inertia(self):
+        dy = self.y[1:] - self.y[:-1]
+        masses = self.masses()
+        radii = np.sqrt(self.Bi / np.pi)[:, :-1]
+
+        # Moments of inertia of each boom
+        Ixx = masses * radii**2 / 4 + masses * dy**2 / 12
+        Izz = masses * radii**2 / 4 + masses * dy**2 / 12
+        Iyy = masses * radii**2 / 2
+
+        # Apply parallel axis theorem
+        x_booms, z_booms = np.split(np.reshape(self.section, (np.size(self.y), 2 * np.shape(self.x)[0])), 2, 1)
+        if np.all(x_booms[:, 0] == x_booms[:, -1]):
+            x_booms_nr = x_booms[:, :-1]
+            z_booms_nr = z_booms[:, :-1]
+        else:
+            x_booms_nr = np.copy(x_booms)
+            z_booms_nr = np.copy(z_booms)
+
+        x_booms_nr = x_booms_nr.T
+        z_booms_nr = z_booms_nr.T
+
+        xcg = np.sum(masses * x_booms_nr[:, :-1], 0) / np.sum(masses, 0)
+        zcg = np.sum(masses * z_booms_nr[:, :-1], 0) / np.sum(masses, 0)
+        ycg = np.sum(masses * self.y[:-1], 1) / np.sum(masses, 1)
+
+        Ixx += masses * (((self.y[:-1] * np.ones(np.shape(masses))).T - ycg).T**2 + (z_booms_nr[:, :-1] - zcg)**2)
+        Iyy += masses * ((x_booms_nr[:, :-1] - xcg)**2 + (z_booms_nr[:, :-1] - zcg)**2)
+        Izz += masses * ((x_booms_nr[:, :-1] - xcg)**2 + ((self.y[:-1] * np.ones(np.shape(masses))).T - ycg).T**2)
+
+        self.Ix = np.sum(Ixx)
+        self.Iy = np.sum(Iyy)
+        self.Iz = np.sum(Izz)
+
+        xcg_overall = np.sum(masses * x_booms_nr[:, :-1]) / np.sum(masses)
+        zcg_overall = np.sum(masses * z_booms_nr[:, :-1]) / np.sum(masses)
+        ycg_overall = np.sum(masses * self.y[:-1]) / np.sum(masses)
+
+        self.xcg = xcg_overall
+        self.ycg = ycg_overall
+        self.zcg = zcg_overall
+
+        return self.Ix, self.Iy, self.Iz, xcg_overall, ycg_overall, zcg_overall
 
     def plot_internal_loading(self):
         fig, (axs1, axs2) = plt.subplots(2, 1)
@@ -434,3 +532,4 @@ class Beam:
 
 if __name__ == "__main__":
     ...
+
