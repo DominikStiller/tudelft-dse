@@ -110,7 +110,7 @@ def size_rotor_blades():
     return blade, np.sum(m_r), D
 
 
-def plot_rotor_vibrations():
+def rotor_vibrations():
     # Parameters of the rod
     cutout = 0.5
     L1 = R
@@ -159,6 +159,7 @@ def plot_rotor_vibrations():
 
     fig.tight_layout()
     plt.show()
+    return w, U
 
 
 def size_wing(chord_array, span):
@@ -511,7 +512,7 @@ if __name__ == '__main__':
     rotorBlade.overall_inertia()
 
     # Evaluate vibrational response
-    plot_rotor_vibrations()
+    w, U = rotor_vibrations()
 
     span = np.array([4500, 4000, 3500, 3000])
     rootChord = np.array([4, 4.3333, 4.9481, 5.78])
