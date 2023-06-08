@@ -89,10 +89,14 @@ class Equilibrium:
         self.rho = 0.01         # density
         self.vel = 400 / 3.6    # velocity
         self.Vh_V = coefficients.Vh_V   # ratio of tail speed to wing speed
+        self.W0 = 2700 * 3.71   # The weight of the aircraft
+        self.pitch = 0          # The pitch angle of aircraft in radians
+        self.C_N_w = 1.7        # Normal coefficient of the wing
+        self.C_N_h = 1.4        # Normal coefficient of the tail
 
     def sum_in_x(self):
         tx = (self.C_T_b * (self.Sb / self.S) + self.C_T_h * self.Sh_S * self.Vh_V**2 + self.C_T_w)\
-             * (0.5 * self.rho * self.S * self.vel)
+             * (0.5 * self.rho * self.S * self.vel) + self.W0 * np.sin(self.pitch)
         return tx
 
     def sum_in_z(self):
