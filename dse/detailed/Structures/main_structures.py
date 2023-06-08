@@ -110,6 +110,19 @@ def size_rotor_blades():
     return blade, np.sum(m_r), D
 
 
+def plot_mode_response(x, U):
+    fig, ax = plt.subplots()
+    ax.plot(x, U * 1e3, label=[f'Mode {i + 1}' for i in range(np.shape(U)[1])])
+    ax.set_xlabel('Span [m]')
+    ax.set_ylabel('Displacement [mm]')
+
+    ax.grid(True)
+    ax.legend()
+
+    fig.tight_layout()
+    plt.show()
+
+
 def rotor_vibrations():
     # Parameters of the rod
     cutout = 0.5
@@ -143,37 +156,53 @@ def rotor_vibrations():
         w, x, U = vtb.euler_beam_modes(n=modes, bctype=bc, beamparams=parameters)
 
     print(f'Natural frequencies = {w} [Hz]')
-    print(f'Maximum deflection = {np.max(U)} [m]')
+    print(f'Maximum deflection = {np.max(np.abs(U))} [m]')
     print(f'Required reinforcement area = {reinforcement_area}')
     print(f'Required reinforcement mass = {reinforcement_area*R*(1-cutout)*materials["CFRP"].rho} kg')
 
     # Calculate equivalent load and additional stress
-
-    fig, ax = plt.subplots()
-    ax.plot(x, U*1e3, label=[f'Mode {i+1}' for i in range(np.shape(U)[1])])
-    ax.set_xlabel('Span [m]')
-    ax.set_ylabel('Displacement [mm]')
-
-    ax.grid(True)
-    ax.legend()
-
-    fig.tight_layout()
-    plt.show()
-    return w, U
+    plot_mode_response(x, U)
+    return w, x, U
 
 
-def size_wing(chord_array, span):
+def wing_vibrations():
+    # Define parameters
+    L = span[best] / 2
+    I = np.mean(np.sum((best_wing.Bi * best_wing.z[:-1] ** 2), 0))
+    A = np.mean(np.sum(best_wing.Bi, 0))
+    parameters = np.array([materials['CFRP'].E, I, materials['CFRP'].rho, A, L])
+
+    # Define analysis conditions
+    bc = 5  # Clamped-free
+    modes = 3
+
+    # Perform analysis
+    w, x, U = vtb.euler_beam_modes(n=modes, bctype=bc, beamparams=parameters)
+
+    # Report results
+    print('\nVibration data:')
+    print(f'Average moment of inertia of the airfoil = {I}')
+    print(f'Natural frequency of the wing = {w}')
+    print(f'Max deflection = {np.max(np.abs(U))} [m]')
+    plot_mode_response(x, U)
+
+    return w, x, U
+
+
+def size_wing(span, chord_root, taper):
+    l = np.linspace(-span, 0, 100)
+    chord_array = np.linspace(chord_root*taper, chord_root, np.size(l))
+
     # Define the geometry
     Xac = np.max(Airfoil['x']) * chord_array[-1] / 4
     Zac = 0.077 * chord_array[-1]
 
-    l = np.linspace(-span, 0, 100)
 
-    section = np.vstack((Airfoil["x"], Airfoil["z"])) * np.reshape(np.vstack(chord_array, chord_array), (np.size(chord_array), 2, 1))
+    section = np.vstack((Airfoil["x"], Airfoil["z"])) * np.reshape(np.vstack((chord_array, chord_array)), (np.size(chord_array), 2, 1))
 
     wing = Beam(
-        width=Airfoil["x"] * chord_array,
-        height=Airfoil["z"] * chord_array,
+        width=np.array([Airfoil['x']]).T * chord_array,
+        height=np.array([Airfoil['z']]).T * chord_array,
         length=l,
         cross_section=section,
         material='CFRP',
@@ -260,7 +289,7 @@ def size_wing(chord_array, span):
 
     # Define loads during cruise
     wing.unload()
-    aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, span)
+    aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, float(span))
 
     liftMoment = -np.dot(aerodynamic_forces.F[2], aerodynamic_forces.application[1])
     bracing_cr_mag = 1 / (span * np.sin(theta)) * (liftMoment - span * g * (mr/2 + m_e))
@@ -506,23 +535,33 @@ if __name__ == '__main__':
 
     Airfoil = pd.read_csv("S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
 
-    # Start sizing
-    # Size the rotor blades for their loads
+    # Rotors
     rotorBlade, mr, D = size_rotor_blades()
     rotorBlade.overall_inertia()
+    wn_rotor, x_rotor, U_rotor = rotor_vibrations()
 
-    # Evaluate vibrational response
-    w, U = rotor_vibrations()
-
-    span = np.array([4500, 4000, 3500, 3000])
+    # Wings
+    print('\n### Wing sizing started ###\n')
+    span = np.array([45, 40, 35, 30])
     rootChord = np.array([4, 4.3333, 4.9481, 5.78])
+    tr = 0.5
+    min_mass = 1e6
+    for i in range(len(span)):
+        b, c = span[i], rootChord[i]
+        wing = size_wing(span=b/2, chord_root=c, taper=tr)
+        wing.overall_inertia()
+        wing.calculate_mass()
 
-    # wing = size_wing()
-    # wing.overall_inertia()
-    # nf = wing.natural_frequency()
-    # print(f'Lowest natural frequency of the wing = {np.min(np.abs(nf[:, 1][np.nonzero(nf[:, 1])]))}')
-    #
-    #
+        if wing.m < min_mass:
+            best = i
+            best_wing = wing
+            min_mass = wing.m
+
+        print(f'Configuration {i} explored, m = {wing.m} [kg]')
+
+    print(f'Configuration {best} is the best, with a total mass of {round(min_mass, 2)} [kg] per wing')
+    wn_wing, x_wing, U_wing = wing_vibrations()
+
     # hStabilizer, vStabilizer, tailPoleMass = size_tail()
     # hStabilizer.overall_inertia()
     # vStabilizer.overall_inertia()
