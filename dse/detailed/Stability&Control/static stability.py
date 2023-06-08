@@ -39,7 +39,7 @@ class Coefficients:
         plt.plot(cgs, tot_mass)
         plt.xlabel('x/c')
         plt.ylabel('total mass [kg]')
-        plt.show()
+        # plt.show()
         return cgs
 
     def tail_area(self, cgs):
@@ -58,7 +58,7 @@ class Coefficients:
         plt.ylim(0, 0.5)
         plt.legend()
         plt.plot()
-        plt.show()
+        # plt.show()
 
         sh_s_stability_value = (max(cgs) - (self.X_ac - self.SM)) / (
                     (self.CL_alph_ah / self.CL_alpha_A) * (1 - self.downwash_angle) * (
@@ -67,7 +67,7 @@ class Coefficients:
                     self.length_h / self.main_wing_chord) * self.Vh_V ** 2
         sh_s_value = max(sh_s_control_value, sh_s_stability_value)
         cgrange = [min(cgs), max(cgs)]
-        print(sh_s_value, cgrange)
+        print(sh_s_value, cgrange, "sh_s_value, cgrange")
         return sh_s_value, cgrange
 
 
@@ -91,24 +91,40 @@ class Equilibrium:
         self.Vh_V = coefficients.Vh_V   # ratio of tail speed to wing speed
         self.W0 = 2700 * 3.71   # The weight of the aircraft
         self.pitch = 0          # The pitch angle of aircraft in radians
-        self.C_N_w = 1.7        # Normal coefficient of the wing
-        self.C_N_h = 1.4        # Normal coefficient of the tail
+        self.C_N_w = 1.3553        # Normal coefficient of the wing
+        self.C_N_h = 1.2        # Normal coefficient of the tail
+        self.C_M_ac_w = coefficients.Cmac   # Main wing moment coefficient
+        self.C_M_ac_h = -0.2    # Tail moment coefficient
+        self.X_W = 1            # X location of the wing center of pressure (or aerodynamic center) im not sure
+        self.Z_W = -1           # Z location of the wing center of pressure (or aerodynamic center)
+        self.X_T = 2            # X location of the thrust
+        self.Z_T = -1           # Z location of the thrust
+        self.Chord_w = coefficients.main_wing_chord     # Main wing chord
+        self.Chord_h = 2        # Tail chord
 
     def sum_in_x(self):
         tx = (self.C_T_b * (self.Sb / self.S) + self.C_T_h * self.Sh_S * self.Vh_V**2 + self.C_T_w)\
-             * (0.5 * self.rho * self.S * self.vel) + self.W0 * np.sin(self.pitch)
+             * (0.5 * self.rho * self.S * self.vel**2) + self.W0 * np.sin(self.pitch)
         return tx
 
     def sum_in_z(self):
         tz = (self.C_N_w + self.C_N_h * self.Sh_S * self.Vh_V**2)\
-             * (0.5 * self.rho * self.S * self.vel) + self.W0 * np.cos(self.pitch)
+             * (0.5 * self.rho * self.S * self.vel**2) - self.W0 * np.cos(self.pitch)
         return tz
 
-    def sum_moments(self):
-        m = self.C_N_h
-        return m
+    def sum_moments(self, Tx, Tz):
+        # we chose position of wing and engine and get position of the tail
+        z_h = np.arange(0, 3.1, 0.5)
+        wing = self.C_M_ac_w + self.C_N_w * self.X_W + self.C_T_w * self.Z_W
+        thrust = (Tz * self.X_T - Tx * self.Z_T) / (0.5 * self.rho * self.S * self.vel**2)
+        print(Tz, self.X_T, Tx, self.Z_T, self.rho, self.S, self.vel**2)
+        tail = (self.C_M_ac_h * self.Chord_h + self.C_T_h * z_h) * ((self.Vh_V**2) * self.Sh_S / self.Chord_w)
+        x_h = (wing + thrust + tail) / (self.C_N_h * ((self.Vh_V**2) * self.Sh_S / self.Chord_w))
+        return x_h
 
 
 equilibrium = Equilibrium()
 thrust_x = equilibrium.sum_in_x()
 thrust_z = equilibrium.sum_in_z()
+M = equilibrium.sum_moments(thrust_x, thrust_z)
+print(M)
