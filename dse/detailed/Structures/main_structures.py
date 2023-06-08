@@ -123,6 +123,16 @@ def plot_mode_response(x, U):
     plt.show()
 
 
+def equivalent_load(deflection, position, E, I):
+    radius_of_curvature = position**2 / deflection
+    curvature = 1 / radius_of_curvature
+
+    # Assuming linearly elastic:
+    M = curvature * E * I
+    P = M / position
+    return P
+
+
 def rotor_vibrations():
     # Parameters of the rod
     cutout = 0.5
