@@ -12,10 +12,10 @@ import csv
 def xflr_forces(filename, q, b):
     if type(filename) != str:
         raise TypeError(f"Input 1 should be a string, not {type(filename)}")
-    if type(q) != float:
-        raise TypeError(f"Input 2 should be a float, not {type(q)}")
-    if type(b) != float:
-        raise TypeError(f"Input 3 should be a float, not {type(b)}")
+    if type(q) != float and type(q) != int:
+        raise TypeError(f"Input 2 should be a float or int, not {type(q)}")
+    if type(b) != float and type(b) != int:
+        raise TypeError(f"Input 3 should be a float or int, not {type(b)}")
 
     # Rewrite the xflr data file into a readable format. ranging from the negative wingtip to closest to zero root
     with open(filename) as csvfile:
