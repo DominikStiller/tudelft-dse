@@ -1,4 +1,4 @@
-import numpy as np
+# import numpy as np
 
 
 class PID:
@@ -37,6 +37,7 @@ class Controller:
             ele = -1277
         return ele
 
+
 class Controller2:
     def __init__(self, dt=0.01, Kp=1., Ki=1., Kd=1.):
         self.PID_thrust = PID(Kp=Kp, Ki=Ki, Kd=Kd)
@@ -54,6 +55,7 @@ class Controller2:
             Trx = 0
         return Tlx, Trx
 
+
 class Controller3:
     def __init__(self, dt=0.01, Kp=1., Ki=1., Kd=1.):
         self.PID_rudder = PID(Kp=Kp, Ki=Ki, Kd=Kd)
@@ -67,6 +69,7 @@ class Controller3:
             rud = -731
         return rud
 
+
 class Controller4:
     def __init__(self, dt=0.01, Kp=1., Ki=1., Kd=1.):
         self.PID_aileron = PID(Kp=Kp, Ki=Ki, Kd=Kd)
@@ -79,6 +82,3 @@ class Controller4:
         elif ail < -1066:
             ail = -1066
         return ail/2, -ail/2
-
-
-

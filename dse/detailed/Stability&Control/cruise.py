@@ -35,10 +35,8 @@ for i in range(int(1e4)):
     # exc_sig = [0, 0, 0], [0, 0, 0], 0, [0, 0, 0], Tlx, Trx
     system(exc_sig, dt)
 
-
-
-euler_in_time = np.array(euler_in_time)
-velocity_linear_in_time = np.array(velocity_linear_in_time)
+# euler_in_time = np.array(euler_in_time)
+# velocity_linear_in_time = np.array(velocity_linear_in_time)
 
 plt.plot(velocity_linear_in_time[:, 0])
 plt.ylabel("velocity in the x direction")
@@ -54,4 +52,3 @@ plt.plot(np.degrees(euler_in_time[:, 1]), color='g')
 plt.plot(np.degrees(euler_in_time[:, 0]), color='r')
 plt.legend('ypr')
 plt.show()
-

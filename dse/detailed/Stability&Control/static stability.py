@@ -100,9 +100,13 @@ class Equilibrium:
         return tx
 
     def sum_in_z(self):
-        tz = self.C_T_b
-
+        tz = (self.C_N_w + self.C_N_h * self.Sh_S * self.Vh_V**2)\
+             * (0.5 * self.rho * self.S * self.vel) + self.W0 * np.cos(self.pitch)
         return tz
+
+    def sum_moments(self):
+        m = self.C_N_h
+        return m
 
 
 equilibrium = Equilibrium()
