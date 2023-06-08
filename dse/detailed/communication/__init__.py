@@ -10,3 +10,11 @@ def to_db(x: float):
 
 def from_db(x: float):
     return 10 ** (x / 10)
+
+
+def db_to_dbm(db: float):
+    return db + 30
+
+
+def dbm_to_db(dbm: float):
+    return dbm - 30
