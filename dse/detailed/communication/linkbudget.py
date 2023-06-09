@@ -66,10 +66,23 @@ def required_snr(bit_error_rate: float, modulation: str, coding: str):
         elif coding == "ldpc-1/2":
             # From CCSDS 130.1-G-3, Figure 3-5
             return 1
+        elif coding == "ldpc-1/2-gladden":
+            # From CCSDS 130.1-G-3, Figure 3-5
+            return 2.5
+        elif coding == "ldpc-7/8":
+            # From CCSDS 130.1-G-3, Figure 8-8
+            return 3.8
+        elif coding == "turbo-1/6":
+            # Only used for MarCO validation
+            return 3.5
     elif modulation == "8fsk":
         if coding == "uncoded":
             # From Wertz Figure 13-9
             return 10
+    elif modulation == "8bsk":
+        if coding == "uncoded":
+            # From Sumic 2010
+            return 11.5
 
     raise "Unsupported combination of modulation and coding schemes"
 
@@ -79,6 +92,10 @@ def coding_datarate_factor(coding: str):
         return 1
     elif "1/2" in coding:
         return 1 / 2
+    elif "1/6" in coding:
+        return 1 / 6
+    elif "7/8" in coding:
+        return 7 / 8
     else:
         raise "Unsupported coding scheme"
 
@@ -125,7 +142,7 @@ class Link:
             bit_error_rate:
             modulation:
             coding:
-            noise_figure: [-]
+            noise_figure: [dB]
             temperature_antenna:
             temperature_system_noise:
             margin_target: [dB]
@@ -152,12 +169,16 @@ class Link:
         if temperature_system_noise is not None:
             assert noise_figure is None
             assert temperature_antenna is None
+            self.temperature_antenna = None
             self.temperature_system_noise = temperature_system_noise
         else:
-            self.noise_figure = noise_figure
             self.temperature_antenna = temperature_antenna
+            self.temperature_line = calculate_line_temp(from_db(rx_loss))
+            self.temperature_receiver = calculate_receiver_temp(
+                from_db(rx_loss), from_db(noise_figure)
+            )
             self.temperature_system_noise = calculate_system_noise_temp(
-                from_db(rx_loss), noise_figure, temperature_antenna
+                from_db(rx_loss), from_db(noise_figure), temperature_antenna
             )
 
         self.budget = None
@@ -171,7 +192,7 @@ class Link:
 
     def _calculate_budget(self):
         loss_free_space = to_db(calculate_free_space_loss(self.tx_rx_distance, self.frequency))
-        required_datarate = self.data_rate / coding_datarate_factor(self.coding)
+        required_datarate = self.data_rate  # / coding_datarate_factor(self.coding)
 
         self.budget = pd.DataFrame(
             [
@@ -227,10 +248,14 @@ class Link:
         print(f"EIRP: {self.eirp:.0f} dBW = {db_to_dbm(self.eirp):.0f} dBm")
         print(f"Rx power: {self.rx_power:.0f} dBW = {db_to_dbm(self.rx_power):.0f} dBm")
         print(f"Frequency: {self.frequency / 1e6:.1f} MHz")
-        print(f"System noise temperature: {self.temperature_system_noise:.0f} K")
         print(
             f"Wavelength: {wavelength(self.frequency):.3g} m (1/4 = {wavelength(self.frequency)/4:.3g} m)"
         )
+        print(f"System noise temperature: {self.temperature_system_noise:.0f} K")
+        if self.temperature_antenna is not None:
+            print(f" - Antenna: {self.temperature_antenna:.0f} K")
+            print(f" - Line: {self.temperature_line:.0f} K")
+            print(f" - Receiver: {self.temperature_receiver:.0f} K")
 
         g_over_t = self.rx_gain - to_db(self.temperature_system_noise)
         print(f"G/T: {g_over_t:.1f} dB/K")
@@ -292,6 +317,7 @@ class Link:
             - self._get_component_value(self.budget, "Data rate")
             - self._get_component_value(self.budget, "Noise spectral density")
         )
+        print(power_required)
 
         for pos in df["pos"]:
             ax.axvline(pos, color="black", alpha=0.5, ls=":")
@@ -331,18 +357,19 @@ class Link:
 
 
 if __name__ == "__main__":
-    relay_gain_uhf = 0
+    relay_gain_uhf_rx = 2
+    relay_gain_uhf_tx = 5
     aircraft_gain_uhf = 4
     aircraft_gain_hf = 0
     base_gain_hf = 0
 
-    relay_pointing_loss_uhf = -2
+    relay_pointing_loss_uhf = -1
     aircraft_pointing_loss_uhf = -2
     aircraft_pointing_loss_hf = -3
     base_pointing_loss_hf = -3
 
-    aircraft_power_uhf = 80
-    relay_power_uhf = 100
+    aircraft_power_uhf = 25
+    relay_power_uhf = 15
     aircraft_power_hf = 1
     base_power_hf = 5
 
@@ -376,9 +403,9 @@ if __name__ == "__main__":
         tx_rx_distance=relay_tx_rx_distance,
         loss_environment=relay_environment_loss_uhf,
         rx_pointing_loss=relay_pointing_loss_uhf,
-        rx_gain=relay_gain_uhf,
+        rx_gain=relay_gain_uhf_rx,
         rx_loss=rx_loss,
-        noise_figure=from_db(relay_noise_figure),
+        noise_figure=relay_noise_figure,
         temperature_antenna=temperature_antenna_downward_looking,
         data_rate=data_rate_uplink,
         bit_error_rate=1e-6,
@@ -395,14 +422,14 @@ if __name__ == "__main__":
         frequency=437e6,
         tx_power=relay_power_uhf,
         tx_loss=tx_loss,
-        tx_gain=relay_gain_uhf,
+        tx_gain=relay_gain_uhf_tx,
         tx_pointing_loss=relay_pointing_loss_uhf,
         tx_rx_distance=relay_tx_rx_distance,
         loss_environment=relay_environment_loss_uhf,
         rx_pointing_loss=aircraft_pointing_loss_uhf,
         rx_gain=aircraft_gain_uhf,
         rx_loss=rx_loss,
-        noise_figure=from_db(aircraft_noise_figure),
+        noise_figure=aircraft_noise_figure,
         temperature_antenna=temperature_antenna_upward_looking,
         data_rate=data_rate_downlink,
         bit_error_rate=1e-6,
@@ -426,7 +453,7 @@ if __name__ == "__main__":
         rx_pointing_loss=base_pointing_loss_hf,
         rx_gain=base_gain_hf,
         rx_loss=rx_loss,
-        noise_figure=from_db(base_noise_figure),
+        noise_figure=base_noise_figure,
         temperature_antenna=temperature_antenna_upward_looking,
         data_rate=data_rate_uplink,
         bit_error_rate=1e-6,
@@ -449,7 +476,7 @@ if __name__ == "__main__":
         rx_pointing_loss=aircraft_pointing_loss_hf,
         rx_gain=aircraft_gain_hf,
         rx_loss=rx_loss,
-        noise_figure=from_db(aircraft_noise_figure),
+        noise_figure=aircraft_noise_figure,
         temperature_antenna=temperature_antenna_upward_looking,
         data_rate=data_rate_downlink,
         bit_error_rate=1e-6,
@@ -472,7 +499,7 @@ if __name__ == "__main__":
         rx_pointing_loss=base_pointing_loss_hf,
         rx_gain=base_gain_hf,
         rx_loss=rx_loss,
-        noise_figure=from_db(base_noise_figure),
+        noise_figure=base_noise_figure,
         temperature_antenna=temperature_antenna_upward_looking,
         data_rate=data_rate_uplink,
         bit_error_rate=1e-6,
@@ -495,7 +522,7 @@ if __name__ == "__main__":
         rx_pointing_loss=aircraft_pointing_loss_hf,
         rx_gain=aircraft_gain_hf,
         rx_loss=rx_loss,
-        noise_figure=from_db(aircraft_noise_figure),
+        noise_figure=aircraft_noise_figure,
         temperature_antenna=temperature_antenna_upward_looking,
         data_rate=data_rate_downlink,
         bit_error_rate=1e-6,

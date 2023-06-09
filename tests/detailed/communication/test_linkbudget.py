@@ -74,3 +74,56 @@ class TestLinkbudget(TestCase):
 
         assert_allclose(link.snr.loc["Received Eb/N0"][0], 36.2, 1e-2)
         assert_allclose(link.snr.loc["Margin"][0], 26.2, 1e-2)
+
+    def test_link_relay(self):
+        # Compare with Gladden 2021
+        # Data rate: 1100 Mb / 2 h = 150 kb/s (maximum case)
+        link = Link(
+            "Test",
+            frequency=402e6,
+            tx_power=10,
+            tx_loss=-1,
+            tx_gain=2,
+            tx_pointing_loss=0,
+            tx_rx_distance=6000e3,
+            loss_environment=-0.5,
+            rx_pointing_loss=0,
+            rx_gain=10,
+            rx_loss=-1,
+            # noise_figure=from_db(4.9),
+            # temperature_antenna=155,
+            temperature_system_noise=1400,
+            data_rate=150e3,
+            bit_error_rate=1e-6,
+            modulation="bpsk",
+            coding="ldpc-1/2-gladden",
+        )
+        link.print_configuration()
+        link.print_table()
+
+        assert_allclose(link.snr.loc["Margin"][0], 3, atol=1)
+
+    def test_link_marco(self):
+        # Compare with Kobayashi 2021, Table 5-5 Post TD
+        link = Link(
+            "Test",
+            frequency=401.586e6,
+            tx_power=14.8,
+            tx_loss=-1.5,
+            tx_gain=3,
+            tx_pointing_loss=0,
+            tx_rx_distance=3500e3,
+            loss_environment=-2.73 - 5.75,
+            rx_pointing_loss=0,
+            rx_gain=3.5,
+            rx_loss=-1.1,
+            temperature_system_noise=632.8,
+            data_rate=8e3,
+            bit_error_rate=1e-6,
+            modulation="bpsk",
+            coding="turbo-1/6",
+        )
+        link.print_configuration()
+        link.print_table()
+
+        assert_allclose(link.snr.loc["Margin"][0], 9.8, atol=1)
