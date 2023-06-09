@@ -5,18 +5,22 @@ import vibration_toolbox as vtb
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from colorama import Fore
 from tqdm import tqdm
 
 
 def size_rotor_blades():
-    print(f'\n### Rotor blade sizing started ###\n')
+    global rootBladeChord, tipBladeChord
+    rootBladeChord = 0.693
+    tipBladeChord = 0.347
+
+
+    print(Fore.WHITE + '\n### Rotor blade sizing started ###\n')
     # Define the blade
     bladeTwist = np.flip(np.radians(np.array([20.01066435, 15.27067334, 12.97291975, 11.55038814, 10.55750286,
                                               9.81326113, 9.22850394,  8.75360237,  8.35851135,  8.02392466,
                                               7.73691493,  7.48862104, 7.27297283,  7.08600653,  6.92558553,
                                               6.79150814,  6.6861861,   6.61653976, 6.59931193, 6.67922986])))
-    rootBladeChord = 0.693
-    tipBladeChord = 0.347
     cutout = 0.5
     discretization = 20
 
@@ -33,8 +37,9 @@ def size_rotor_blades():
     sect = np.ones((np.size(twist), 2, np.size(Airfoil['x']))) * sect
     sect = y_transformation(twist, sect) * np.reshape(bladeChord, (np.size(bladeChord), 1, 1))
 
-    Xac = np.max(Airfoil['x']) * rootBladeChord / 4
-    Zac = 0.077 * tipBladeChord / 20
+    global Xac_rotor, Zac_rotor
+    Xac_rotor = np.max(Airfoil['x']) * rootBladeChord / 4
+    Zac_rotor = 0.077 * tipBladeChord / 20
 
     blade = Beam(
         width=sect[:, 0].T,
@@ -42,12 +47,12 @@ def size_rotor_blades():
         length=l,
         cross_section=sect,
         material='CFRP',
-        fixing_points=np.array([[Xac], [Zac]]) * np.ones(np.size(l))
+        fixing_points=np.array([[Xac_rotor], [Zac_rotor]]) * np.ones(np.size(l))
     )
 
     # Define the applied forces
     liftOffperBlade = np.ones(np.shape(twist)) * 1.1 * MTOM * g / 24 / np.size(twist)
-    application = np.ones(np.shape(twist)) * np.array([[Xac], [-R], [Zac]])
+    application = np.ones(np.shape(twist)) * np.array([[Xac_rotor], [-R], [Zac_rotor]])
     application[1] = l
 
     liftOffForce = Force(
@@ -99,15 +104,33 @@ def size_rotor_blades():
         Fy ** 2 + 8 * rodMat.compressive / 1.5 * np.pi * 0.001 * (Mz * np.cos(maxStressPos) + Mx * np.sin(maxStressPos)))) / (
                 2 * rodMat.compressive / 1.5 * np.pi * 0.001)
 
-    rod_weight = np.pi * D * 0.001 * R * rodMat.rho
-    print(f'Minimum rod diameter = {1000*D} [mm], with a weight of {rod_weight} [kg]')
+    rod_weight2 = np.pi * D * 0.001 * R * (1 - cutout) * rodMat.rho
+    print(f'Minimum rod diameter = {1000*D} [mm], with a weight of {rod_weight2} [kg]')
+
+    def I(w, t):
+        return w * t ** 3 + 2 * w * t * (0.0840609 - t) / 2 + t * (0.0840609 - 2 * t) ** 3 / 6
+
+    required_I = 2.300534277610573e-06
+    for i in np.linspace(0.001, rootBladeChord, 1000):
+        if I(i, 0.001) > required_I:
+            break
+
+    print(f'A hollow square beam of thickness 1[mm] and width {round(i*1e3, 2)} [mm] is needed before the cutout')
+    rod_weight_1 = (2 * i*0.001 + 2*0.001 * (0.0840609-2*0.001)) * 0.5*R * materials["CFRP"].rho
+    print(f'This beam weights {rod_weight_1} [kg]')
 
     m_r = rotorMass * 24
 
-    print(f'Each blade weights {np.round(blade.m, 2) + 10} kg, including kg of reinforcements')
+    print(f'Each blade weights {np.round(blade.m, 2) + 10} kg, including 10 kg of reinforcements')
     print(f'Total rotor mass = {np.round(24 * (blade.m + 10), 2)} kg')
 
-    return blade, np.sum(m_r), D
+    blade.overall_inertia()
+    wn_rotor, x_rotor, U_rotor = rotor_vibrations(blade)
+    mass_shroud = shroud_mass()
+    print(f'The mass of the shroud would be {mass_shroud} [kg]')
+    m_prop = np.sum(m_r) + mass_shroud + rod_weight_1
+    print(Fore.BLUE + f'The total mass of the propulsion subsystem is {round(m_prop, 2)} [kg]')
+    return blade, m_prop, D
 
 
 def plot_mode_response(x, U):
@@ -133,7 +156,7 @@ def equivalent_load(deflection, position, E, I):
     return P
 
 
-def rotor_vibrations():
+def rotor_vibrations(rotorBlade):
     # Parameters of the rod
     cutout = 0.5
     L1 = R
@@ -169,10 +192,41 @@ def rotor_vibrations():
     print(f'Maximum deflection = {np.max(np.abs(U))} [m]')
     print(f'Required reinforcement area = {reinforcement_area}')
     print(f'Required reinforcement mass = {reinforcement_area*R*(1-cutout)*materials["CFRP"].rho} kg')
+    plot_mode_response(x, U)
 
     # Calculate equivalent load and additional stress
-    plot_mode_response(x, U)
+    max_deflection = U[np.where(np.abs(U) == np.max(np.abs(U)))]
+    max_deflection_pos = x[np.where(np.abs(U) == np.max(np.abs(U)))[0]]
+    P = equivalent_load(deflection=max_deflection,
+                        position=max_deflection_pos,
+                        E=E1,
+                        I=I0)
+
+    print(f'Equivalent load due to vibrations in rotor blades is {P} [N]')
+
+    # vib_load = Force(
+    #     magnitude=np.array([
+    #         [0, 0, P]
+    #     ]).T,
+    #     point_of_application=np.array([
+    #         [Xac_rotor, -max_deflection_pos, Zac_rotor]
+    #     ]).T
+    # )
+    # rotorBlade.add_loading(vib_load)
+    # rotorBlade.InternalStress(0, 0, 0)
+    # rotorBlade.calculate_mass()
+    # print(f'Final rotor blade mass = {rotorBlade.m} [kg]')
+
     return w, x, U
+
+
+def shroud_mass():
+    # Use the same airfoil to prevent flow separation
+    mat = materials['Al/Si']
+    height = 0.15 * tipBladeChord
+    thickness = 0.005
+    length = 2 * np.pi * R
+    return length * thickness * height * mat.rho
 
 
 def wing_vibrations():
@@ -190,7 +244,7 @@ def wing_vibrations():
     w, x, U = vtb.euler_beam_modes(n=modes, bctype=bc, beamparams=parameters)
 
     # Report results
-    print('\nVibration data:')
+    print(Fore.WHITE + '\nVibration data:')
     print(f'Average moment of inertia of the airfoil = {I}')
     print(f'Natural frequency of the wing = {w}')
     print(f'Max deflection = {np.max(np.abs(U))} [m]')
@@ -204,8 +258,9 @@ def size_wing(span, chord_root, taper):
     chord_array = np.linspace(chord_root*taper, chord_root, np.size(l))
 
     # Define the geometry
-    Xac = np.max(Airfoil['x']) * chord_array[-1] / 4
-    Zac = 0.077 * chord_array[-1]
+    global Xac_wing, Zac_wing
+    Xac_wing = np.max(Airfoil['x']) * chord_array[-1] / 4
+    Zac_wing = 0.077 * chord_array[-1]
 
 
     section = np.vstack((Airfoil["x"], Airfoil["z"])) * np.reshape(np.vstack((chord_array, chord_array)), (np.size(chord_array), 2, 1))
@@ -216,7 +271,7 @@ def size_wing(span, chord_root, taper):
         length=l,
         cross_section=section,
         material='CFRP',
-        fixing_points=np.array([[Xac], [Zac]]) * np.ones(np.size(l))
+        fixing_points=np.array([[Xac_wing], [Zac_wing]]) * np.ones(np.size(l))
     )
 
     theta = np.arctan(fuselage_height / span)
@@ -233,9 +288,9 @@ def size_wing(span, chord_root, taper):
         ),
         point_of_application=np.array(
             [
-                [Xac],
+                [Xac_wing],
                 [-span],
-                [Zac]
+                [Zac_wing]
             ]
         )
     )
@@ -249,9 +304,9 @@ def size_wing(span, chord_root, taper):
         ),
         point_of_application=np.array(
             [
-                [Xac],
+                [Xac_wing],
                 [-span],
-                [Zac]
+                [Zac_wing]
             ]
         )
     )
@@ -265,9 +320,9 @@ def size_wing(span, chord_root, taper):
         ),
         point_of_application=np.array(
             [
-                [Xac],
+                [Xac_wing],
                 [-span],
-                [Zac]
+                [Zac_wing]
             ]
         )
     )
@@ -281,9 +336,9 @@ def size_wing(span, chord_root, taper):
         ),
         point_of_application=np.array(
             [
-                [Xac],
+                [Xac_wing],
                 [-span],
-                [Zac]
+                [Zac_wing]
             ]
         )
     )
@@ -313,9 +368,9 @@ def size_wing(span, chord_root, taper):
         ),
         point_of_application=np.array(
             [
-                [Xac],
+                [Xac_wing],
                 [-span],
-                [Zac]
+                [Zac_wing]
             ]
         )
     )
@@ -368,7 +423,7 @@ def size_tail():
         height=z * tail_taper,
         length=l,
         cross_section=section,
-        material='CFRP',
+        material='Al/Si',
         fixing_points=np.array([[Xac], [Zac]]) * np.ones(m)
     )
 
@@ -411,7 +466,7 @@ def size_tail():
         height=z * vTailTaper,
         length=l,
         cross_section=section,
-        material='CFRP',
+        material='Al/Si',
         fixing_points=np.array([[Xac], [Zac]]) * np.ones(m)
     )
 
@@ -466,7 +521,7 @@ def size_tail():
     tailPoleMass = np.pi * D * 0.001 * R * materials['CFRP'].rho
 
     print(f'Tail pole mass = {tailPoleMass} [kg]')
-    print(f'Tail group mass = {hStabilizer.m + vStabilizer.m + tailPoleMass + margin} [kg], '
+    print(Fore.BLUE + f'The total tail group mass is {hStabilizer.m + vStabilizer.m + tailPoleMass + margin} [kg], '
           f'including {margin} [kg] of margin')
     return hStabilizer, vStabilizer, tailPoleMass
 
@@ -526,6 +581,8 @@ def size_body(fuselage_height=1.67, cabin_length=2, full_length=6.15):
 
 
 if __name__ == '__main__':
+    global Xac_rotor, Zac_rotor, Xac_wing, Zac_wing, rootBladeChord, tipBladeChord
+
     # Constants
     R = 10.4
     MTOM = 3000
@@ -547,11 +604,9 @@ if __name__ == '__main__':
 
     # Rotors
     rotorBlade, mr, D = size_rotor_blades()
-    rotorBlade.overall_inertia()
-    wn_rotor, x_rotor, U_rotor = rotor_vibrations()
 
     # Wings
-    print('\n### Wing sizing started ###\n')
+    print(Fore.WHITE + '\n### Wing sizing started ###\n')
     span = np.array([45, 40, 35, 30])
     rootChord = np.array([4, 4.3333, 4.9481, 5.78])
     tr = 0.5
@@ -559,7 +614,6 @@ if __name__ == '__main__':
     for i in range(len(span)):
         b, c = span[i], rootChord[i]
         wing = size_wing(span=b/2, chord_root=c, taper=tr)
-        wing.overall_inertia()
         wing.calculate_mass()
 
         if wing.m < min_mass:
@@ -569,39 +623,8 @@ if __name__ == '__main__':
 
         print(f'Configuration {i} explored, m = {wing.m} [kg]')
 
-    print(f'Configuration {best} is the best, with a total mass of {round(min_mass, 2)} [kg] per wing')
+    print(Fore.BLUE + f'Configuration {best} is the best, with a total mass of {2*round(min_mass, 2)} [kg] per wing')
     wn_wing, x_wing, U_wing = wing_vibrations()
 
-    # hStabilizer, vStabilizer, tailPoleMass = size_tail()
-    # hStabilizer.overall_inertia()
-    # vStabilizer.overall_inertia()
-    #
-    # bodyMass, Ix_f, Iy_f, Iz_f = size_body()
-    #
-    # # Calculate Ixx of the AC
-    #
-    # # Wing contribution - Assume x and z coordinates of wing's cg coincide with aircraft's
-    # Ix = 2 * (wing.Ix + wing.m * wing.ycg**2)
-    # Iy = 2 * (wing.Iy + wing.m * (1.67/2)**2)
-    # Iz = 2 * (wing.Iz + wing.m * wing.ycg**2)
-    #
-    # # Engine contribution - Assume x and z coordinates of engines' cg coincide with aircraft's
-    # Ix += 2 * (2*m_e * b**2)
-    # Iz += 2 * (2*m_e * b**2)
-    #
-    # # Rotor blade contributions - Assume x and z coordinates of engines' cg coincide with aircraft's
-    # Ix += 2 * (12 * rotorBlade.Ix + rotorBlade.m * b**2)
-    # Iy += 24 * rotorBlade.Iy
-    # Iz += 2 * (12 * rotorBlade.Iz + rotorBlade.m + b**2)
-    #
-    # # Fuselage contribution
-    # Ix += Ix_f
-    # Iy += Iy_f
-    # Iz += Iz_f
-    #
-    # # Tail contribution
-    # Ix += hStabilizer.Ix + vStabilizer.Ix
-    # Iy += hStabilizer.Iy + vStabilizer.Iy + (hStabilizer.m + vStabilizer.m) * (tailPoleMass + rootChord)**2
-    # Iz += hStabilizer.Iz + vStabilizer.Iz + (hStabilizer.m + vStabilizer.m) * (tailPoleMass + rootChord)**2
-    #
-    # print(f'Overall Ix, Iy, Iz = {Ix, Iy, Iz} [kgm^2]')
+    print(Fore.WHITE + '\n### Tail sizing started ###\n')
+    hStabilizer, vStabilizer, tailPoleMass = size_tail()
