@@ -46,7 +46,7 @@ def size_rotor_blades():
         height=sect[:, 1].T,
         length=l,
         cross_section=sect,
-        material='CFRP',
+        material='CFRCy',
         fixing_points=np.array([[Xac_rotor], [Zac_rotor]]) * np.ones(np.size(l))
     )
 
@@ -99,7 +99,7 @@ def size_rotor_blades():
     Mz = boomMoments[2]
     Fy = blade.f_loading[-1][1][0]
     maxStressPos = np.arctan(Mx / Mz)
-    rodMat = materials['Titanium Alloys']
+    rodMat = materials['CFRCy']
     D = (Fy + np.sqrt(
         Fy ** 2 + 8 * rodMat.compressive / 1.5 * np.pi * 0.001 * (Mz * np.cos(maxStressPos) + Mx * np.sin(maxStressPos)))) / (
                 2 * rodMat.compressive / 1.5 * np.pi * 0.001)
@@ -108,7 +108,7 @@ def size_rotor_blades():
     print(f'Minimum rod diameter = {1000*D} [mm], with a weight of {rod_weight2} [kg]')
 
     def I(w, t):
-        return w * t ** 3 + 2 * w * t * (0.0840609 - t) / 2 + t * (0.0840609 - 2 * t) ** 3 / 6
+        return w * t ** 3 + 2 * w * t * (0.073 - t) / 2 + t * (0.073 - 2 * t) ** 3 / 6
 
     required_I = 2.300534277610573e-06
     for i in np.linspace(0.001, rootBladeChord, 1000):
@@ -116,7 +116,7 @@ def size_rotor_blades():
             break
 
     print(f'A hollow square beam of thickness 1[mm] and width {round(i*1e3, 2)} [mm] is needed before the cutout')
-    rod_weight_1 = (2 * i*0.001 + 2*0.001 * (0.0840609-2*0.001)) * 0.5*R * materials["CFRP"].rho
+    rod_weight_1 = (2 * i*0.001 + 2*0.001 * (0.0840609-2*0.001)) * 0.5*R * materials["CFRCy"].rho
     print(f'This beam weights {rod_weight_1} [kg]')
 
     m_r = rotorMass * 24
@@ -126,9 +126,7 @@ def size_rotor_blades():
 
     blade.overall_inertia()
     wn_rotor, x_rotor, U_rotor = rotor_vibrations(blade)
-    mass_shroud = shroud_mass()
-    print(f'The mass of the shroud would be {mass_shroud} [kg]')
-    m_prop = np.sum(m_r) + mass_shroud + rod_weight_1
+    m_prop = np.sum(m_r) + rod_weight_1
     print(Fore.BLUE + f'The total mass of the propulsion subsystem is {round(m_prop, 2)} [kg]')
     return blade, m_prop, D
 
@@ -160,18 +158,20 @@ def rotor_vibrations(rotorBlade):
     # Parameters of the rod
     cutout = 0.5
     L1 = R
-    E1 = materials['CFRP'].E
+    E1 = materials['CFRCy'].E
     I0 = np.mean(np.sum((rotorBlade.Bi * rotorBlade.z[:-1]**2), 0))
     A0 = np.mean(np.sum(rotorBlade.Bi, 0))
 
     print('\nVibration data:')
     print(f'Average moment of inertia of the airfoil = {I0}')
 
-    bc = 3  # Clamped-pinned
+    bc = 2  # Clamped - free
     modes = 3
 
-    parameters = np.array([E1, I0, materials['CFRP'].rho, A0, L1])
+    parameters = np.array([E1, I0, materials['CFRCy'].rho, A0, L1])
     w, x, U = vtb.euler_beam_modes(n=modes, bctype=bc, beamparams=parameters)
+
+    print(f'Original natural freq: {np.min(w)}')
 
     reinforcement_area = 0
     z_NA = np.sum(rotorBlade.Bi*rotorBlade.z[:-1], 0)/np.sum(rotorBlade.Bi, 0)
@@ -185,13 +185,13 @@ def rotor_vibrations(rotorBlade):
         if reinforcement_area >= 1:
             raise ValueError('The added area is too large')
 
-        parameters = np.array([E1, I0, materials['CFRP'].rho, A0, L1])
+        parameters = np.array([E1, I0, materials['CFRCy'].rho, A0, L1])
         w, x, U = vtb.euler_beam_modes(n=modes, bctype=bc, beamparams=parameters)
 
     print(f'Natural frequencies = {w} [Hz]')
     print(f'Maximum deflection = {np.max(np.abs(U))} [m]')
     print(f'Required reinforcement area = {reinforcement_area}')
-    print(f'Required reinforcement mass = {reinforcement_area*R*(1-cutout)*materials["CFRP"].rho} kg')
+    print(f'Required reinforcement mass = {reinforcement_area*R*(1-cutout)*materials["CFRCy"].rho} kg')
     plot_mode_response(x, U)
 
     # Calculate equivalent load and additional stress
@@ -220,15 +220,6 @@ def rotor_vibrations(rotorBlade):
     return w, x, U
 
 
-def shroud_mass():
-    # Use the same airfoil to prevent flow separation
-    mat = materials['Al/Si']
-    height = 0.15 * tipBladeChord
-    thickness = 0.005
-    length = 2 * np.pi * R
-    return length * thickness * height * mat.rho
-
-
 def wing_vibrations():
     # Define parameters
     L = span[best] / 2
@@ -253,7 +244,7 @@ def wing_vibrations():
     return w, x, U
 
 
-def size_wing(span, chord_root, taper):
+def size_wing(span, chord_root, taper, wing_model=None):
     l = np.linspace(-span, 0, 100)
     chord_array = np.linspace(chord_root*taper, chord_root, np.size(l))
 
@@ -354,7 +345,31 @@ def size_wing(span, chord_root, taper):
 
     # Define loads during cruise
     wing.unload()
-    aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, float(span))
+    if wing_model is None:
+        aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, float(span))
+    else:
+        cl, cd, y_L = xflr_forces('wings.csv', q, float(span), adrian=wing_model)
+        dy = np.abs(wing.y[:-1] - wing.y[1:])
+        c_arr = (chord_array[:-1] + chord_array[1:]) / 2
+
+        Cl = np.zeros(np.size(dy))
+        Cd = np.zeros(np.size(dy))
+        app = np.zeros(np.size(dy))
+        for i in range(np.size(dy)):
+            indx = (np.abs(wing.y[i] - y_L)).argmin()
+            Cl[i] = cl[indx]
+            Cd[i] = cd[indx]
+            app[i] = wing.y[i]
+
+        lift = Cl * q * c_arr * dy
+        drag = Cd * q * c_arr * dy
+
+        aerodynamic_forces = Force(
+            magnitude=np.vstack((-drag, np.zeros(np.size(lift)), lift)),
+            point_of_application=np.vstack((Xac_wing * np.ones(np.size(lift)),
+                                            app,
+                                            Zac_wing * np.ones(np.size(lift))))
+        )
 
     liftMoment = -np.dot(aerodynamic_forces.F[2], aerodynamic_forces.application[1])
     bracing_cr_mag = 1 / (span * np.sin(theta)) * (liftMoment - span * g * (mr/2 + m_e))
@@ -606,25 +621,25 @@ if __name__ == '__main__':
     rotorBlade, mr, D = size_rotor_blades()
 
     # Wings
-    print(Fore.WHITE + '\n### Wing sizing started ###\n')
-    span = np.array([45, 40, 35, 30])
-    rootChord = np.array([4, 4.3333, 4.9481, 5.78])
-    tr = 0.5
-    min_mass = 1e6
-    for i in range(len(span)):
-        b, c = span[i], rootChord[i]
-        wing = size_wing(span=b/2, chord_root=c, taper=tr)
-        wing.calculate_mass()
-
-        if wing.m < min_mass:
-            best = i
-            best_wing = wing
-            min_mass = wing.m
-
-        print(f'Configuration {i} explored, m = {wing.m} [kg]')
-
-    print(Fore.BLUE + f'Configuration {best} is the best, with a total mass of {2*round(min_mass, 2)} [kg] per wing')
-    wn_wing, x_wing, U_wing = wing_vibrations()
-
-    print(Fore.WHITE + '\n### Tail sizing started ###\n')
-    hStabilizer, vStabilizer, tailPoleMass = size_tail()
+    # print(Fore.WHITE + '\n### Wing sizing started ###\n')
+    # span = np.flip(np.array([45, 40, 35, 30]))
+    # rootChord = np.flip(np.array([4, 4.3333, 4.9481, 5.78]))
+    # tr = 0.5
+    # min_mass = 1e6
+    # for i in range(len(span)):
+    #     b, c = span[i], rootChord[i]
+    #     wing = size_wing(span=b/2, chord_root=c, taper=tr, wing_model=i)
+    #     wing.calculate_mass()
+    #
+    #     if wing.m < min_mass:
+    #         best = i
+    #         best_wing = wing
+    #         min_mass = wing.m
+    #
+    #     print(f'Configuration {i} explored, m = {wing.m} [kg]')
+    #
+    # print(Fore.BLUE + f'Configuration {best} is the best, with a total mass of {2*round(min_mass, 2)} [kg] per wing')
+    # wn_wing, x_wing, U_wing = wing_vibrations()
+    #
+    # print(Fore.WHITE + '\n### Tail sizing started ###\n')
+    # hStabilizer, vStabilizer, tailPoleMass = size_tail()
