@@ -24,6 +24,7 @@ sb.set(
         "mathtext.it": "Cambria Math:italic",
         "mathtext.cal": "Cambria Math",
         "mathtext.rm": "Cambria Math",
+        "figure.dpi": 300,
     },
 )
 

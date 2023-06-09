@@ -317,7 +317,6 @@ class Link:
             - self._get_component_value(self.budget, "Data rate")
             - self._get_component_value(self.budget, "Noise spectral density")
         )
-        print(power_required)
 
         for pos in df["pos"]:
             ax.axvline(pos, color="black", alpha=0.5, ls=":")
@@ -532,10 +531,10 @@ if __name__ == "__main__":
     budget_downlink_nv_skywave.print_configuration()
     budget_downlink_nv_skywave.print_table()
 
-    # Link.plot_multiple(
-    #     [budget_uplink_relay, budget_uplink_skywave, budget_uplink_nv_skywave],
-    #     "linkbudget_uplink_all",
-    # )
+    Link.plot_multiple(
+        [budget_uplink_relay, budget_uplink_skywave, budget_uplink_nv_skywave],
+        "linkbudget_uplink_all",
+    )
     # Link.plot_multiple([budget_uplink_relay, budget_downlink_relay])
     # Link.plot_multiple([budget_uplink_skywave, budget_downlink_skywave])
     # Link.plot_multiple([budget_uplink_nv_skywave, budget_downlink_nv_skywave])
