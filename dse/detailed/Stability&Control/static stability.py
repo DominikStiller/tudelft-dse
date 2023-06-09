@@ -180,3 +180,35 @@ thrust_z = equilibrium.sum_in_z()
 x_location_tail = equilibrium.sum_moments(thrust_x, thrust_z)
 s1, s2 = equilibrium.rudder_sizing(x_location_tail)
 print(s1, s2)
+
+def landing_distance():
+    m = 3000
+    g = 3.71
+    thrust_up = 5000
+    rho = 0.01
+    surface_area_w = 112
+    cl_max = 2.4
+    surface_area_b = 1
+    cd_body = 0.1
+    mu_break = 0.5 # performance brakes coefficient
+    v_stall = np.sqrt((m * g - thrust_up) / (0.5 * rho * surface_area_w * cl_max))
+    v_approach = v_stall * 1.1
+    v = v_approach
+    distance = 0
+    dt = 0.01
+
+    while v > 0:
+        drag = (m * g - thrust_up) * 0.5 + 0.5 * rho * cd_body * surface_area_b * v**2
+        a = drag/m
+        v = v - a * dt
+        distance += v * dt
+
+        if thrust_up > 0:
+            thrust_up = thrust_up - 5
+
+    print("landing distance", distance)
+
+landing_distance()
+
+
+
