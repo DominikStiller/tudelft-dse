@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
         print(f"  - {design_name}: {median:.0f} ({q1:.0f} – {q3:.0f}, IQR = {iqr:.0f})")
 
-    fix, ax = plt.subplots(figsize=(10, 5), sharey="all", sharex="all")
+    fix, ax = plt.subplots(figsize=(8, 2.8), sharey="all", sharex="all")
 
     ax.boxplot(scores_perturbed, labels=design_names)
 
@@ -60,8 +60,9 @@ if __name__ == "__main__":
         upper = 100 * upper / maximum_score
         ax.axhspan(lower, upper, color=f"#{color}", alpha=0.3)
 
+    ax.set_xlim([0.5, len(design_names) + 0.5])
     ax.set_ylim([0, 100])
-    ax.set_ylabel("Total weighted score")
+    ax.set_ylabel("Total score")
     ax.set_yticks([0, 25, 50, 75, 100])
     # ax.set_xticklabels(ax.get_xticklabels(), rotation=15, ha="right")
 
