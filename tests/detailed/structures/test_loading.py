@@ -135,7 +135,7 @@ class TestBeam(TestCase):
         loc = -1.5
 
         point_load = Force(
-            magnitude=np.array([[0, 0, F]]).T, point_of_application=np.array([[0, loc, 0]]).T
+            magnitude=np.array([[0, 0, F]]).T, point_of_application=np.array([[x/2, loc, z/2]]).T
         )
 
         wing.add_loading(point_load)
@@ -152,21 +152,22 @@ class TestBeam(TestCase):
     def test_add_loading_distributed_load(self):
         from dse.detailed.Structures.StructureClasses import Beam, Force
 
-        x = np.linspace(0, 0.1, 10)
-        y = np.linspace(-2, 0, 100)
-        z = np.linspace(0, 0.05, 10)
-        wing = Beam(x, y, z, "constant", material=materials['Al/Si'])
+        x = 0.1
+        y = 2
+        z = 0.05
+        wing = Beam(x, y, z, "square", material='Al/Si',
+                    fixing_points=np.array([[x/2], [z/2]]) * np.ones(100))
 
         F = np.array([[0, 0, 0], [0, 0, 0], [1, 1, 1]])
 
-        app = np.array([[0.05, 0.05, 0.05], [-0.1, -1, -1.5], [0.025, 0.025, 0.025]])
+        app = np.array([[x/2, x/2, x/2], [-0.1, -1, -1.5], [z/2, z/2, z/2]])
 
         force = Force(magnitude=F, point_of_application=app)
         wing.add_loading(force)
 
-        y_index_1 = (np.abs(y - app[:, 0][1])).argmin()
-        y_index_2 = (np.abs(y - app[:, 1][1])).argmin()
-        y_index_3 = (np.abs(y - app[:, 2][1])).argmin()
+        y_index_1 = (np.abs(wing.y - app[:, 0][1])).argmin()
+        y_index_2 = (np.abs(wing.y - app[:, 1][1])).argmin()
+        y_index_3 = (np.abs(wing.y - app[:, 2][1])).argmin()
 
         if (
                 np.all(wing.f_loading[y_index_1:] == np.reshape(np.sum(F, 1), (3, 1)))
