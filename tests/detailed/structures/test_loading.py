@@ -207,22 +207,23 @@ class TestBeam(TestCase):
         NAz_hand = 0.  # Neutral axis as obtained by hand calculations
         Ixx_hand = 0.0375  # [m4]
         Izz_hand = 0.0375  # [m4]
-        Ixz_hand = 0.000  # [m4]
+        Ixz_hand = 0.000   # [m4]
         sigma_hand = np.array(
             [
                 [0.266666666666, 1.4666666666, 2.666666666, 1.2, -0.266666666666, -1.4666666666, -2.6666666, -1.2]
             ]
         ).T * 1e6
         b = 10
-        x = np.array([1, 0.5, 0, -0.5, -1, -0.5, 0, 0.5])
-        z = np.array([0, 0.5, 1, 0.5, 0, -0.5, -1, -0.5])
+        x = np.array([[1, 0.5, 0, -0.5, -1, -0.5, 0, 0.5]])
+        z = np.array([[0, 0.5, 1, 0.5, 0, -0.5, -1, -0.5]])
         l = np.linspace(-b, 0, 100)
         rombus = Beam(
-            width=x,
-            height=z,
+            width=x.T * np.ones(100),
+            height=z.T * np.ones(100),
             length=l,
-            cross_section="constant",
-            material=materials['Al/Si']
+            cross_section=np.vstack((x, z)) * np.ones((np.size(l), 2, 1)),
+            material='Al/Si',
+            fixing_points=np.array([[0], [0]]) * np.ones(100)
         )
         Applied_Load = Force(
             magnitude=np.array(
