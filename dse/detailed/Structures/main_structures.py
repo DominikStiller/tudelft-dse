@@ -203,20 +203,6 @@ def rotor_vibrations(rotorBlade):
                         I=I0)
 
     print(f'Equivalent load due to vibrations in rotor blades is {P} [N]')
-
-    # vib_load = Force(
-    #     magnitude=np.array([
-    #         [0, 0, P]
-    #     ]).T,
-    #     point_of_application=np.array([
-    #         [Xac_rotor, -max_deflection_pos, Zac_rotor]
-    #     ]).T
-    # )
-    # rotorBlade.add_loading(vib_load)
-    # rotorBlade.InternalStress(0, 0, 0)
-    # rotorBlade.calculate_mass()
-    # print(f'Final rotor blade mass = {rotorBlade.m} [kg]')
-
     return w, x, U
 
 
@@ -225,10 +211,10 @@ def wing_vibrations():
     L = span[best] / 2
     I = np.mean(np.sum((best_wing.Bi * best_wing.z[:-1] ** 2), 0))
     A = np.mean(np.sum(best_wing.Bi, 0))
-    parameters = np.array([materials['CFRP'].E, I, materials['CFRP'].rho, A, L])
+    parameters = np.array([materials['CFRPeek'].E, I, materials['CFRPeek'].rho, A, L])
 
     # Define analysis conditions
-    bc = 5  # Clamped-free
+    bc = 6  # Clamped-pinned
     modes = 3
 
     # Perform analysis
@@ -261,7 +247,7 @@ def size_wing(span, chord_root, taper, wing_model=None):
         height=np.array([Airfoil['z']]).T * chord_array,
         length=l,
         cross_section=section,
-        material='CFRP',
+        material='CFRPeek',
         fixing_points=np.array([[Xac_wing], [Zac_wing]]) * np.ones(np.size(l))
     )
 
@@ -334,17 +320,7 @@ def size_wing(span, chord_root, taper, wing_model=None):
         )
     )
 
-    # Apply loads and size
-    wing.add_loading(liftOffLoad)
-    wing.add_loading(engine_and_rotor_weight)
-    wing.add_loading(bracing_TO)
-    wing.plot_internal_loading()
-    wing.InternalStress(0, 0, 0)
-    thickness = wing.t
-    B1 = wing.Bi
-
     # Define loads during cruise
-    wing.unload()
     if wing_model is None:
         aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, float(span))
     else:
@@ -397,24 +373,37 @@ def size_wing(span, chord_root, taper, wing_model=None):
     wing.add_loading(aerodynamic_forces)
     wing.plot_internal_loading()
     wing.InternalStress(0, 0, 0)
+    f_loading_Cr = wing.f_loading
     thickness2 = wing.t
     B2 = wing.Bi
+
+    # Apply loads and size
+    wing.unload()
+    wing.add_loading(liftOffLoad)
+    wing.add_loading(engine_and_rotor_weight)
+    wing.add_loading(bracing_TO)
+    wing.plot_internal_loading()
+    wing.InternalStress(0, 0, 0)
+    f_loading_TO = wing.f_loading
+    thickness = wing.t
+    B1 = wing.Bi
 
     # Choose the most critical structure
     wing.t = np.maximum(thickness, thickness2)
     wing.Bi = np.maximum(B1, B2)
+    f_loading_abs = np.maximum(np.abs(f_loading_TO), np.abs(f_loading_Cr))
 
     wing.calculate_mass()
     print(f'Mass of each wing = {np.round(wing.m, 2)}kg')
-    return wing
+    return wing, f_loading_abs
 
 
 def size_tail():
+    # span, 14.23/2  chord 2.7106, tip = 1.0834 NACA0012
+
     # Assumptions
     m = 25
     tail_to_wing_lift = 0.1
-    cl_t = 1
-    AR_tail = 10
     lift_to_drag_tail = 15
     extra_force = 500  # For control
     tail_taper = np.linspace(1, 0.7, m)
@@ -422,20 +411,21 @@ def size_tail():
 
     ### Horizontal stabilizer ###
     # Define the geometry
-    tailChord = tail_to_wing_lift * MTOM * g / (AR_tail * cl_t * q)
-    tailSpan = tailChord * AR_tail / 2
+    tailSpan = 4.19
+    tailChord = np.linspace(1.1996, 2.998, m)
+    NACA0012 = pd.read_csv('NACA 0012.dat', delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
 
     l = np.linspace(-tailSpan, 0, m)
-    x = np.reshape(Airfoil['x'] * tailChord, (np.size(Airfoil['x']), 1))
-    z = np.reshape(Airfoil['z'] * tailChord, (np.size(Airfoil['z']), 1))
-    section = np.vstack((x.T, z.T)) * np.ones((m, 2, 1)) * np.reshape(tail_taper, (m, 1, 1))
+    x = np.reshape(NACA0012['x'], (len(NACA0012['x']), 1)) * tailChord
+    z = np.reshape(NACA0012['z'], (len(NACA0012['z']), 1)) * tailChord
+    section = np.vstack((NACA0012['x'], NACA0012['z'])) * np.reshape(np.vstack((tailChord, tailChord)), (m, 2, 1))
 
-    Xac = np.max(Airfoil['x']) * tailChord / 4
-    Zac = 0.077 * tailChord
+    Xac = np.max(NACA0012['x']) * tailChord[0] / 4
+    Zac = 0.077 * tailChord[0]
 
     hStabilizer = Beam(
-        width=x * tail_taper,
-        height=z * tail_taper,
+        width=x,
+        height=z,
         length=l,
         cross_section=section,
         material='Al/Si',
@@ -459,27 +449,27 @@ def size_tail():
     hStabilizer.plot_internal_loading()
     hStabilizer.InternalStress(0, 0, 0)
     hStabilizer.calculate_mass()
-    print(f"Horizontal stabilizer's mass is {np.round(hStabilizer.m)} [kg]")
+    print(f"Horizontal stabilizer's mass is {2*np.round(hStabilizer.m)} [kg]")
 
     ### Vertical stabilizer ###
     # Define geometry
 
-    vTailSpan = extra_force / (cl_t * q * AR_tail)
-    vTailChord = vTailSpan / vTailSpan
+    vTailSpan = 14.23/2
+    vTailChord = np.linspace(1.0834, 2.7106, m)
 
 
-    l = np.linspace(-vTailSpan, 0, m)
-    x = np.reshape(Airfoil['x'] * vTailChord, (np.size(Airfoil['x']), 1))
-    z = np.reshape(Airfoil['z'] * vTailChord, (np.size(Airfoil['z']), 1))
-    section = np.vstack((x.T, z.T)) * np.ones((m, 2, 1)) * np.reshape(tail_taper, (m, 1, 1))
+    lv = np.linspace(-vTailSpan, 0, m)
+    xv = np.reshape(NACA0012['x'], (len(NACA0012['x']), 1)) * vTailChord
+    zv = np.reshape(NACA0012['z'], (len(NACA0012['x']), 1)) * vTailChord
+    section = np.vstack((NACA0012['x'], NACA0012['z'])) * np.reshape(np.vstack((vTailChord, vTailChord)), (m, 2, 1))
 
-    Xac = np.max(Airfoil['x']) * vTailChord / 4
-    Zac = 0.077 * vTailChord
+    Xac = np.max(NACA0012['x']) * vTailChord[0] / 4
+    Zac = 0.077 * vTailChord[0]
 
     vStabilizer = Beam(
-        width=x * vTailTaper,
-        height=z * vTailTaper,
-        length=l,
+        width=xv * vTailTaper,
+        height=zv * vTailTaper,
+        length=lv,
         cross_section=section,
         material='Al/Si',
         fixing_points=np.array([[Xac], [Zac]]) * np.ones(m)
@@ -490,7 +480,7 @@ def size_tail():
         magnitude=extra_force / m * np.vstack((-np.ones(m)/lift_to_drag_tail, np.zeros(m), np.ones(m))),
         point_of_application=np.vstack(
             ((Xac * np.min(vTailTaper) + (1-np.min(vTailTaper))*vTailChord) * np.ones(m),
-             l,
+             lv,
              Zac * np.min(vTailTaper) * np.ones(m))
         )
     )
@@ -533,10 +523,10 @@ def size_tail():
     theta = np.arctan(Mx/Mz)
     D = (Fy + np.sqrt(Fy**2 + 8 * s_max * np.pi * t_min * np.abs(Mz*np.cos(theta) + Mx*np.sin(theta)))) / (2 * s_max * np.pi * t_min)
 
-    tailPoleMass = np.pi * D * 0.001 * R * materials['CFRP'].rho
+    tailPoleMass = np.pi * D * 0.001 * R * materials['CFRPeek'].rho
 
     print(f'Tail pole mass = {tailPoleMass} [kg]')
-    print(Fore.BLUE + f'The total tail group mass is {hStabilizer.m + vStabilizer.m + tailPoleMass + margin} [kg], '
+    print(Fore.BLUE + f'The total tail group mass is {2*hStabilizer.m + vStabilizer.m + tailPoleMass + margin} [kg], '
           f'including {margin} [kg] of margin')
     return hStabilizer, vStabilizer, tailPoleMass
 
@@ -544,7 +534,7 @@ def size_tail():
 def size_body(fuselage_height=1.67, cabin_length=2, full_length=6.15):
     r = fuselage_height/2
     aft_cone_length = full_length - cabin_length - rootChord  # [m], assumed
-    mat = materials['CFRP']
+    mat = materials['CFRPeek']
     t = 0.001
     margin = 200
 
@@ -621,25 +611,28 @@ if __name__ == '__main__':
     rotorBlade, mr, D = size_rotor_blades()
 
     # Wings
-    # print(Fore.WHITE + '\n### Wing sizing started ###\n')
-    # span = np.flip(np.array([45, 40, 35, 30]))
-    # rootChord = np.flip(np.array([4, 4.3333, 4.9481, 5.78]))
-    # tr = 0.5
-    # min_mass = 1e6
-    # for i in range(len(span)):
-    #     b, c = span[i], rootChord[i]
-    #     wing = size_wing(span=b/2, chord_root=c, taper=tr, wing_model=i)
-    #     wing.calculate_mass()
-    #
-    #     if wing.m < min_mass:
-    #         best = i
-    #         best_wing = wing
-    #         min_mass = wing.m
-    #
-    #     print(f'Configuration {i} explored, m = {wing.m} [kg]')
-    #
-    # print(Fore.BLUE + f'Configuration {best} is the best, with a total mass of {2*round(min_mass, 2)} [kg] per wing')
-    # wn_wing, x_wing, U_wing = wing_vibrations()
-    #
-    # print(Fore.WHITE + '\n### Tail sizing started ###\n')
-    # hStabilizer, vStabilizer, tailPoleMass = size_tail()
+    print(Fore.WHITE + '\n### Wing sizing started ###\n')
+    span = np.flip(np.array([45, 40, 35, 30]))
+    rootChord = np.flip(np.array([4, 4.3333, 4.9481, 5.78]))
+    tr = 0.5
+    min_mass = 1e6
+    for i in range(len(span)):
+        b, c = span[i], rootChord[i]
+        wing, F = size_wing(span=b/2, chord_root=c, taper=tr, wing_model=i)
+        wing.calculate_mass()
+
+        if wing.m < min_mass:
+            best = i
+            best_wing = wing
+            min_mass = wing.m
+            best_wing.f_loading = F
+
+        print(f'Configuration {i} explored, m = {wing.m} [kg]')
+
+    print(Fore.BLUE + f'Configuration {best} is the best, with a total mass of {2*round(min_mass, 2)} [kg] per wing')
+    wn_wing, x_wing, U_wing = wing_vibrations()
+    n_rivets_0 = best_wing.design_joint(b=span[best]/2)
+    n_rivets_1 = best_wing.design_joint(b=0)
+
+    print(Fore.WHITE + '\n### Tail sizing started ###\n')
+    hStabilizer, vStabilizer, tailPoleMass = size_tail()

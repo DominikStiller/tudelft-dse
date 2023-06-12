@@ -9,7 +9,7 @@ import pandas as pd
 import csv
 
 
-def xflr_forces(filename, q, b):
+def xflr_forces(filename, q, b, adrian=None):
     if type(filename) != str:
         raise TypeError(f"Input 1 should be a string, not {type(filename)}")
     if type(q) != float and type(q) != int:
@@ -18,47 +18,58 @@ def xflr_forces(filename, q, b):
         raise TypeError(f"Input 3 should be a float or int, not {type(b)}")
 
     # Rewrite the xflr data file into a readable format. ranging from the negative wingtip to closest to zero root
-    with open(filename) as csvfile:
-        data = csv.reader(csvfile, delimiter=",")
-        Data = []
-        for row in data:
-            Data.append(row)
-    while [] in Data:
-        Data.remove([])
-    indx = Data.index(["Main Wing"])
-    Data = Data[indx + 1 :]
+    if type(adrian) != int:
+        with open(filename) as csvfile:
+            data = csv.reader(csvfile, delimiter=",")
+            Data = []
+            for row in data:
+                Data.append(row)
+        while [] in Data:
+            Data.remove([])
+        indx = Data.index(["Main Wing"])
+        Data = Data[indx + 1 :]
 
-    xflr_data = pd.DataFrame(Data[1:], columns=Data[0], dtype=float)
+        xflr_data = pd.DataFrame(Data[1:], columns=Data[0], dtype=float)
 
-    # Cut half wing
-    cutpoint = int(round(len(xflr_data["Cl"]) / 2))
-    xflr_data = xflr_data[:cutpoint]
+        # Cut half wing
+        cutpoint = int(round(len(xflr_data["Cl"]) / 2))
+        xflr_data = xflr_data[:cutpoint]
 
-    ## Application of the forces
-    # Assume drag acts through the neutral axis
-    application = np.zeros((3, len(xflr_data['  y-span'])))   # [m] (3, n) where n is the length of y-span
-    application[0] = np.array(xflr_data['XCP'])             # [m] Point of application in the x direction
-    application[1] = np.array(xflr_data['  y-span'])          # [m] Point of application in the y direction
+        ## Application of the forces
+        # Assume drag acts through the neutral axis
+        application = np.zeros((3, len(xflr_data['  y-span'])))   # [m] (3, n) where n is the length of y-span
+        application[0] = np.array(xflr_data['XCP'])             # [m] Point of application in the x direction
+        application[1] = np.array(xflr_data['  y-span'])          # [m] Point of application in the y direction
 
-    ## Magnitude of the forces
-    # Overwrite the forces in y direction if there are any present.
-    # [m2] Array of all the surface areas
-    S_array = xflr_data["Chord"] * np.hstack(
-        (
-            np.array([b - abs(xflr_data["  y-span"][0])]),
-            abs(application[1][1:] - application[1][:-1]),
+        ## Magnitude of the forces
+        # Overwrite the forces in y direction if there are any present.
+        # [m2] Array of all the surface areas
+        S_array = xflr_data["Chord"] * np.hstack(
+            (
+                np.array([b - abs(xflr_data["  y-span"][0])]),
+                abs(application[1][1:] - application[1][:-1]),
+            )
         )
-    )
-    margin = 500
-    cd = (xflr_data["ICd"] + xflr_data["PCd"])
-    lift_drag_ratio = xflr_data["Cl"] / cd
-    mag = np.zeros((3, len(xflr_data["  y-span"])))  # [N] (3 x n) where n is the length of y_lst
-    mag[0] = (
-        -cd * q * S_array + margin/lift_drag_ratio * cd / np.sum(cd)
-    )  # [N] Forces in x-direction due to drag
-    mag[2] = xflr_data["Cl"] * q * S_array + margin * xflr_data["Cl"]/np.sum(xflr_data["Cl"])  # [N] Forces in z-direction due to lift
 
-    return Force(magnitude=mag, point_of_application=application)
+        margin = 500
+        cd = (xflr_data["ICd"] + xflr_data["PCd"])
+        lift_drag_ratio = xflr_data["Cl"] / cd
+        mag = np.zeros((3, len(xflr_data["  y-span"])))  # [N] (3 x n) where n is the length of y_lst
+        mag[0] = (
+                -cd * q * S_array + margin / lift_drag_ratio * cd / np.sum(cd)
+        )  # [N] Forces in x-direction due to drag
+        mag[2] = xflr_data["Cl"] * q * S_array + margin * xflr_data["Cl"] / np.sum(
+            xflr_data["Cl"])  # [N] Forces in z-direction due to lift
+
+        return Force(magnitude=mag, point_of_application=application)
+
+    else:
+        df = pd.read_csv(filename)
+        cl_array = np.fromstring(df["Cl_dist"].iloc[adrian][1:-1], sep=" ")
+        cd_array = np.fromstring(df["Cd_dist"].iloc[adrian][1:-1], sep=" ")
+        sp_array = np.fromstring(df["y_span"].iloc[adrian][1:-1], sep=" ")
+
+        return cl_array, cd_array, sp_array
 
 
 class Force:
@@ -506,6 +517,49 @@ class Beam:
         self.zcg = zcg_overall
 
         return self.Ix, self.Iy, self.Iz, xcg_overall, ycg_overall, zcg_overall
+
+    def design_joint(self, b, n_rows=1):
+        # This function will return the extra mass needed for a rivetted joint at a cetain position along the span
+        # Rivet properties
+        D = 0.005
+        rivet_mat = materials['Titanium Alloys']
+        n_safety = 3 * 1.5
+
+        # Plate properties
+        indx = (np.abs(self.y - b)).argmin()
+        width = np.max(self.x[:, indx]) - np.min(self.x[:, indx])
+        thickness = np.min(self.t[:, indx])
+        plate_mat = self.material_types[self.mat[0, indx]]
+        Px = self.f_loading[indx][0]
+        Py = self.f_loading[indx][1]
+
+        if n_rows == 1:
+            n_rivets = 1
+            # Bearing stress - failure of the plate
+            bearing1 = (Py / n_rivets) / (D * thickness)
+            while bearing1 >= plate_mat.compressive / n_safety:
+                n_rivets += 1
+                bearing1 = Py / n_rivets / (D * thickness)
+
+            # Shearing stress - failure of the rivet
+            tau = Px / 3 / (np.pi * D**2 / 4)
+            if tau >= rivet_mat.tau / n_safety:
+                D = np.sqrt(Px/3 / (np.pi * rivet_mat.tau / n_safety / 4))
+                if D > 0.02:
+                    print(f'Rivet diameter is greater than 20 mm - consider increasing plate thickness instead')
+
+            # Tensions failure - failure of the plate
+            w = (width - D * n_rivets) / (n_rivets + 1)
+            sigma = Py / (w * thickness)
+            while sigma >= plate_mat.tensile / n_safety:
+                n_rivets += 1
+                w = (width - D * n_rivets) / (n_rivets + 1)
+                sigma = Py / (w * thickness)
+
+            print(f'A single rivet row of {n_rivets} rivets of diameter {D*1000} mm will suffice at {b}m from the root along the span')
+            return n_rivets, D
+        else:
+            raise ValueError('Multiple rivet rows not yet implemented')
 
     def plot_internal_loading(self):
         fig, (axs1, axs2) = plt.subplots(2, 1)
