@@ -552,23 +552,22 @@ class Beam:
         width = np.max(self.x[:, indx]) - np.min(self.x[:, indx])
         thickness = np.min(self.t[:, indx])
         plate_mat = self.material_types[self.mat[0, indx]]
-        Px = self.f_loading[indx][0]
-        Py = self.f_loading[indx][1]
+        Px = np.abs(self.f_loading[indx][0])
+        Py = np.abs(self.f_loading[indx][1]) + np.abs(self.m_loading[indx][0]) * np.max(np.abs(self.z[:, indx] - self.fix[1, indx]))
 
         if n_rows == 1:
             n_rivets = 1
-            # Bearing stress - failure of the plate
-            bearing1 = (Py / n_rivets) / (D * thickness)
-            while bearing1 >= plate_mat.compressive / n_safety:
-                n_rivets += 1
-                bearing1 = Py / n_rivets / (D * thickness)
-
             # Shearing stress - failure of the rivet
-            tau = Px / 3 / (np.pi * D**2 / 4)
+            tau = Py / (np.pi * D**2 / 4)
             if tau >= rivet_mat.tau / n_safety:
-                D = np.sqrt(Px/3 / (np.pi * rivet_mat.tau / n_safety / 4))
+                D = np.ceil(1000*np.sqrt(Py / (np.pi * rivet_mat.tau / n_safety / 4))) / 1e3
                 if D > 0.02:
                     print(f'Rivet diameter is greater than 20 mm - consider increasing plate thickness instead')
+
+            # Bearing stress - failure of the plate
+            bearing1 = (Py / n_rivets) / (D * thickness)
+            if bearing1 >= plate_mat.compressive / n_safety:
+                n_rivets = np.ceil(Py / (plate_mat.compressive / n_safety * D * thickness))
 
             # Tensions failure - failure of the plate
             w = (width - D * n_rivets) / (n_rivets + 1)

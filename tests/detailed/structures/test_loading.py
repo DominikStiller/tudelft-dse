@@ -122,7 +122,6 @@ class TestBeam(TestCase):
     # calculate_mass
     # rho
     # youngs_mod
-    # overall_inertia
     # design_joint
 
     def test_add_loading_point_load(self):
@@ -628,5 +627,46 @@ class TestBeam(TestCase):
         assert np.abs(squareBeam.Iy - Iyy)/Iyy < 0.05
         assert np.abs(squareBeam.Iz - Izz)/Izz < 0.05
 
+    def test_design_joint(self):
+        x0 = 1
+        z0 = 1
+        y = 5
+
+        squareBeam = Beam(
+            width=x0,
+            height=z0,
+            length=y,
+            cross_section='square',
+            material='Al/Si',
+            fixing_points=np.array([[x0 / 2], [z0 / 2]]) * np.ones(100)
+        )
+
+        t_plate = 0.001
+        squareBeam.t = t_plate * np.ones(np.shape(squareBeam.x))
+        P_mag = 1e5
+        P = Force(magnitude=np.array([[0, 0, P_mag]]).T,
+                  point_of_application=np.array([[x0 / 2], [-y], [z0 / 2]]))
+
+        squareBeam.add_loading(P)
+        indx = (np.abs(squareBeam.y + y/2)).argmin()
+        F = np.abs(squareBeam.f_loading[indx][1]) + np.abs(squareBeam.m_loading[indx][0]) * np.max(np.abs(squareBeam.z[:, indx] - squareBeam.fix[1, indx]))
 
 
+        tau_max = materials['Titanium Alloys'].tau / 4.5
+        D = np.ceil(1e3*np.sqrt(4 * F / (np.pi * tau_max))) / 1e3
+
+        sigma_max = materials['Al/Si'].compressive / 4.5
+        n0 = np.ceil(F / (sigma_max * t_plate * D))
+
+        n1 = n0
+        width = np.max(squareBeam.x[:, indx]) - np.min(squareBeam.x[:, indx])
+        w = (width - D * n1) / (n1 + 1)
+        while F / (t_plate * w) > sigma_max:
+            n1 += 1
+            w = (width - D * n1) / (n1 + 1)
+
+        n_out, D_out = squareBeam.design_joint(-y/2)
+
+        assert n_out == n1, 'The number of rivets does not coincide with the analytical solution'
+
+        assert D_out == D, 'Rivet diameter does not coincide with the analytical solution'
