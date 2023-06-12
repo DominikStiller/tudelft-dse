@@ -122,19 +122,14 @@ class TestForce(TestCase):
 
 
 class TestBeam(TestCase):
-    # Functions without tests:
-    #    AirfoilBoom
-    #    unitSquareBoom
-    #    DesignConstraints
-    #    BoomArea
-    #    plot_internal_loading
     def test_add_loading_point_load(self):
         from dse.detailed.Structures.StructureClasses import Beam, Force
 
-        x = np.linspace(0, 0.1, 10)
-        y = np.linspace(-2, 0, 100)
-        z = np.linspace(0, 0.05, 10)
-        wing = Beam(x, y, z, "full", material=materials['Al/Si'])
+        x = 0.1
+        y = 2
+        z = 0.05
+        wing = Beam(x, y, z, "square", material='Al/Si',
+                    fixing_points=np.array([[x/2], [z/2]]) * np.ones(100))
 
         F = 1
         loc = -1.5
@@ -145,7 +140,7 @@ class TestBeam(TestCase):
 
         wing.add_loading(point_load)
 
-        y_index = (np.abs(y - loc)).argmin()
+        y_index = (np.abs(wing.y - loc)).argmin()
         if np.all(wing.f_loading[y_index:] == np.array([[0, 0, F]]).T):
             if (np.abs((wing.m_loading[y_index] - wing.m_loading[-1]) / loc)[0] - F) < 0.01:
                 assert True
@@ -160,7 +155,7 @@ class TestBeam(TestCase):
         x = np.linspace(0, 0.1, 10)
         y = np.linspace(-2, 0, 100)
         z = np.linspace(0, 0.05, 10)
-        wing = Beam(x, y, z, "full", material=materials['Al/Si'])
+        wing = Beam(x, y, z, "constant", material=materials['Al/Si'])
 
         F = np.array([[0, 0, 0], [0, 0, 0], [1, 1, 1]])
 

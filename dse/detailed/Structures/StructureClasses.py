@@ -118,38 +118,57 @@ class Beam:
             raise TypeError("Length needs to be either a constant float/int or a 1D array")
 
         if type(width) == int or type(width) == float:
-            self.x = np.reshape(np.linspace(-width/2, width, 100), (100, 1)) * np.ones(np.size(self.y))
+            if cross_section == 'square':
+                self.x = np.atleast_2d(np.hstack((
+                    np.zeros(19),
+                    np.linspace(0, width, 20)[:-1],
+                    np.ones(19)*width,
+                    np.linspace(-width, 0, 20)[:-1]
+                ))).T * np.ones(np.size(self.y))
+            else:
+                self.x = np.reshape(np.linspace(0, width, 100), (100, 1)) * np.ones(np.size(self.y))
         elif type(width) == np.ndarray:
-            self.x = width
+            if len(np.shape(width)) == 2 and np.shape(width)[1] == np.size(self.y):
+                self.x = width
+            else:
+                raise ValueError('Width array must be n x len(y)')
         else:
-            raise TypeError("Width needs to be either a constant float/int or a 100 x n array")
-
+            raise TypeError("Width needs to be either a constant float/int or a n x len(y) array")
 
         if type(height) == int or type(height) == float:
-            self.z = np.reshape(np.linspace(-height/2, height/2, 100), (100, 1)) * np.ones(np.size(self.y))
+            if cross_section == 'square':
+                self.z = np.atleast_2d(np.hstack((
+                    np.linspace(0, height, 20)[:-1],
+                    np.ones(19) * height,
+                    np.linspace(height, 0, 20)[:-1],
+                    np.zeros(19)
+                ))).T * np.ones(np.size(self.y))
+            else:
+                self.z = np.reshape(np.linspace(0, height, 100), (100, 1)) * np.ones(np.size(self.y))
         elif type(height) == np.ndarray:
-            self.z = height
+            if len(np.shape(height)) == 2 and np.shape(height)[1] == np.size(self.y):
+                self.z = height
+            else:
+                raise ValueError('Height array must be n x len(y)')
         else:
-            raise TypeError("Height needs to be either a constant float/int or a 100 x n array")
+            raise TypeError("Height needs to be either a constant float/int or a n x len(y) array")
 
         if np.shape(self.x) != np.shape(self.z):
             raise ValueError('Width and height must have matching shapes')
 
         if type(cross_section) == str:
-            if cross_section == "full":
-                self.section = np.ones((len(self.y), len(self.z), len(self.x)))
-            elif cross_section == "constant":
+            if cross_section == "constant":
                 self.section = np.ones((len(self.y), 2, len(self.x))) * np.vstack((self.x, self.z))
+            elif cross_section == "square":
+                self.section = np.vstack((self.x[:, 0], self.z[:, 0])) * np.ones((np.size(self.y), 2, np.shape(self.x)[0]))
+            else:
+                raise ValueError('The cross section needs to be either "constant" or a 3D array')
         else:
             if type(cross_section) != np.ndarray:
-                raise TypeError('The cross section needs to be either "full" or a 3D array')
+                raise TypeError('The cross section needs to be either "constant" or a 3D array')
             else:
                 if np.shape(cross_section) != (len(self.y), 2, len(self.x)):
-                    raise ValueError('Cross section needs to have a size consistent with the '
-                                     'amount of points indicated for length, height and width')
-                if len(np.shape(self.x)) != 2:
-                    raise ValueError('If cross_section != "full" or "constant", then width and height need to be 2D '
-                                     'arrays')
+                    raise ValueError('Cross section needs to have a size (len(self.y), 2, len(self.x))')
                 self.section = cross_section
 
         # Internal forces
@@ -175,13 +194,13 @@ class Beam:
             raise TypeError('Material needs to be a single Material class or an array')
 
         if np.shape(fixing_points) == (2, 1) and cross_section == 'constant':
-            self.fix = fixing_points * np.ones(np.size(self.y))
+            self.fix = fixing_points * np.ones((np.size(self.y), 2, 1))
         elif np.shape(fixing_points) == (2, np.size(self.y)):
             self.fix = fixing_points
         else:
             raise ValueError('Fixing points needs to be a 2x1 array with constant cross section or 2xn array')
 
-        # Parameters to be calulated later
+        # Parameters to be calculated later
         self.t = None
         self.sigma = None
         self.Bi = None
