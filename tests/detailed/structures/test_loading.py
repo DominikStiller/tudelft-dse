@@ -75,8 +75,6 @@ class Test(TestCase):
 
 class TestForce(TestCase):
     def test_concatenate_two_forces(self):
-        from dse.detailed.Structures.StructureClasses import Force
-
         dummy = Force(
             magnitude=np.array([[3, 3, 3]]).T, point_of_application=np.array([[1, 0, 0]]).T
         )
@@ -88,8 +86,6 @@ class TestForce(TestCase):
         assert np.shape(dummy.F) == (3, 2)
 
     def test_concatenate_functions_list(self):
-        from dse.detailed.Structures.StructureClasses import Force
-
         dummy = Force(
             magnitude=np.array([[3, 3, 3]]).T, point_of_application=np.array([[1, 0, 0]]).T
         )
@@ -105,8 +101,6 @@ class TestForce(TestCase):
         assert np.shape(dummy.F) == (3, 3)
 
     def test_separate_forces_number(self):
-        from dse.detailed.Structures.StructureClasses import Force
-
         mag = np.array([[1, 5], [0, 0], [0, 0]])
         app = np.array([[1, 3], [0, 0], [0, 0]])
         dummy = Force(magnitude=mag, point_of_application=app)
@@ -132,8 +126,6 @@ class TestBeam(TestCase):
     # design_joint
 
     def test_add_loading_point_load(self):
-        from dse.detailed.Structures.StructureClasses import Beam, Force
-
         x = 0.1
         y = 2
         z = 0.05
@@ -159,8 +151,6 @@ class TestBeam(TestCase):
             assert np.all(wing.f_loading[y_index:] == np.array([[0, 1, 0]]).T)
 
     def test_add_loading_distributed_load(self):
-        from dse.detailed.Structures.StructureClasses import Beam, Force
-
         x = 0.1
         y = 2
         z = 0.05
@@ -336,7 +326,6 @@ class TestBeam(TestCase):
         assert np.all(abs(sigma_nr[:,-1] - sigma_hand.T)/sigma_hand.T < 0.01), 'The stresses are wrong'
 
     def test_neutral_axis(self):
-        from dse.detailed.Structures.StructureClasses import Beam
         x = np.atleast_2d(np.hstack(
             (np.linspace(-1, 0, 25)[:-1],
              np.linspace(0, 1, 25)[:-1],
@@ -377,7 +366,6 @@ class TestBeam(TestCase):
         assert np.all(np.abs(NAz) <= 0.001), 'Neutral axis is not along the axis for a symmetric shape'
 
     def test_mo_i(self):
-        from dse.detailed.Structures.StructureClasses import Beam
         x = np.atleast_2d(np.hstack(
             (np.linspace(-1, 0, 25)[:-1],
              np.linspace(0, 1, 25)[:-1],
@@ -419,7 +407,6 @@ class TestBeam(TestCase):
         assert np.all(Ixz <= 0.001), 'Symmetrical shape does not have Ixz = 0'
 
     def test_stress_calculations(self):
-        from dse.detailed.Structures.StructureClasses import Beam, Force
         x = np.atleast_2d(np.hstack(
             (np.linspace(-1, 0, 25)[:-1],
              np.linspace(0, 1, 25)[:-1],
@@ -504,7 +491,6 @@ class TestBeam(TestCase):
         assert np.max(stress) == np.abs(np.min(stress)), 'The maximum tensile and compressive stresses are not the same'
 
     def test_internal_stress(self):
-        from dse.detailed.Structures.StructureClasses import Beam, Force
         x = np.atleast_2d(np.hstack(
             (np.linspace(-1, 0, 25)[:-1],
              np.linspace(0, 1, 25)[:-1],
@@ -553,8 +539,6 @@ class TestBeam(TestCase):
         assert np.all(rombus.sigma <= 250e6/1.5)
 
     def test_masses_constant_section(self):
-        from dse.detailed.Structures.StructureClasses import Beam
-        from dse.detailed.Structures.material_properties import materials
         x = 1
         z = 1
         y = 2
@@ -613,4 +597,36 @@ class TestBeam(TestCase):
         assert np.all((summed_masses[:-1] - hand_masses_y[1:-1]) / hand_masses_y[1:-1] < 0.01), "Mass array doesn't coincide with the analytical calculation"
 
     def test_overall_inertia(self):
-        ...
+        x0 = 1
+        z0 = 1
+        y = 5
+
+        squareBeam = Beam(
+            width=x0,
+            height=z0,
+            length=y,
+            cross_section='square',
+            material='Al/Si',
+            fixing_points=np.array([[x0/2], [z0/2]]) * np.ones(100)
+        )
+        t = 0.005
+        x1 = x0 - 2*t
+        z1 = z0 - 2*t
+
+        A = x0*z0 - x1*z1
+        squareBeam.Bi = A / np.shape(squareBeam.x)[0] * np.ones(np.shape(squareBeam.x))
+        squareBeam.overall_inertia()
+
+        # Hand calculations
+        M0 = x0*z0*y*materials['Al/Si'].rho
+        M1 = x1*z1*y*materials['Al/Si'].rho
+        Ixx = M0*(y**2 + z0**2)/12 - M1*(y**2 + z1**2)/12
+        Izz = M0*(y**2 + x0**2)/12 - M1*(y**2 + x1**2)/12
+        Iyy = M0*(x0**2 + z0**2)/12 - M1*(x1**2 + z1**2)/12
+
+        assert np.abs(squareBeam.Ix - Ixx)/Ixx < 0.05
+        assert np.abs(squareBeam.Iy - Iyy)/Iyy < 0.05
+        assert np.abs(squareBeam.Iz - Izz)/Izz < 0.05
+
+
+

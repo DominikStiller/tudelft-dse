@@ -506,11 +506,6 @@ class Beam:
         masses = self.masses()
         radii = np.sqrt(self.Bi / np.pi)[:, :-1]
 
-        # Moments of inertia of each boom
-        Ixx = masses * radii**2 / 4 + masses * dy**2 / 12
-        Izz = masses * radii**2 / 4 + masses * dy**2 / 12
-        Iyy = masses * radii**2 / 2
-
         # Apply parallel axis theorem
         x_booms, z_booms = np.split(np.reshape(self.section, (np.size(self.y), 2 * np.shape(self.x)[0])), 2, 1)
         if np.all(x_booms[:, 0] == x_booms[:, -1]):
@@ -527,9 +522,9 @@ class Beam:
         zcg = np.sum(masses * z_booms_nr[:, :-1], 0) / np.sum(masses, 0)
         ycg = np.sum(masses * self.y[:-1], 1) / np.sum(masses, 1)
 
-        Ixx += masses * (((self.y[:-1] * np.ones(np.shape(masses))).T - ycg).T**2 + (z_booms_nr[:, :-1] - zcg)**2)
-        Iyy += masses * ((x_booms_nr[:, :-1] - xcg)**2 + (z_booms_nr[:, :-1] - zcg)**2)
-        Izz += masses * ((x_booms_nr[:, :-1] - xcg)**2 + ((self.y[:-1] * np.ones(np.shape(masses))).T - ycg).T**2)
+        Ixx = masses * (((self.y[:-1] * np.ones(np.shape(masses))).T - ycg).T**2 + (z_booms_nr[:, :-1] - zcg)**2)
+        Iyy = masses * ((z_booms_nr[:, :-1] - zcg)**2 + (x_booms_nr[:, :-1] - xcg)**2)
+        Izz = masses * (((self.y[:-1] * np.ones(np.shape(masses))).T - ycg).T**2 + (x_booms_nr[:, :-1] - xcg)**2)
 
         self.Ix = np.sum(Ixx)
         self.Iy = np.sum(Iyy)
