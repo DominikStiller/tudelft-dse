@@ -127,7 +127,6 @@ class TestBeam(TestCase):
     # BoomArea
     # calculate_mass
     # rho
-    # masses
     # youngs_mod
     # overall_inertia
     # design_joint
@@ -553,7 +552,7 @@ class TestBeam(TestCase):
         assert np.all(rombus.t >= 0.001), 'The minimum thickness is smaller than 1mm'
         assert np.all(rombus.sigma <= 250e6/1.5)
 
-    def test_masses(self):
+    def test_masses_constant_section(self):
         from dse.detailed.Structures.StructureClasses import Beam
         from dse.detailed.Structures.material_properties import materials
         x = 1
@@ -576,3 +575,42 @@ class TestBeam(TestCase):
 
         assert np.all(masses == masses[0]), 'Discrete masses are not constant'
         assert np.sum(masses) == A * y * materials['Al/Si'].rho
+
+    def test_masses_linear_section(self):
+        x = np.atleast_2d(np.hstack((
+                    np.zeros(20),
+                    np.linspace(0, 1, 21)[:-1],
+                    np.ones(20)*1,
+                    np.linspace(1, 0, 21)[:-1]
+                )))
+        z = np.atleast_2d(np.hstack((
+                    np.linspace(0, 1, 21)[:-1],
+                    np.ones(20) * 1,
+                    np.linspace(1, 0, 21)[:-1],
+                    np.zeros(20)
+                )))
+        y = np.linspace(-2, 0, 100)
+        piramid = Beam(
+            width=x.T * np.ones(100),
+            height=z.T * np.linspace(1, 2, 100),
+            length=y,
+            cross_section=np.vstack((x, z)) * np.ones((100, 1, 1)),
+            material='Al/Si',
+            fixing_points=np.array([[1], [1]]) * np.ones(100)
+        )
+        infill = 0.1
+        A = np.max(piramid.x, 0) * np.max(piramid.z, 0) * infill
+        piramid.Bi = A / np.shape(piramid.x)[0] * np.ones(np.shape(piramid.x))
+        masses = piramid.masses()
+
+        masses_y = np.sum(masses, 0)
+        summed_masses = np.zeros(np.shape(masses_y))
+        for i in range(len(masses_y)-1):
+            summed_masses[i] = np.sum(masses_y[:i+1])
+        hand_masses_y = materials['Al/Si'].rho * np.flip(np.abs(y) + 0.25 * y**2) * infill
+
+        assert np.all(masses[:, 1:]/masses[:, :-1] > 1), 'Mass is not increasing'
+        assert np.all((summed_masses[:-1] - hand_masses_y[1:-1]) / hand_masses_y[1:-1] < 0.01), "Mass array doesn't coincide with the analytical calculation"
+
+    def test_overall_inertia(self):
+        ...
