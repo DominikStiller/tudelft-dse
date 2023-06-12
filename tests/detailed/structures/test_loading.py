@@ -277,14 +277,16 @@ class TestBeam(TestCase):
             ]
         ).T * 1e6
         b = 10
-        x = np.array([1, 1, 1, 0, -1, -1, -1, 0])
-        z = np.array([0, 0.5, 1, 0.5, 0, -0.5, -1, -0.5])
+        x = np.array([[1, 1, 1, 0, -1, -1, -1, 0]])
+        z = np.array([[0, 0.5, 1, 0.5, 0, -0.5, -1, -0.5]])
         l = np.linspace(-b, 0, 100)
         parallelogram = Beam(
-            width=x,
-            height=z,
+            width=x.T * np.ones(np.size(l)),
+            height=z.T * np.ones(np.size(l)),
             length=l,
-            cross_section="constant",
+            cross_section=np.vstack((x, z)) * np.ones((np.size(l), 2, 1)),
+            material='Al/Si',
+            fixing_points=np.array([[0], [0]]) * np.ones(np.size(l))
         )
         Applied_Load = Force(
             magnitude=np.array(
