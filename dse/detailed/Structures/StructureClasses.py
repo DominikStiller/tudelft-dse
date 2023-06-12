@@ -331,18 +331,21 @@ class Beam:
                    ) / (Ixx * Izz - Ixz**2) - (Fy / np.sum(boomArea_nr, 0)) * np.ones(np.shape(boomArea_nr))
         return sigma_nr
 
-    def TorsionStress(self, tSkin, boomArea_nr):
+    def TorsionStress(self, tSkin, boomArea_nr, A_Airfoil):
         Vx = np.reshape(self.f_loading[:, 0], np.size(self.y))
         Vz = np.reshape(self.f_loading[:, 2], np.size(self.y))
         My = np.reshape(self.m_loading[:, 1], np.size(self.y))
-        A_Airfoil = self.AirfoilArea()
-        q_torsion = My / (2* A_Airfoil)
+        if A_Airfoil == 0:
+            A = self.AirfoilArea()
+        else:
+            A = A_Airfoil
+        q_torsion = My / (2 * A)
         x_booms, z_booms = np.split(np.reshape(self.section, (np.size(self.y), 2 * np.shape(self.x)[0])), 2, 1)
         if np.all(x_booms[:, 0] == x_booms[:, -1]):
             x_booms_nr = x_booms[:, :-1]
             z_booms_nr = z_booms[:, :-1]
         else:
-            x_booms_nr = np.cpoy(x_booms)
+            x_booms_nr = np.copy(x_booms)
             z_booms_nr = np.copy(z_booms)
             x_booms = np.hstack((x_booms_nr, np.reshape(x_booms_nr[:, 0], (np.shape(x_booms_nr)[0], 1))))
             z_booms = np.hstack((z_booms_nr, np.reshape(z_booms_nr[:, 0], (np.shape(z_booms_nr)[0], 1))))
@@ -366,7 +369,7 @@ class Beam:
             qb[i] = qb[i-1] + C * boomArea_nr[i] * (z_booms_nr[i] - NAz) + D * boomArea_nr[i] * (x_booms_nr[i] - NAx)
         qs0 = (np.sum((
                 qb * ((x_booms[1:] - x_booms_nr) * (z_booms_nr - NAz) +
-                      (z_booms[1:] - z_booms_nr) * (x_booms_nr - NAx))), 0)) / (2 * A_Airfoil)
+                      (z_booms[1:] - z_booms_nr) * (x_booms_nr - NAx))), 0)) / (2 * A)
         q_shear = qb + np.ones(np.shape(qb)) * qs0
         q_total = q_shear + q_torsion
         tau = q_total / tSkin
@@ -427,9 +430,9 @@ class Beam:
                 # Stress with repeating column for the first node for easy calculations for the boom areas
                 sigma = np.vstack((sigma_nr, sigma_nr[0]))
                 sigma[np.where(np.abs(sigma) <= 0.01)] = 0.1
-                tau = self.TorsionStress(tSkin, boomArea_nr)
+                tau = self.TorsionStress(tSkin, boomArea_nr, i)
 
-                if np.any(np.abs(sigma) > sigma_ult/n):
+                if np.any(np.abs(sigma[:-1]) > sigma_ult/n):
                     # Boom area calculations
                     boomAreaCopy = np.copy(boomArea_nr)
                     boomAreaCopy = self.BoomArea(boomAreaCopy, tSkin, boomDistance, sigma)

@@ -496,25 +496,26 @@ class TestBeam(TestCase):
 
     def test_internal_stress(self):
         from dse.detailed.Structures.StructureClasses import Beam, Force
-        x = np.hstack(
+        x = np.atleast_2d(np.hstack(
             (np.linspace(-1, 0, 25)[:-1],
              np.linspace(0, 1, 25)[:-1],
              np.linspace(1, 0, 25)[:-1],
              np.linspace(0, -1, 25)[:-1])
-        )
-        y = np.hstack(
+        ))
+        z = np.atleast_2d(np.hstack(
             (np.linspace(0, 1, 25)[:-1],
              np.linspace(1, 0, 25)[:-1],
              np.linspace(0, -1, 25)[:-1],
              np.linspace(-1, 0, 25)[:-1]
              )
-        )
+        ))
         rombus = Beam(
-            width=x,
-            height=y,
+            width=x.T * np.ones(100),
+            height=z.T * np.ones(100),
             length=5,
-            cross_section='constant',
-            material=materials['Al/Si']
+            cross_section=np.vstack((x, z)) * np.ones((100, 1, 1)),
+            material='Al/Si',
+            fixing_points=np.array([[0], [0]]) * np.ones(100)
         )
 
         dummy_force_2 = Force(
@@ -534,8 +535,10 @@ class TestBeam(TestCase):
             )
         )
 
+        A = (np.max(x) - np.min(x)) * (np.max(z) - np.min(z)) / 2
+
         rombus.add_loading(dummy_force_2)
-        rombus.InternalStress(0, 0, 2)
+        rombus.InternalStress(0, 0, A)
         assert np.shape(rombus.t) == (np.size(x), 100), 'rombus.t is not an array of the correct shape'
         assert np.all(rombus.t >= 0.001), 'The minimum thickness is smaller than 1mm'
         assert np.all(rombus.sigma <= 250e6/1.5)
