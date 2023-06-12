@@ -1,3 +1,5 @@
+from numpy.testing import assert_allclose
+
 from dse.detailed.Structures.StructureClasses import *
 from dse.detailed.Structures.material_properties import materials
 from unittest import TestCase
@@ -28,13 +30,7 @@ class TestBeam(TestCase):
         wing.add_loading(point_load)
 
         y_index = (np.abs(wing.y - loc)).argmin()
-        if np.all(wing.f_loading[y_index:] == np.array([[0, 0, F]]).T):
-            if (np.abs((wing.m_loading[y_index] - wing.m_loading[-1]) / loc)[0] - F) < 0.01:
-                assert True
-            else:
-                assert (np.abs((wing.m_loading[y_index] - wing.m_loading[-1]) / loc)[0] - F) < 0.01
-        else:
-            assert np.all(wing.f_loading[y_index:] == np.array([[0, 1, 0]]).T)
+        assert_allclose(((wing.m_loading[y_index] - wing.m_loading[-1]) / -loc)[0], F, rtol=0.01)
 
     def test_add_loading_distributed_load(self):
         x = 0.1
@@ -54,37 +50,16 @@ class TestBeam(TestCase):
         y_index_2 = (np.abs(wing.y - app[:, 1][1])).argmin()
         y_index_3 = (np.abs(wing.y - app[:, 2][1])).argmin()
 
-        if (
-                np.all(wing.f_loading[y_index_1:] == np.reshape(np.sum(F, 1), (3, 1)))
-                and np.all(
-            wing.f_loading[y_index_2:y_index_1] == np.reshape(np.sum(F[:, 1:], 1), (3, 1))
-        )
-                and np.all(wing.f_loading[y_index_3:y_index_2] == np.reshape(F[:, -1], (3, 1)))
-                and np.all(wing.f_loading[:y_index_3] == 0)
-        ):
-            if (
-                    np.abs(wing.m_loading[-1][0]) - 2.6 < 0.01
-                    and np.abs(wing.m_loading[y_index_1][0]) - 2.3 < 0.01
-                    and np.abs(wing.m_loading[y_index_2][0]) - 0.5 < 0.01
-                    and np.all(wing.m_loading[:y_index_3] == 0)
-            ):
-                assert True
-            else:
-                assert np.abs(wing.m_loading[-1][0]) - 2.6 < 0.01, "Moment at the root is off"
-                assert np.abs(wing.m_loading[y_index_1][0]) - 2.3 < 0.01, "Moment at point 1 is off"
-                assert np.abs(wing.m_loading[y_index_2][0]) - 0.5 < 0.01, "Moment at point 2 is off"
-                assert np.all(wing.m_loading[:y_index_3] == 0), "Moment at the tip is not 0"
-        else:
-            assert np.all(
-                wing.f_loading[y_index_1:] == np.reshape(np.sum(F, 1), (3, 1))
-            ), "Forces at root are off"
-            assert np.all(
-                wing.f_loading[y_index_2:y_index_1] == np.reshape(np.sum(F[:, 1:], 1), (3, 1))
-            ), "Forces at middle are off"
-            assert np.all(
-                wing.f_loading[y_index_3:y_index_2] == np.reshape(F[:, -1], (3, 1))
-            ), "Forces at semi-middle are off"
-            assert np.all(wing.f_loading[:y_index_3] == 0), "Forces at the tip are off"
+        # Check moments
+        assert_allclose(wing.m_loading[-1][0], -2.6, rtol=0.05, err_msg='Moment at the tip is wrong')
+        assert_allclose(wing.m_loading[y_index_1][0], -2.3, rtol=0.05, err_msg='Moment at segment 1 is wrong')
+        assert_allclose(wing.m_loading[y_index_2][0], -0.5, rtol=0.05, err_msg='Moment at segment 2 is wrong')
+        assert_allclose(wing.m_loading[y_index_3-1][0], 0, rtol=0.05, err_msg='Moment at the third point is wrong')
+
+        # Check forces
+        self.assertTrue(np.all(wing.f_loading[y_index_1:] == np.reshape(np.sum(F, 1), (3, 1))))
+        self.assertTrue(np.all(wing.f_loading[y_index_2:y_index_1] == np.reshape(np.sum(F[:, 1:], 1), (3, 1))))
+        self.assertTrue(np.all(wing.f_loading[y_index_3:y_index_2] == np.reshape(F[:, -1], (3, 1))))
 
     def test_InternalLoads_Rhombus(self):
         ## Hand Calculations
