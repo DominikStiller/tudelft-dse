@@ -122,6 +122,16 @@ class TestForce(TestCase):
 
 
 class TestBeam(TestCase):
+    # Functions that need testing:
+    # TorsionStress
+    # BoomArea
+    # calculate_mass
+    # rho
+    # masses
+    # youngs_mod
+    # overall_inertia
+    # design_joint
+
     def test_add_loading_point_load(self):
         from dse.detailed.Structures.StructureClasses import Beam, Force
 
@@ -542,3 +552,27 @@ class TestBeam(TestCase):
         assert np.shape(rombus.t) == (np.size(x), 100), 'rombus.t is not an array of the correct shape'
         assert np.all(rombus.t >= 0.001), 'The minimum thickness is smaller than 1mm'
         assert np.all(rombus.sigma <= 250e6/1.5)
+
+    def test_masses(self):
+        from dse.detailed.Structures.StructureClasses import Beam
+        from dse.detailed.Structures.material_properties import materials
+        x = 1
+        z = 1
+        y = 2
+
+        squareBeam = Beam(
+            width=x,
+            height=z,
+            length=y,
+            cross_section='square',
+            material='Al/Si',
+            fixing_points=np.array([[x/2], [z/2]]) * np.ones(100)
+        )
+
+        infill = 0.1
+        A = x * z * infill
+        squareBeam.Bi = A / np.shape(squareBeam.x)[0] * np.ones(np.shape(squareBeam.x))
+        masses = squareBeam.masses()
+
+        assert np.all(masses == masses[0]), 'Discrete masses are not constant'
+        assert np.sum(masses) == A * y * materials['Al/Si'].rho

@@ -120,10 +120,10 @@ class Beam:
         if type(width) == int or type(width) == float:
             if cross_section == 'square':
                 self.x = np.atleast_2d(np.hstack((
-                    np.zeros(19),
-                    np.linspace(0, width, 20)[:-1],
-                    np.ones(19)*width,
-                    np.linspace(-width, 0, 20)[:-1]
+                    np.zeros(20),
+                    np.linspace(0, width, 21)[:-1],
+                    np.ones(20)*width,
+                    np.linspace(width, 0, 21)[:-1]
                 ))).T * np.ones(np.size(self.y))
             else:
                 self.x = np.reshape(np.linspace(0, width, 100), (100, 1)) * np.ones(np.size(self.y))
@@ -138,10 +138,10 @@ class Beam:
         if type(height) == int or type(height) == float:
             if cross_section == 'square':
                 self.z = np.atleast_2d(np.hstack((
-                    np.linspace(0, height, 20)[:-1],
-                    np.ones(19) * height,
-                    np.linspace(height, 0, 20)[:-1],
-                    np.zeros(19)
+                    np.linspace(0, height, 21)[:-1],
+                    np.ones(20) * height,
+                    np.linspace(height, 0, 21)[:-1],
+                    np.zeros(20)
                 ))).T * np.ones(np.size(self.y))
             else:
                 self.z = np.reshape(np.linspace(0, height, 100), (100, 1)) * np.ones(np.size(self.y))
@@ -478,9 +478,14 @@ class Beam:
 
     def rho(self):
         rho = np.zeros(np.shape((self.Bi[:, :-1] * self.y[1:] - self.y[:-1])))
-        for i in range(np.shape(self.mat)[0] - 1):
-            for j in range(np.shape(self.mat)[1] - 1):
-                rho[i, j] = self.material_types[self.mat[i, j]].rho
+        if self.x[0,0] == self.x[-1, 0]:
+            for i in range(np.shape(self.mat)[0] - 1):
+                for j in range(np.shape(self.mat)[1] - 1):
+                    rho[i, j] = self.material_types[self.mat[i, j]].rho
+        else:
+            for i in range(np.shape(self.mat)[0]):
+                for j in range(np.shape(self.mat)[1] - 1):
+                    rho[i, j] = self.material_types[self.mat[i, j]].rho
         return rho
 
     def masses(self):
