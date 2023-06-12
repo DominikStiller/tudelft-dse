@@ -227,7 +227,7 @@ class Beam:
             # Calculate moments
             for j in range(len(self.y[y_point:])):
                 distance = np.array(
-                    [[np.mean(self.x), self.y[y_point + j], np.mean(self.z)]]
+                    [[self.fix[0][y_point + j], self.y[y_point + j], self.fix[1][y_point + j]]]
                 ).T - np.reshape(force.application[:, i], (3, 1))
                 self.m_loading[y_point + j] += np.reshape(
                     np.cross(force.F[:, i], distance.T), (3, 1)
@@ -383,7 +383,7 @@ class Beam:
             ) + tSkin[i] * boomDistance[i] / 6 * (2 + sigma[i + 1] / sigma[i])
         return boomAreaCopy
 
-    def InternalStress(self, boom_coordinates, interconnection, i):
+    def InternalStress(self, boom_coordinates, interconnection, i, title=None):
         if interconnection != 0:  # define the interconnection of all of the boom areas
             print("Interconnection between stringers still need to be implemented")
 
@@ -432,7 +432,7 @@ class Beam:
                 sigma[np.where(np.abs(sigma) <= 0.01)] = 0.1
                 tau = self.TorsionStress(tSkin, boomArea_nr, i)
 
-                if np.any(np.abs(sigma[:-1]) > sigma_ult/n):
+                if np.any(np.abs(sigma) > sigma_ult/n):
                     # Boom area calculations
                     boomAreaCopy = np.copy(boomArea_nr)
                     boomAreaCopy = self.BoomArea(boomAreaCopy, tSkin, boomDistance, sigma)
@@ -465,6 +465,8 @@ class Beam:
         # plt.axhline(sigma_ult)
         # plt.axhline(-sigma_ult)
         plt.plot(self.y, sigma.transpose())
+        if title is not None:
+            plt.title(title)
         plt.show()
 
     def calculate_mass(self):
