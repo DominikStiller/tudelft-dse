@@ -11,51 +11,144 @@ from tqdm import tqdm
 
 def size_rotor_blades():
     global rootBladeChord, tipBladeChord
-    rootBladeChord = 0.693
-    tipBladeChord = 0.347
 
 
     print(Fore.WHITE + '\n### Rotor blade sizing started ###\n')
     # Define the blade
-    bladeTwist = np.flip(np.radians(np.array([20.01066435, 15.27067334, 12.97291975, 11.55038814, 10.55750286,
-                                              9.81326113, 9.22850394,  8.75360237,  8.35851135,  8.02392466,
-                                              7.73691493,  7.48862104, 7.27297283,  7.08600653,  6.92558553,
-                                              6.79150814,  6.6861861,   6.61653976, 6.59931193, 6.67922986])))
-    cutout = 0.5
-    discretization = 20
+    frontBladeChord = np.flip(np.array([26,         13,          8.66666667,  6.5,         5.2,         4.33333333,
+  3.71428571,  3.25      ,  2.88888889,  2.6       ,  2.36363636,  2.16666667,
+  2.        ,  1.85714286,  1.73333333,  1.625     ,  1.52941176,  1.44444444,
+  1.36842105,  1.3       ,  1.23809524,  1.18181818,  1.13043478,  1.08333333,
+  1.04      ,  1.        ,  0.96296296,  0.92857143,  0.89655172,  0.86666667,
+  0.83870968,  0.8125    ,  0.78787879,  0.76470588,  0.74285714,  0.72222222,
+  0.7027027 ,  0.68421053,  0.66666667,  0.65      ,  0.63414634,  0.61904762,
+  0.60465116,  0.59090909,  0.57777778,  0.56521739,  0.55319149,  0.54166667,
+  0.53061224,  0.52      ,  0.50980392,  0.5       ,  0.49056604,  0.48148148,
+  0.47272727,  0.46428571,  0.45614035,  0.44827586,  0.44067797,  0.43333333,
+  0.42622951,  0.41935484,  0.41269841,  0.40625   ,  0.4       ,  0.39393939,
+  0.3880597 ,  0.38235294,  0.37681159,  0.37142857,  0.36619718,  0.36111111,
+  0.35616438,  0.35135135,  0.34666667,  0.34210526,  0.33766234,  0.33333333,
+  0.32911392,  0.325     ,  0.32098765,  0.31707317,  0.31325301,  0.30952381,
+  0.30588235,  0.30232558,  0.29885057,  0.29545455,  0.29213483,  0.28888889,
+  0.28571429,  0.2826087 ,  0.27956989,  0.27659574,  0.27368421,  0.27083333,
+  0.26804124,  0.26530612,  0.26262626,  0.26]))
+    frontBladeTwist = np.flip(np.radians(np.array([42.43378774, 41.14750545, 39.24159364, 36.96781713, 34.55063734, 32.15582014,
+ 29.8877177 , 27.80064951, 25.91407413, 24.22611721, 22.72353279, 21.38815179,
+ 20.20064245, 19.14248423, 18.19686297, 17.34896345, 16.58595097, 15.89680929,
+ 15.27212576, 14.70387011, 14.18518831, 13.71022028, 13.27394304, 12.87203799,
+ 12.50077967, 12.156943  , 11.83772601, 11.54068562, 11.26368411, 11.00484444,
+ 10.76251294, 10.53522794, 10.32169343, 10.12075678,  9.93138994,  9.75267339,
+  9.58378249,  9.42397582,  9.27258518,  9.12900693,  8.99269456,  8.86315225,
+  8.73992928,  8.62261514,  8.51083527,  8.40424736,  8.30253805,  8.20542009,
+  8.11262975,  8.02392466,  7.93908175,  7.85789554,  7.78017659,  7.70575005,
+  7.63445451,  7.56614085,  7.50067124,  7.43791833,  7.3777644 ,  7.32010074,
+  7.26482696,  7.21185048,  7.16108605,  7.11245529,  7.06588638,  7.02131364,
+  6.97867738,  6.93792356,  6.89900368,  6.86187461,  6.82649849,  6.79284272,
+  6.7608799 ,  6.73058793,  6.70195011,  6.67495526,  6.64959799,  6.62587902,
+  6.60380552,  6.58339167,  6.56465925,  6.5476384 ,  6.53236861,  6.51889984,
+  6.50729399,  6.49762663,  6.48998925,  6.48449195,  6.48126692,  6.48047276,
+  6.48230009,  6.48697869,  6.49478693,  6.50606422,  6.52122773,  6.54079533,
+  6.5654176 ,  6.59592351,  6.63338738,  6.67922986])))
 
-    twist = np.zeros(discretization * (np.size(bladeTwist)-1))
-    for i in range(np.size(bladeTwist)-1):
-        twist[i*discretization:i*discretization+discretization] = np.linspace(bladeTwist[i], bladeTwist[i+1], discretization)
+    rearBladeChord = np.flip(np.array([26.,         13.,          8.66666667,  6.5,         5.2,         4.33333333,
+  3.71428571,  3.25      ,  2.88888889,  2.6       ,  2.36363636,  2.16666667,
+  2.        ,  1.85714286,  1.73333333,  1.625     ,  1.52941176,  1.44444444,
+  1.36842105,  1.3       ,  1.23809524,  1.18181818,  1.13043478,  1.08333333,
+  1.04      ,  1.        ,  0.96296296,  0.92857143,  0.89655172,  0.86666667,
+  0.83870968,  0.8125    ,  0.78787879,  0.76470588,  0.74285714,  0.72222222,
+  0.7027027 ,  0.68421053,  0.66666667,  0.65      ,  0.63414634,  0.61904762,
+  0.60465116,  0.59090909,  0.57777778,  0.56521739,  0.55319149,  0.54166667,
+  0.53061224,  0.52      ,  0.50980392,  0.5       ,  0.49056604,  0.48148148,
+  0.47272727,  0.46428571,  0.45614035,  0.44827586,  0.44067797,  0.43333333,
+  0.42622951,  0.41935484,  0.41269841,  0.40625   ,  0.4       ,  0.39393939,
+  0.3880597 ,  0.38235294,  0.37681159,  0.37142857,  0.36619718,  0.36111111,
+  0.35616438,  0.35135135,  0.34666667,  0.34210526,  0.33766234,  0.33333333,
+  0.32911392,  0.325     ,  0.32098765,  0.31707317,  0.31325301,  0.30952381,
+  0.30588235,  0.30232558,  0.29885057,  0.29545455,  0.29213483,  0.28888889,
+  0.28571429,  0.2826087 ,  0.27956989,  0.27659574,  0.27368421,  0.27083333,
+  0.26804124,  0.26530612,  0.26262626,  0.26      ]))
+    rearBladeTwist = np.flip(np.radians(np.array([ 31.8609133,   33.78500837,  35.43535859, -23.15916849, -25.97132754,
+ -31.18604613, -40.90954726, -48.97296653, -60.27684071, -14.97638318,
+ -13.60117457, -12.50470998, -11.61168686,  37.96510886,  37.37429069,
+  36.74423084,  36.07711508,  35.38519305,  34.67723838,  33.96022864,
+  33.23987975,  32.52087892,  31.80704483,  31.10145937,  30.40658074,
+  29.72434099,  29.05622968,  28.40336557,  27.76655785,  27.14635821,
+  26.5431053 ,  25.95696239,  25.38794934,  24.83596973,  24.30083364,
+  23.78227696,  23.27997755,  22.7935688 ,  22.32265093,  21.8668004,
+  21.4255777 ,  20.99853373,  20.58521509,  20.18516831,  19.79794333,
+  19.4230962 ,  19.0601913 ,  15.17840633,  13.82929334,  12.89977478,
+  12.18362701,  11.60043421,  11.10896107,  10.68483948,  10.31233707,
+   9.98065934,   9.68206194,   9.41079541,   9.1624739 ,   8.93367707,
+   8.72168811,   8.52431527,   8.33976668,   8.16656048,   8.00345875,
+   7.8494182 ,   7.70355272,   7.56510447,   7.4334215 ,   7.30793995,
+   7.18817005,   7.07368484,   6.9641111 ,   6.85912203,   6.75843132,
+   6.6617884 ,   6.56897466,   6.47980041,   6.39410272,   6.31174383,
+   6.23261033,   6.15661297,   6.08368736,   6.01379553,   5.94692877,
+   5.88311202,   5.82241055,   5.76493984,   5.71088033,   5.66049991,
+   5.61418872,   5.57251537,   5.53632148,   5.50689046,   5.48627199,
+   5.47797263,   5.48865277,   5.53334028,   5.65971286,   5.64894463])))
 
+    cutout = 0.47
+    discretization = 5
 
-    twist = twist[:np.size(twist)-round(cutout*np.size(twist))]
-    l = np.linspace(-R, -R * cutout, np.size(twist))
+    frontTwist = np.zeros(discretization * (np.size(frontBladeTwist)-1))
+    for i in range(np.size(frontBladeTwist)-1):
+        frontTwist[i*discretization:i*discretization+discretization] = np.linspace(frontBladeTwist[i], frontBladeTwist[i+1], discretization)
 
-    bladeChord = np.linspace(tipBladeChord, rootBladeChord, np.size(twist))
-    sect = np.vstack((Airfoil['x'], Airfoil['z']))
-    sect = np.ones((np.size(twist), 2, np.size(Airfoil['x']))) * sect
-    sect = y_transformation(twist, sect) * np.reshape(bladeChord, (np.size(bladeChord), 1, 1))
+    rearTwist = np.zeros(discretization * (np.size(rearBladeTwist)-1))
+    for i in range(np.size(frontBladeTwist)-1):
+        rearTwist[i*discretization:i*discretization+discretization] = np.linspace(rearBladeTwist[i], rearBladeTwist[i+1], discretization)
+
+    frontTwist = frontTwist[:np.size(frontTwist)-round(cutout*np.size(frontTwist))]
+    l_front = np.linspace(-R, -R * cutout, np.size(frontTwist))
+
+    rearTwist = rearTwist[:np.size(rearTwist)-round(cutout*np.size(rearTwist))]
+    l_rear = np.linspace(-R, -R * cutout, np.size(frontTwist))
+
+    frontChord = np.linspace(frontBladeChord[0],
+                             frontBladeChord[np.size(frontBladeChord) - round(cutout * np.size(frontBladeChord))],
+                             np.size(frontTwist))
+
+    rearChord = np.linspace(rearBladeChord[0],
+                             rearBladeChord[np.size(rearBladeChord) - round(cutout * np.size(rearBladeChord))],
+                             np.size(rearTwist))
+
+    frontSect = np.vstack((Airfoil['x'], Airfoil['z']))
+    frontSect = np.ones((np.size(l_front), 2, 1)) * frontSect * np.reshape(frontChord, (np.size(frontChord), 1, 1))
+    frontSect = y_transformation(frontTwist, frontSect)
+
+    rearSect = np.vstack((Airfoil['x'], Airfoil['z']))
+    rearSect = np.ones((np.size(l_rear), 2, 1)) * rearSect * np.reshape(rearChord, (np.size(rearChord), 1, 1))
+    rearSect = y_transformation(rearTwist, rearSect)
 
     global Xac_rotor, Zac_rotor
-    Xac_rotor = np.max(Airfoil['x']) * rootBladeChord / 4
-    Zac_rotor = 0.077 * tipBladeChord / 20
+    Xac_rotor = np.max(Airfoil['x']) * frontChord[-1] / 4
+    Zac_rotor = 0.077 * frontChord[0] / 20
 
-    blade = Beam(
-        width=sect[:, 0].T,
-        height=sect[:, 1].T,
-        length=l,
-        cross_section=sect,
+    frontBlade = Beam(
+        width=frontSect[:, 0].T,
+        height=frontSect[:, 1].T,
+        length=l_front,
+        cross_section=frontSect,
         material='CFRCy',
-        fixing_points=np.array([[Xac_rotor], [Zac_rotor]]) * np.ones(np.size(l))
+        fixing_points=np.array([[Xac_rotor], [Zac_rotor]]) * np.ones(np.size(l_front))
+    )
+
+    rearBlade = Beam(
+        width=rearSect[:, 0].T,
+        height=rearSect[:, 1].T,
+        length=l_rear,
+        cross_section=rearSect,
+        material='CFRCy',
+        fixing_points=np.array([[Xac_rotor], [Zac_rotor]]) * np.ones(np.size(l_front))
     )
 
     # Define the applied forces
-    liftOffperBlade = np.ones(np.shape(twist)) * 1.1 * MTOM * g / 24 / np.size(twist)
-    application = np.ones(np.shape(twist)) * np.array([[Xac_rotor], [-R], [Zac_rotor]])
-    application[1] = l
+    liftOffperBlade = np.ones(np.shape(frontTwist)) * 1.1 * MTOM * g / 32 / np.size(frontTwist)
+    application = np.ones(np.shape(frontTwist)) * np.array([[Xac_rotor], [-R], [Zac_rotor]])
+    application[1] = l_front
 
-    liftOffForce = Force(
+    liftOffForce_front = Force(
         magnitude=liftOffperBlade * np.array(
             [
                 [-1 / 54.178],
@@ -66,52 +159,62 @@ def size_rotor_blades():
         point_of_application=application
     )
 
-    diff = 100
-    rotorMass = 250 / 9 / np.size(l)
-    while diff > 0.01:
-        blade.unload()
+    application2 = np.ones(np.shape(rearTwist)) * np.array([[Xac_rotor], [-R], [Zac_rotor]])
+    application2[1] = l_rear
+    liftOffForce_rear = Force(
+        magnitude=liftOffperBlade * np.array(
+            [
+                [-1 / 54.178],
+                [0],
+                [1]
+            ]
+        ),
+        point_of_application=application2
+    )
 
-        rotationForce = rotorMass * rpm**2 * l
-        rotatingForce = Force(
-            magnitude=np.vstack((np.zeros(np.shape(rotationForce)), rotationForce, np.zeros(np.shape(rotationForce)))),
+    diff = 100
+    rotorMass = 250 / 9 / np.size(l_front)
+    print('Iteration begun')
+    while diff > 0.01:
+        frontBlade.unload()
+        rearBlade.unload()
+
+        rotationForce_front = rotorMass * rpm**2 * l_front
+        rotatingForce_front = Force(
+            magnitude=np.vstack((np.zeros(np.size(rotationForce_front)), rotationForce_front, np.zeros(np.size(rotationForce_front)))),
             point_of_application=application
         )
 
-        blade.add_loading(liftOffForce)
-        blade.add_loading(rotatingForce)
-        blade.plot_internal_loading()
+        rotationForce_rear = rotorMass * rpm ** 2 * l_rear
+        rotatingForce_rear = Force(
+            magnitude=np.vstack((np.zeros(np.size(rotationForce_rear)), rotationForce_rear,
+                                 np.zeros(np.size(rotationForce_rear)))),
+            point_of_application=application
+        )
 
-        blade.InternalStress(0, 0, 0)
-        blade.calculate_mass()
+        frontBlade.add_loading(liftOffForce_front)
+        frontBlade.add_loading(rotatingForce_front)
+        frontBlade.plot_internal_loading()
 
-        diff = np.abs(rotorMass - blade.m - 10) / (rotorMass - 10)
-        rotorMass = np.hstack((np.sum(blade.masses(), 0), np.array([0]))) + 10 * np.ones(np.size(l)) / np.size(l)
+        rearBlade.add_loading(liftOffForce_rear)
+        rearBlade.add_loading(rotatingForce_rear)
+        rearBlade.plot_internal_loading()
 
-    boomMoments = blade.m_loading[-1] + R*cutout * np.array(
-        [
-            [blade.f_loading[-1][2][0]],
-            [0],
-            [blade.f_loading[-1][0][0]]
-        ]
-    )
+        frontBlade.InternalStress(0, 0, 0)
+        frontBlade.calculate_mass()
 
-    Mx = boomMoments[0]
-    Mz = boomMoments[2]
-    Fy = blade.f_loading[-1][1][0]
-    maxStressPos = np.arctan(Mx / Mz)
-    rodMat = materials['CFRCy']
-    D = (Fy + np.sqrt(
-        Fy ** 2 + 8 * rodMat.compressive / 1.5 * np.pi * 0.001 * (Mz * np.cos(maxStressPos) + Mx * np.sin(maxStressPos)))) / (
-                2 * rodMat.compressive / 1.5 * np.pi * 0.001)
+        rearBlade.InternalStress(0, 0, 0)
+        rearBlade.calculate_mass()
 
-    rod_weight2 = np.pi * D * 0.001 * R * (1 - cutout) * rodMat.rho
-    print(f'Minimum rod diameter = {1000*D} [mm], with a weight of {rod_weight2} [kg]')
+        diff = np.maximum(np.abs(rotorMass - frontBlade.m - 10) / (rotorMass - 10),
+                          np.abs(rotorMass - rearBlade.m - 10) / (rotorMass - 10))
+        rotorMass = np.hstack((np.sum(frontBlade.masses(), 0), np.array([0]))) + 10 * np.ones(np.size(l_front)) / np.size(l_front)
 
     def I(w, t):
         return w * t ** 3 + 2 * w * t * (0.073 - t) / 2 + t * (0.073 - 2 * t) ** 3 / 6
 
     required_I = 2.300534277610573e-06
-    for i in np.linspace(0.001, rootBladeChord, 1000):
+    for i in np.linspace(0.001, frontChord[-1], 1000):
         if I(i, 0.001) > required_I:
             break
 
@@ -121,14 +224,15 @@ def size_rotor_blades():
 
     m_r = rotorMass * 24
 
-    print(f'Each blade weights {np.round(blade.m, 2) + 10} kg, including 10 kg of reinforcements')
-    print(f'Total rotor mass = {np.round(24 * (blade.m + 10), 2)} kg')
+    print(f'Each front blade weights {np.round(frontBlade.m, 2) + 10} kg, including 10 kg of reinforcements')
+    print(f'Each rear blade weights {np.round(rearBlade.m, 2) + 10} kg, including 10 kg of reinforcements')
+    print(f'Total rotor mass = {np.round(12 * (frontBlade.m + 10) + 12 * (rearBlade.m + 10), 2)} kg')
 
-    blade.overall_inertia()
-    wn_rotor, x_rotor, U_rotor = rotor_vibrations(blade)
+    wn_rotor, x_rotor, U_rotor = rotor_vibrations(frontBlade)
+    wn_rotor, x_rotor, U_rotor = rotor_vibrations(rearBlade)
     m_prop = np.sum(m_r) + rod_weight_1
     print(Fore.BLUE + f'The total mass of the propulsion subsystem is {round(m_prop, 2)} [kg]')
-    return blade, m_prop, D
+    return frontBlade, rearBlade, m_prop
 
 
 def plot_mode_response(x, U):
@@ -156,8 +260,8 @@ def equivalent_load(deflection, position, E, I):
 
 def rotor_vibrations(rotorBlade):
     # Parameters of the rod
-    cutout = 0.5
-    L1 = R
+    cutout = 0.47
+    L1 = R * cutout
     E1 = materials['CFRCy'].E
     I0 = np.mean(np.sum((rotorBlade.Bi * rotorBlade.z[:-1]**2), 0))
     A0 = np.mean(np.sum(rotorBlade.Bi, 0))
@@ -608,7 +712,7 @@ if __name__ == '__main__':
     Airfoil = pd.read_csv("S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
 
     # Rotors
-    rotorBlade, mr, D = size_rotor_blades()
+    frontBlade, rearBlade, mr = size_rotor_blades()
 
     # Wings
     print(Fore.WHITE + '\n### Wing sizing started ###\n')
