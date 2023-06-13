@@ -3,15 +3,16 @@ import numpy as np
 
 class Fuselage:
 
-    def __init__(self, cabin_width, cabin_height, fuselage_length):
+    def __init__(self, cabin_width, cabin_height, fuselage_length, fuselage_area):
 
         # Useful characteristics
-        self.cab_w = cabin_width
-        self.cab_h = cabin_height
+        self.width = cabin_width
+        self.height = cabin_height
         self.length = fuselage_length
+        self.area = fuselage_area
 
-        self.s = 2 * np.pi * self.r_main * self.cab_l + 0.5 * 4 * np.pi * (
-                    self.r_main ** 2 + ((self.d_main + self.L_D_nose * self.d_main) / 4) ** 2)
+        self.r_main = (self.width + self.height)/4
+        self.d_main = self.r_main * 2
 
         self.cd = self.calculate_cd()
 
@@ -39,17 +40,12 @@ class Fuselage:
 
     #  --------- Methods for calculating characteristics --------- #
 
-    # def effective_fuselage_diameter(self, height_factor):
-    #     """ Returns dimensions [...]. Inputs are cabin_diameter, cabin_length, height_factor, all in [m] """
-    #     d = self.cab_d * (1 + height_factor)
-    #     return d
-
     def calculate_cd(self):
         """ Calculates cd [-] based on the fuselage characteristics """
         # Calculations in excel - based on Torenbeek
         perfect_cylinder_area = 2 * np.pi * self.r_main * (self.r_main + self.length)
-        CdS = 0.0031 * 1 * self.length * self.d_main  # (Torenbeek page 150) # This is Cd * S_factor. Not real S.
-        S_ratio = 0.5 * np.pi * self.length * self.d_main  # (Torenbeek page 150)
+        CdS = 0.0031 * 1.15 * self.length * (self.height + self.width)  # (Torenbeek page 150) # This is Cd * S_factor. Not real S.
+        S_ratio = 0.5 * np.pi * self.length * (self.height + self.width)/2  # (Torenbeek page 150)
 
         # The  aerodynamic format of the current shape surely contributes less to drag than a cylinder of equal area.
         # In order to account for this, this ratio is calculated and applied to the hypothetical fully cylindrical
@@ -62,7 +58,7 @@ class Fuselage:
     def drag_simulation(self, velocity, air_density):
         """ Calculates fuselage drag [N] based on dynamic pressure. It takes velocity [m/s] and air density [kg/m^3] """
         q = 0.5 * air_density * velocity ** 2
-        drag_force = self.cd * self.s * q
+        drag_force = self.cd * self.area * q
         return drag_force
 
 
@@ -107,34 +103,27 @@ class Fuselage:
 
 # Testing
 
-cabin_diameter = 1.8
-cabin_length = 4
-L_D_nose = 1.5
-L_D_tail = 1
+cabin_width = 1.5
+cabin_height = 1.8
+fuselage_length = 5.72
+fuselage_area = 25.88
 
-fuselage = Fuselage(cabin_diameter, cabin_length, L_D_nose, L_D_tail)
 
-print(f' D:{fuselage.cab_d}        L:{fuselage.length}       S:{round(fuselage.s, 3)}        cd:{round(fuselage.cd, 5)}')
+fuselage = Fuselage(cabin_width, cabin_height, fuselage_length, fuselage_area)
+
+print(f' Width:{fuselage.width}        Height:{fuselage.height}       Length:{round(fuselage.length, 3)}    Area:{round(fuselage.area, 5)}     cd:{round(fuselage.cd, 5)}')
 
 v = 111
-rho = 0.015
-drag = fuselage.drag_simulation(v, rho)
+rho = 0.01
+drag = round(fuselage.drag_simulation(v, rho),2)
 # drag = round(drag, 3)
-print("drag force: ", drag)
+print("drag force: ", drag, "[N]")
 
 """
 #  --------------------------------  TO DO  --------------------------------  #
 
--> Fix calculations and results based on the new excel sheet
+V -> Fix calculations and results based on the new excel sheet
 -> Apply changes to the unit tests.
 
 """
-print()
-
-nose_area = Fuselage.area_sphere(2.075)/2
-cabin_area = Fuselage.area_cabin(1.66, 2)
-rear_area = Fuselage.area_sphere(1.66)/2
-
-total_area = nose_area + cabin_area + rear_area
-print(f'Nose area: {nose_area}  \n  cabin area: {cabin_area} \n  rear area: {rear_area}  \n  total area: {total_area}')
 
