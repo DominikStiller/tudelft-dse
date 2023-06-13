@@ -7,6 +7,7 @@ import vibration_toolbox as vtb
 import numpy as np
 import pandas as pd
 import csv
+import scipy as sp
 
 
 def xflr_forces(filename, q, b, adrian=None):
@@ -590,6 +591,64 @@ class Beam:
         else:
             print(f'The lightest option is to have 2 rows of {n1} rivets of {D1 * 1e3} mm in diameter')
             return n1, D1
+
+
+    def buckling(self):
+        ## Wingbox Geometry
+        y = self.y
+        x = self.x
+
+        rho = self.rho()  # [kg/m3] The density of the ribs
+        A_rib = self.AirfoilArea() * 0.1  # [m2] Area of the ribes
+        t_rib = 0.001  # [m] thickness of the ribs
+        m_rib = np.hstack((rho[0], rho[0, 0])) * A_rib * t_rib  # [kg] mass of a rib
+        A_str = 0.04 * 0.001  # [m2] Area of the stringers
+        E = np.mean(self.youngs_mod(), 0)  # [GPa]
+        t = np.mean(self.t, 0)
+
+        sigma = self.sigma
+        iteration_mass = []
+        mass = 0
+        ItInfo = []
+        for i in range(int(len(y) / 2)):  # Guess number of ribs
+            N_ribs = i
+            a = max(abs(y)) / (N_ribs + 1)
+            strdis = []
+            sig = []
+            dy = int(len(y) / (N_ribs + 1)) - 1
+            for j in range(i + 1):  # Iterate over sections
+                sig_crit = 1e10
+                k = -1
+                yi = j * int(len(y) / (N_ribs + 1))
+                yi1 = (j + 1) * int(len(y) / (N_ribs + 1))
+                while np.any(sigma[:, yi:yi1] < sig_crit):
+                    k += 1
+                    N_str = k
+                    b = max(abs(x[:, yi])) / (N_str + 1)
+                    if a / b < 4.5:
+                        Kc = -0.1456 * (a / b) ** 3 + 1.6039 * (a / b) ** 2 - 5.9531 * a / b + 13.875
+                    else:
+                        Kc = 6
+                    sig_crit = -Kc * np.mean(E[yi:yi1]) * (np.mean(t[yi:yi1]) / b) ** 2
+                if k == -1:
+                    k = 0
+                    N_str = k
+                mass += N_str * A_str * np.min(rho) * abs(
+                    y[int(j * dy)] - y[int(((j + 1) * dy))]) + m_rib[int(((j + 1) * dy))]
+                strdis.append(N_str)
+                sig.append(sig_crit)
+            iteration_mass.append(mass)
+            ItInfo.append([mass, strdis, sig])
+        np.array(iteration_mass)
+        I = np.where(iteration_mass[1:] == np.min(iteration_mass[1:]))[0][0]
+        print(f"The best stringer distribution is {ItInfo[I + 1][1]}, having a mass of {ItInfo[I + 1][0]} [kg]")
+        N_ribs = len(ItInfo[I + 1][1])
+        for j in range(N_ribs):
+            yi = j * int(len(y) / (N_ribs + 1))
+            yi1 = (j + 1) * int(len(y) / (N_ribs + 1))
+            plt.hlines(ItInfo[I + 1][2][j], y[yi], y[yi1])
+        return ItInfo[I + 1]
+
 
 
     def plot_internal_loading(self):
