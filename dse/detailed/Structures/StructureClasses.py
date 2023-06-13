@@ -375,13 +375,11 @@ class Beam:
         for i in range(len(x_booms_nr)):
             if x_booms[i,0] == x_booms[i + 1,0]:
                 d.append((x_booms[i] - x0))
-                print('K')
             else:
                 a = (z_booms[i+1]-z_booms[i])/(x_booms[i]-x_booms[i+1])
                 b = 1
                 c = (x_booms[i+1] * z_booms[i] - x_booms[i] * z_booms[i+1])/(x_booms[i]-x_booms[i+1])
                 d.append(abs(a * x0 + b * z0 + c)/np.sqrt(a**2 + b**2))
-                print('K')
         d = np.array(d)
         qs0 = (-My - np.sum(qb * l * d, 0))/(2 * A)
         q_total = qb + np.ones(np.shape(qb)) * qs0
