@@ -3,21 +3,15 @@ import numpy as np
 
 class Fuselage:
 
-    def __init__(self, cabin_diameter, cabin_length, L_D_nose, L_D_tail):
-        # Useful info
-        self.L_D_nose = L_D_nose
-        self.L_D_tail = L_D_tail
+    def __init__(self, cabin_width, cabin_height, fuselage_length):
 
         # Useful characteristics
-        self.cab_d = cabin_diameter
-        self.cab_l = cabin_length
+        self.cab_w = cabin_width
+        self.cab_h = cabin_height
+        self.length = fuselage_length
 
-        self.d_main = self.cab_d
-        self.r_main = self.d_main / 2
-
-        self.length = self.cab_l + (self.L_D_nose * self.d_main) + (self.L_D_tail * self.d_main)
         self.s = 2 * np.pi * self.r_main * self.cab_l + 0.5 * 4 * np.pi * (
-                self.r_main ** 2 + ((self.d_main + self.L_D_nose * self.d_main) / 4) ** 2)
+                    self.r_main ** 2 + ((self.d_main + self.L_D_nose * self.d_main) / 4) ** 2)
 
         self.cd = self.calculate_cd()
 
@@ -113,8 +107,8 @@ class Fuselage:
 
 # Testing
 
-cabin_diameter = 1.66
-cabin_length = 2
+cabin_diameter = 1.8
+cabin_length = 4
 L_D_nose = 1.5
 L_D_tail = 1
 
@@ -143,3 +137,4 @@ rear_area = Fuselage.area_sphere(1.66)/2
 
 total_area = nose_area + cabin_area + rear_area
 print(f'Nose area: {nose_area}  \n  cabin area: {cabin_area} \n  rear area: {rear_area}  \n  total area: {total_area}')
+
