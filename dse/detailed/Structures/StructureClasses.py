@@ -332,15 +332,16 @@ class Beam:
                    ) / (Ixx * Izz - Ixz**2) - (Fy / np.sum(boomArea_nr, 0)) * np.ones(np.shape(boomArea_nr))
         return sigma_nr
 
-    def TorsionStress(self, tSkin, boomArea_nr, A_Airfoil):
+    def TorsionStress(self, boomArea_nr, A_Airfoil):
         Vx = np.reshape(self.f_loading[:, 0], np.size(self.y))
         Vz = np.reshape(self.f_loading[:, 2], np.size(self.y))
         My = np.reshape(self.m_loading[:, 1], np.size(self.y))
+        x0 = self.fix[0]
+        z0 = self.fix[1]
         if A_Airfoil == 0:
             A = self.AirfoilArea()
         else:
             A = A_Airfoil
-        q_torsion = My / (2 * A)
         x_booms, z_booms = np.split(np.reshape(self.section, (np.size(self.y), 2 * np.shape(self.x)[0])), 2, 1)
         if np.all(x_booms[:, 0] == x_booms[:, -1]):
             x_booms_nr = x_booms[:, :-1]
@@ -368,13 +369,21 @@ class Beam:
 
         for i in range(1, len(qb[:,0])):
             qb[i] = qb[i-1] + C * boomArea_nr[i] * (z_booms_nr[i] - NAz) + D * boomArea_nr[i] * (x_booms_nr[i] - NAx)
-        qs0 = (np.sum((
-                qb * ((x_booms[1:] - x_booms_nr) * (z_booms_nr - NAz) +
-                      (z_booms[1:] - z_booms_nr) * (x_booms_nr - NAx))), 0)) / (2 * A)
-        q_shear = qb + np.ones(np.shape(qb)) * qs0
-        q_total = q_shear + q_torsion
-        tau = q_total / tSkin
-        return tau
+        l = np.sqrt((x_booms[1:] - x_booms[:-1]) ** 2 + (z_booms[1:] - z_booms[:-1]) ** 2)
+        d = []
+
+        for i in range(len(x_booms_nr)):
+            if x_booms[i,0] == x_booms[i + 1,0]:
+                d.append((x_booms[i] - x0))
+            else:
+                a = (z_booms[i+1]-z_booms[i])/(x_booms[i]-x_booms[i+1])
+                b = 1
+                c = (x_booms[i+1] * z_booms[i] - x_booms[i] * z_booms[i+1])/(x_booms[i]-x_booms[i+1])
+                d.append(abs(a * x0 + b * z0 + c)/np.sqrt(a**2 + b**2))
+        d = np.array(d)
+        qs0 = (-My - np.sum(qb * l * d, 0))/(2 * A)
+        q_total = qb + np.ones(np.shape(qb)) * qs0
+        return q_total
 
     def BoomArea(self, boomAreaCopy, tSkin, boomDistance, sigma):
         # Update the boom areas for the given stress.
@@ -431,8 +440,8 @@ class Beam:
                 # Stress with repeating column for the first node for easy calculations for the boom areas
                 sigma = np.vstack((sigma_nr, sigma_nr[0]))
                 sigma[np.where(np.abs(sigma) <= 0.01)] = 0.1
-                tau = self.TorsionStress(tSkin, boomArea_nr, i)
-
+                q_total = self.TorsionStress(boomArea_nr, i)
+                tau = q_total / tSkin
                 if np.any(np.abs(sigma) > sigma_ult/n):
                     # Boom area calculations
                     boomAreaCopy = np.copy(boomArea_nr)

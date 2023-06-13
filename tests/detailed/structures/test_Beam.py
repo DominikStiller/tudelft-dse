@@ -182,6 +182,55 @@ class TestBeam(TestCase):
         assert_allclose(Ixz[-1], Ixz_hand, atol=1e-5, err_msg='The Ixz is off')
         assert_allclose(sigma_nr[:, -1], sigma_hand.T[0], rtol=1e-3, err_msg='The stresses are wrong')
 
+    def test_ShearLoads_Wingbox(self):
+        ## Hand Calculations
+        q_total_hand = np.array(
+            [
+                [12.72, -5.32, -34.18, -37.79, -34.18, -5.32, 12.72, 17.05]
+            ]
+        ).T * 1e3 * np.ones(100)
+        b = 10
+        x = np.array([[0.6, 0.36, 0.12, 0, 0, .12, .36, .6, .6]])
+        z = np.array([[0.03, 0.1, .1, 0.05, -0.05, -0.1, -0.1, -0.03, 0.03]])
+        l = np.linspace(-b, 0, 100)
+        boomArea_nr = np.array([[0.0002, 0.00025, 0.0004, 0.0001, 0.0001, 0.0004, 0.00025, 0.0002,]]).T * np.ones(len(l))
+        wingbox = Beam(
+            width=x.T * np.ones(np.size(l)),
+            height=z.T * np.ones(np.size(l)),
+            length=l,
+            cross_section=np.vstack((x, z)) * np.ones((np.size(l), 2, 1)),
+            material='Al/Si',
+            fixing_points=np.array([[0], [0]]) * np.ones(np.size(l))
+        )
+        Applied_Load = Force(
+            magnitude=np.array(
+                [
+                    [0],
+                    [0],
+                    [10000]
+                ]
+            ),
+            point_of_application=np.array(
+                [
+                    [0.12],
+                    [-b],
+                    [0]
+                ]
+            )
+        )
+        wingbox.add_loading(Applied_Load)
+
+        x_booms_nr, z_booms_nr = np.split(
+            np.reshape(wingbox.section, (np.size(wingbox.y), 2 * np.shape(wingbox.x)[0])), 2,
+            1)
+        if np.all(x_booms_nr[:, 0] == x_booms_nr[:, -1]):
+            x_booms_nr = x_booms_nr[:, :-1]
+            z_booms_nr = x_booms_nr[:, :-1]
+
+
+        q_total = wingbox.TorsionStress(boomArea_nr=boomArea_nr, A_Airfoil=97200 * 1e-6)
+        assert_allclose(q_total, q_total_hand, rtol=1e-3, err_msg='The stresses are wrong')
+
     def test_stress_calculations(self):
         x = np.atleast_2d(np.hstack(
             (np.linspace(-1, 0, 25)[:-1],
