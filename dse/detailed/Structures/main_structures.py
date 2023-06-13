@@ -1,12 +1,11 @@
-from StructureClasses import Beam, Force, xflr_forces
-from rotor_sizing import y_transformation
-from material_properties import materials
+from dse.detailed.Structures.StructureClasses import Beam, Force, xflr_forces
+from dse.detailed.Structures.rotor_sizing import y_transformation
+from dse.detailed.Structures.material_properties import materials
 import vibration_toolbox as vtb
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from colorama import Fore
-from tqdm import tqdm
 
 
 def size_rotor_blades():
@@ -258,12 +257,15 @@ def equivalent_load(deflection, position, E, I):
     return P
 
 
-def rotor_vibrations(rotorBlade):
-    # Parameters of the rod
-    cutout = 0.47
-    L1 = R
+def rotor_vibrations(rotorBlade, reinforce=True, overwrite_I=None):
+    L1 = np.abs(np.min(rotorBlade.y))
     E1 = materials['CFRCy'].E
-    I0 = np.mean(np.sum((rotorBlade.Bi * rotorBlade.z[:-1]**2), 0))
+    if np.shape(rotorBlade.Bi) == np.shape(rotorBlade.z[:-1]):
+        I0 = np.mean(np.sum((rotorBlade.Bi * rotorBlade.z[:-1]**2), 0))
+    else:
+        I0 = np.mean(np.sum((rotorBlade.Bi * rotorBlade.z ** 2), 0))
+    if overwrite_I is not None:
+        I0 = overwrite_I
     A0 = np.mean(np.sum(rotorBlade.Bi, 0))
 
     print('\nVibration data:')
@@ -277,48 +279,53 @@ def rotor_vibrations(rotorBlade):
 
     print(f'Original natural freq: {np.min(w)}')
 
-    reinforcement_area = 0
-    z_NA = np.sum(rotorBlade.Bi*rotorBlade.z[:-1], 0)/np.sum(rotorBlade.Bi, 0)
-    z_max = np.max(rotorBlade.z, 0)
-    arm = np.mean(z_max - z_NA)
-    dA = 0.0001
-    while np.min(w) < 20:
-        A0 += dA
-        I0 += dA * arm**2
-        reinforcement_area += dA
-        if reinforcement_area >= 1:
-            raise ValueError('The added area is too large')
+    if reinforce:
+        reinforcement_area = 0
+        z_NA = np.sum(rotorBlade.Bi*rotorBlade.z[:-1], 0)/np.sum(rotorBlade.Bi, 0)
+        z_max = np.max(rotorBlade.z, 0)
+        arm = np.mean(z_max - z_NA)
+        dA = 0.0001
+        while np.min(w) < 25:
+            A0 += dA
+            I0 += dA * arm**2
+            reinforcement_area += dA
+            if reinforcement_area >= 1:
+                raise ValueError('The added area is too large')
 
-        parameters = np.array([E1, I0, materials['CFRCy'].rho, A0, L1])
-        w, x, U = vtb.euler_beam_modes(n=modes, bctype=bc, beamparams=parameters)
+            parameters = np.array([E1, I0, materials['CFRCy'].rho, A0, L1])
+            w, x, U = vtb.euler_beam_modes(n=modes, bctype=bc, beamparams=parameters)
 
-    print(f'Natural frequencies = {w} [Hz]')
-    print(f'Maximum deflection = {np.max(np.abs(U))} [m]')
-    print(f'Required reinforcement area = {reinforcement_area}')
-    print(f'Required reinforcement mass = {reinforcement_area*R*(1-cutout)*materials["CFRCy"].rho} kg')
+        print(f'Natural frequencies = {w} [rad/s]')
+        print(f'Maximum deflection = {np.max(np.abs(U))} [m]')
+        print(f'Required reinforcement area = {reinforcement_area}')
+        print(f'Required reinforcement mass = {reinforcement_area*R*(1-cutout)*materials["CFRCy"].rho} kg')
+
+        # Calculate equivalent load and additional stress
+        max_deflection = U[np.where(np.abs(U) == np.max(np.abs(U)))]
+        max_deflection_pos = x[np.where(np.abs(U) == np.max(np.abs(U)))[0]]
+        P = equivalent_load(deflection=max_deflection,
+                            position=max_deflection_pos,
+                            E=E1,
+                            I=I0)
+
+        print(f'Equivalent load due to vibrations in rotor blades is {P} [N]')
+
     plot_mode_response(x, U)
-
-    # Calculate equivalent load and additional stress
-    max_deflection = U[np.where(np.abs(U) == np.max(np.abs(U)))]
-    max_deflection_pos = x[np.where(np.abs(U) == np.max(np.abs(U)))[0]]
-    P = equivalent_load(deflection=max_deflection,
-                        position=max_deflection_pos,
-                        E=E1,
-                        I=I0)
-
-    print(f'Equivalent load due to vibrations in rotor blades is {P} [N]')
     return w, x, U
 
 
-def wing_vibrations():
+def wing_vibrations(pars=None):
     # Define parameters
-    L = b / 2
-    I = np.mean(np.sum((best_wing.Bi * best_wing.z[:-1] ** 2), 0))
-    A = np.mean(np.sum(best_wing.Bi, 0))
-    parameters = np.array([materials['CFRPeek'].E, I, materials['CFRPeek'].rho, A, L])
+    if pars is None:
+        L = b / 2
+        I = np.mean(np.sum((best_wing.Bi * best_wing.z[:-1] ** 2), 0))
+        A = np.mean(np.sum(best_wing.Bi, 0))
+        parameters = np.array([materials['CFRPeek'].E, I, materials['CFRPeek'].rho, A, L])
+    else:
+        parameters = pars
 
     # Define analysis conditions
-    bc = 6  # Clamped-pinned
+    bc = 3  # Clamped-pinned
     modes = 3
 
     # Perform analysis
@@ -326,7 +333,7 @@ def wing_vibrations():
 
     # Report results
     print(Fore.WHITE + '\nVibration data:')
-    print(f'Average moment of inertia of the airfoil = {I}')
+    print(f'Average moment of inertia of the airfoil = {parameters[1]}')
     print(f'Natural frequency of the wing = {w}')
     print(f'Max deflection = {np.max(np.abs(U))} [m]')
     plot_mode_response(x, U)
@@ -633,59 +640,6 @@ def size_tail():
     print(Fore.BLUE + f'The total tail group mass is {2*hStabilizer.m + vStabilizer.m + tailPoleMass + margin} [kg], '
           f'including {margin} [kg] of margin')
     return hStabilizer, vStabilizer, tailPoleMass
-
-
-def size_body(fuselage_height=1.67, cabin_length=2, full_length=6.15):
-    r = fuselage_height/2
-    aft_cone_length = full_length - cabin_length - rootChord  # [m], assumed
-    mat = materials['CFRPeek']
-    t = 0.001
-    margin = 200
-
-    # From https://dr.ntu.edu.sg/bitstream/10356/152917/2/Damage%20Severity%20Prediction%20of%20Helicopter%20Windshield.pdf
-    windshieldMaterial = materials['Polycarbonate']
-    windshieldThickness = 0.005
-
-    cabin_SA = np.pi/6 * (r/cabin_length**2) * ((r**2 + 4*cabin_length**2)**1.5 - r**3)
-    main_body_SA = 2 * np.pi * r * rootChord
-    aft_connection_SA = np.pi/6 * (r/aft_cone_length**2) * ((r**2 + 4*aft_cone_length**2)**1.5 - r**3)
-
-    cabinMass = cabin_SA * windshieldThickness * windshieldMaterial.rho
-    bodyMass = main_body_SA * t * mat.rho
-    aftConeMass = aft_connection_SA * t * mat.rho
-
-    bodySkinMass = bodyMass + aftConeMass + cabinMass + margin
-
-    print(f'Cabin mass = {cabin_SA * windshieldThickness * windshieldMaterial.rho} [kg]')
-    print(f'Body mass = {(main_body_SA + aft_connection_SA) * t * mat.rho} [kg]')
-    print(f'Margin = {margin} [kg]')
-
-    # Moments of inertia
-    ycg = (cabinMass * (full_length - 2/3*cabin_length) + bodyMass * (full_length - cabin_length - rootChord/2) +
-           aftConeMass * 2/3 * (full_length-cabin_length-rootChord)) / (cabinMass + bodyMass + aftConeMass)
-    print(f'Body cg is {full_length - ycg} [m] behind the nose')
-
-    # Cabin
-    Ix_c = 2 / 3 * cabinMass * r * windshieldThickness
-    Iy_c = Iz_c = cabinMass * (r*windshieldThickness / 3 + cabin_length*windshieldThickness/9)
-
-    # Main body
-    Ix_b = bodyMass * r * t
-    Iy_b = Iz_b = bodyMass * r * t / 2
-
-    # Aft cone
-    Ix_a = 2 / 3 * aftConeMass * r * t
-    Iy_a = Iz_a = aftConeMass * (r*t / 3 + (full_length-cabin_length-rootChord)*t/9)
-
-    # Combine
-    Ix = Ix_c + cabinMass * ((full_length - 2/3*cabin_length) - ycg)**2 + \
-         Ix_b + bodyMass * ((full_length - cabin_length - rootChord/2) - ycg)**2 + \
-         Ix_a + aftConeMass * (2/3 * (full_length-cabin_length-rootChord) - ycg)**2
-
-    Iy = Iy_c + Iy_b + Iy_a
-    Iz = Iz_c + Iz_b + Iz_a
-
-    return bodySkinMass, Ix, Iy, Iz
 
 
 

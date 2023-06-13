@@ -1,7 +1,3 @@
-from material_properties import  materials
-from StructureClasses import Beam, Force
-import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
 
 
