@@ -451,3 +451,91 @@ class TestBeam(TestCase):
 
         assert n_out == n1, 'The number of rivets does not coincide with the analytical solution'
         assert D_out == D, 'Rivet diameter does not coincide with the analytical solution'
+
+
+class ValidateBeam(TestCase):
+    def test_internal_load(self):
+        # From https://www.studocu.com/row/document/university-of-engineering-and-technology-lahore/engineering-dynamics/lab-report-1-reaction-of-forces-on-a-simply-supported-beam/15764339
+        loads0 = np.array([
+            [-10],
+            [-10],
+            [-10]
+        ])
+
+        loads1 = np.array([
+            [-5, -5, -5],
+            [-10, -10, -10],
+            [-15, -15, -15],
+        ])
+
+        positions0 = np.array([
+            [-0.6],
+            [-0.3],
+            [-0.15]
+        ])
+
+        positions1 = np.array([
+            [-0.15, -0.3, -0.6],
+            [-0.15, -0.3, -0.6],
+            [-0.15, -0.3, -0.6]
+        ])
+
+        Ra0 = np.array([
+            [3.33],
+            [6.67],
+            [8.33]
+        ])
+
+        Ra1 = np.array([
+            [9.17],
+            [18.33],
+            [27.5]
+        ])
+
+        Rb0 = np.array([[-6.67, -3.33, -1.67]]).T
+        Rb1 = np.array([[-5.83, -11.67, -17.5]]).T
+
+        beam = Beam(
+            width=0.05,
+            height=0.05,
+            length=0.9,
+            cross_section='square',
+            material='Al/Si',
+            fixing_points=np.array([[0.025], [0.025]])*np.ones(100)
+        )
+
+        for i in range(3):
+            beam.unload()
+            loading0 = Force(
+                magnitude=np.vstack((np.zeros((2, 1)), loads0[i][0])),
+                point_of_application=np.array([
+                    [0.025],
+                    [positions0[i][0]],
+                    [0.025]
+                ])
+            )
+            reaction = Force(
+                magnitude=np.array([[0, 0, Ra0[i][0]]]).T,
+                point_of_application=np.array([[0.025, -0.8999, 0.025]]).T
+            )
+            beam.add_loading(loading0)
+            beam.add_loading(reaction)
+            assert_allclose(beam.f_loading[-1][-1], Rb0[i], rtol=0.01, err_msg='Reaction force does not match')
+
+            beam.unload()
+            loading1 = Force(
+                magnitude=np.vstack((np.zeros((2, 3)), loads1[i])),
+                point_of_application=np.vstack((
+                    0.025*np.ones(3),
+                    positions1[i],
+                    0.025*np.ones(3)
+                ))
+            )
+            reaction = Force(
+                magnitude=np.array([[0, 0, Ra1[i][0]]]).T,
+                point_of_application=np.array([[0.025, -0.8999, 0.025]]).T
+            )
+            beam.add_loading(loading1)
+            beam.add_loading(reaction)
+            assert_allclose(beam.f_loading[-1][-1], Rb1[i], rtol=0.01, err_msg='Reaction force does not match')
+
