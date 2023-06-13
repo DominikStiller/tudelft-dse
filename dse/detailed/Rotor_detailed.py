@@ -6,6 +6,7 @@ import numpy as np
 import scipy.optimize
 from scipy import integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
+from tqdm import tqdm
 
 warnings.filterwarnings("ignore") #TODO: DELETE THIS!!!
 
@@ -38,9 +39,9 @@ const = {
 
 rotorParameters = {
     "maxEnginePower": 52000,
-    "Radius": 10.4,
-    'chord': 10.4/40,
-    "cutout": 0.1,
+    "Radius": 8.2,
+    'chord': 8.2/30,
+    "cutout": 0.15,
     "N_blades": 8,
     "coaxial": True,
     "CL_data": [
@@ -284,6 +285,7 @@ def TakeoffRotor(V_tip, prnt, n_elements = rotorParameters["n_elements"]):
     r2R = np.arange(1, n_elements + 1) / n_elements  # Local radius to total rotor
 
     c2R = c/R / r2R
+    c2R[c2R*R > 0.75] = 0.75/R
 
     M_local = (r2R) * (omega * R / V_m)  # Local Mach number (omega*R = V_tip which is constant)
 
@@ -417,6 +419,7 @@ def SecondRotor(vtipmax, thetaRotor1, T_Rotor1, n_elements = rotorParameters["n_
     r2R = np.arange(1, n_elements + 1) / n_elements  # Local radius to total rotor
 
     c2R = C/R / r2R
+    c2R[c2R*R > 0.75] = 0.75/R
 
     # Induced Swirl from previous rotor
     Vinf = 0
@@ -542,8 +545,6 @@ def SecondRotor(vtipmax, thetaRotor1, T_Rotor1, n_elements = rotorParameters["n_
 
     return T, torque, pow, AddHP
 
-
-
 def DetermineCutout(MTOM, tipspeed, plot=False):
     T = 10000*3.71*np.ones(100)
     Torque = np.zeros(100)
@@ -599,7 +600,8 @@ def OptimizeCruise(Drag, Vcr, plot=False):
         r2R = np.arange(1, n_elements + 1) / n_elements  # Local radius to total rotor
 
         c2R = c / R
-        c2R = c / R * (1.5 - r2R)
+        c2R = c/R / r2R
+        c2R[c2R*R > 0.75] = 0.75/R
 
         theta = theta0 + collective - rotorParameters['alpha_0']
 
@@ -628,11 +630,11 @@ def OptimizeCruise(Drag, Vcr, plot=False):
         cl = CLalpha(alpha)
         cd = CDalpha(alpha)
         if any(alpha > np.radians(11)):
-            cl[alpha > np.radians(11)] = 0.5
-            cd[alpha > np.radians(11)] = 0.5
+            cl[alpha > np.radians(11)] = 0.5*np.cos(alpha[alpha>np.radians(11)])
+            cd[alpha > np.radians(11)] = 1.28*np.sin(alpha[alpha>np.radians(11)])
         if any(alpha < np.radians(-5)):
-            cl[alpha < np.radians(-5)] = 0.000001
-            cd[alpha < np.radians(-5)] = 0.5
+            cl[alpha < np.radians(-5)] = -0.000001
+            cd[alpha < np.radians(-5)] = 1.28*np.sin(alpha[alpha<np.radians(-5)])
 
 
         DctDr2R = b * r2R ** 2 * c2R * cl / (2 * np.pi)
@@ -651,7 +653,7 @@ def OptimizeCruise(Drag, Vcr, plot=False):
         funCQ0 = InterpolatedUnivariateSpline(r2R, Dcq0Dr2R)
         CQ_profile = funCQ0.integral(x0, 1)
 
-        DcqiDr2R = b * r2R ** 3 * c2R * cl * v12Omegar(theta) / (2 * np.pi)
+        DcqiDr2R = b * r2R ** 3 * c2R * cl * (v12Omegar(theta)+V_c)/(omega*r2R*R) / (2 * np.pi)
 
         funCQi = InterpolatedUnivariateSpline(r2R, DcqiDr2R)
         CQ_induced = funCQi.integral(x0, B)
@@ -673,6 +675,7 @@ def OptimizeCruise(Drag, Vcr, plot=False):
         pow += AdditionalClimbPower(T, const["cruiseSpeed"])[0]
 
         if plot == True:
+            print(f"Rotor 1 AOA: {np.degrees(alpha)}")
             plt.plot(r2R, funCQi(r2R))
             plt.plot(r2R, funCQ0(r2R))
             plt.plot(r2R, funcPratio(r2R))
@@ -704,7 +707,8 @@ def OptimizeCruise(Drag, Vcr, plot=False):
         r2R = np.arange(1, n_elements + 1) / n_elements  # Local radius to total rotor
 
         c2R = c / R
-        c2R = c / R * (1.5 - r2R)
+        c2R = c/R / r2R
+        c2R[c2R*R > 0.75] = 0.75/R
 
         omega, collective = x
 
@@ -753,11 +757,11 @@ def OptimizeCruise(Drag, Vcr, plot=False):
         cl = CLalpha(alpha)
         cd = CDalpha(alpha)
         if any(alpha > np.radians(11)):
-            cl[alpha > np.radians(11)] = 0.5
-            cd[alpha > np.radians(11)] = 0.5
+            cl[alpha > np.radians(11)] = 0.5 * np.cos(alpha[alpha > np.radians(11)])
+            cd[alpha > np.radians(11)] = 1.28 * np.sin(alpha[alpha > np.radians(11)])
         if any(alpha < np.radians(-5)):
-            cl[alpha < np.radians(-5)] = 0.00001
-            cd[alpha < np.radians(-5)] = 0.5
+            cl[alpha < np.radians(-5)] = -0.000001
+            cd[alpha < np.radians(-5)] = 1.28 * np.sin(alpha[alpha < np.radians(-5)])
         DctDr2R = b * r2R ** 2 * c2R * cl / (2 * np.pi)
         # Create spline of data points in order
         funCT = InterpolatedUnivariateSpline(r2R, DctDr2R)
@@ -774,7 +778,7 @@ def OptimizeCruise(Drag, Vcr, plot=False):
         funCQ0 = InterpolatedUnivariateSpline(r2R, Dcq0Dr2R)
         CQ_profile = funCQ0.integral(x0 , 1)
 
-        DcqiDr2R = b * r2R ** 3 * c2R * cl * v12Omegar(theta) / (2 * np.pi)
+        DcqiDr2R = b * r2R ** 3 * c2R * cl * (v12Omegar(theta) + V_c) / (omega * r2R * R+Vitheta) / (2 * np.pi)
 
         funCQi = InterpolatedUnivariateSpline(r2R, DcqiDr2R)
         CQ_induced = funCQi.integral(x0, B)
@@ -810,6 +814,7 @@ def OptimizeCruise(Drag, Vcr, plot=False):
         Vitheta2 = ftheta2 / (2 * rho * np.pi * (Vix2 + Vinf))
 
         if plot == True:
+            print(f"Rotor 2 AOA: {np.degrees(alpha)}")
             print(f'Downwash rotor 1: {np.max(Vix)}[m/s]')
             print(f'Downwash rotor 2: {np.max(Vix2)}[m/s')
             print(f"Total Downwash in cruise: {np.max(Vix2+Vix)}[m/s]")
@@ -817,12 +822,6 @@ def OptimizeCruise(Drag, Vcr, plot=False):
             plt.plot(r2R, funCQ0(r2R))
             #plt.plot(r2R, funcPratio(r2R))
             plt.show()
-
-        # if any(alpha > np.radians(11.5)):
-        #     T = 0
-        #     torque = 0
-        #     pow = 0
-        #     AddHP = 0
 
         return T, pow, Torque
     powmin_1 = 1000000000
@@ -841,57 +840,47 @@ def OptimizeCruise(Drag, Vcr, plot=False):
     Torquemin_2 = 0
     Torquemax_1 = 0
     Torquemax_2 = 0
-    #FirstRotorThrustAndPower([200, -0.3], Vcr, rotorParameters["cruise_AoA"])
-    for x0 in np.linspace(0, 180, 100):
-        for x1 in np.linspace(0, 3, 100):
-            x=[x0, x1]
-            T_1calc, pow_1calc, Torque_1calc = FirstRotorThrustAndPower(x, Vcr, rotorParameters["cruise_AoA"])
-            Tmax_1calc, powmaxcalc_1, Torquemax_1calc = FirstRotorThrustAndPower(x, Vcr, rotorParameters["takeoff_AoA"])
-            #if T_1calc>0: print(T_1calc, pow_1calc, Torque_1calc)
-            if pow_1calc < T_1calc*Vcr: pow_1calc=T_1calc*Vcr
-            if powmaxcalc_1 < Tmax_1calc * Vcr: powmaxcalc_1 = Tmax_1calc * Vcr
 
-            if pow_1calc >0 and Torque_1calc>0 and pow_1calc < powmin_1 and T_1calc>Drag:
-                powmin_1 = pow_1calc
-                xmin_1 = x
-                Tmin_1 = T_1calc
-                Torquemin_1 = Torque_1calc
-            if powmaxcalc_1>0 and Torquemax_1calc>0 and powmaxcalc_1 <= 52000 and Tmax_1calc>Tmax_1 and Tmax_1calc>Drag :
-                powmax_1 = powmaxcalc_1
-                xmax_1 = x
-                Tmax_1 = Tmax_1calc
-                Torquemax_1 = Torquemax_1calc
-            # if powmaxcalc_1>0 and powmaxcalc_1 <= 52000*2 and Tmax_1calc>Tmax_1 and Tmax_1calc>Drag :
-            #     powSingleRotor = powmaxcalc_1
-            #     xSingleRotor = x
-            #     TSingleRotor = Tmax_1calc
-            #     TorqueSingleRotor = Torquemax_1calc
+    x0_values = np.linspace(0, 180, 100)
+    x1_values = np.linspace(0, np.pi/2, 100)
+    x2_values = np.linspace(0, 180, 100)
+    x3_values = np.linspace(0, np.pi/2, 100)
 
-    for x2 in np.linspace(0, 180, 100):
-        for x3 in np.linspace(0, 3, 100):
-            x=[x2, x3]
-            T_2calc, pow_2calc, Torque_2calc = SecondRotorThrustAndPower(x, Tmin_1, Vcr, rotorParameters["cruise_AoA"])
-            Tmax_2calc, powmaxcalc_2, Torquemax_2calc = SecondRotorThrustAndPower(x, Tmax_1, Vcr, rotorParameters["takeoff_AoA"])
+    Tmax_1 = Tmin_1 = Torquemax_1 = Torquemin_1 = 0
+    powmax_1 = powmin_1 = 1e10
+    Tmax_2 = Tmin_2 = Torquemax_2 = Torquemin_2 = 0
+    powmax_2 = powmin_2 = 1e10
 
-            if pow_2calc < T_2calc*Vcr: pow_2calc=T_2calc*Vcr
-            if powmaxcalc_2 < Tmax_2calc * Vcr: powmaxcalc_2 = Tmax_2calc * Vcr
+    for x0 in np.linspace(1, 25, 50):
+        for x1 in np.linspace(0.01, np.pi/2, 50):
+            for x2 in np.linspace(1, 25, 50):
+                for x3 in np.linspace(0.01, np.pi/2, 50):
+                    T_1calc, pow_1calc, Torque_1calc = FirstRotorThrustAndPower([x0, x1], Vcr, rotorParameters["cruise_AoA"])
+                    T_2calc, pow_2calc, Torque_2calc = SecondRotorThrustAndPower([x2, x3], T_1calc, Vcr,
+                                                                                 rotorParameters["cruise_AoA"])
+                    if np.all(np.array([T_1calc, pow_1calc, Torque_1calc, T_2calc, pow_2calc, Torque_2calc])>0) \
+                        and (T_1calc+T_2calc)>(2*Drag) \
+                            and (pow_1calc+pow_2calc)<(powmin_1) and pow_1calc<52000 and pow_2calc < 115000:
+                        xmin_1 = [x0, x1]
+                        xmin_2 = [x2, x3]
+                        Tmin_1 = T_1calc
+                        Tmin_2 = T_2calc
+                        powmin_1 = pow_1calc
+                        powmin_2 = pow_2calc
+                        Torquemin_1 = Torque_1calc
+                        Torquemin_2 = Torque_2calc
+                    if np.all(np.array([T_1calc, pow_1calc, Torque_1calc, T_2calc, pow_2calc, Torque_2calc])>0) \
+                        and (T_1calc+T_2calc)>(Tmax_1+Tmax_2) \
+                            and pow_1calc<52000 and pow_2calc < 115000:
+                        xmax_1 = [x0, x1]
+                        xmax_2 = [x2, x3]
+                        Tmax_1 = T_1calc
+                        Tmax_2 = T_2calc
+                        powmax_1 = pow_1calc
+                        powmax_2 = pow_2calc
+                        Torquemax_1 = Torque_1calc
+                        Torquemax_2 = Torque_2calc
 
-            if pow_2calc >0 and Torque_2calc>0 and pow_2calc < powmin_2 and T_2calc>Drag:
-                powmin_2 = pow_2calc
-                xmin_2 = x
-                Tmin_2 = T_2calc
-                Torquemin_2 = Torque_2calc
-            if powmaxcalc_2 >0 and Torquemax_2calc>0 and powmaxcalc_2 <= 52000 and Tmax_2calc>Tmax_2 and Tmax_2calc>Drag:
-            #if powmaxcalc_2 >= 0 and Tmax_2calc > Tmax_2 and Tmax_2calc > Drag:
-                powmax_2 = powmaxcalc_2
-                xmax_2 = x
-                Tmax_2 = Tmax_2calc
-                Torquemax_2 = Torquemax_2calc
-
-    FirstRotorThrustAndPower(xmin_1, Vcr, rotorParameters["cruise_AoA"], plot=True)
-    SecondRotorThrustAndPower(xmin_2, Tmin_1, Vcr, rotorParameters["cruise_AoA"], plot=True)
-
-    FirstRotorThrustAndPower([200, 0], 112, rotorParameters["cruise_AoA"])
     print(f"###################################")
     print(f"First Rotor")
     print(f"Thrust per rotor: {Tmin_1}[N]")
@@ -938,8 +927,8 @@ def TransitionSimple(V, tilt, cl, S, clWING):
     Vtang = V*np.cos(tilt)
     omega = (Vmax-Vtang)/R
     mu = V/(omega*R) * np.cos(tilt)
-    c = R/20
-    func = lambda r, phi: (omega * R * (r / R + mu * np.sin(phi)))**2 *rho/2 * cl* c
+    c = rotorParameters["chord"]
+    func = lambda r, phi: (omega * R * (r / R + mu * np.sin(phi)))**2 *rho/2 * cl* c/r
     T = b/(2*np.pi)* integrate.dblquad(func, 0, 2*np.pi, 0, R)[0]
     if T*np.sin(tilt)*V > powmax:
         T = powmax/(V*np.sin(tilt))
@@ -1045,13 +1034,13 @@ def RotorWash(downwash, H):
     print(f'Rc: {Rc/3.28084}[m], Rv: {Rv/3.28084}[m]')
     print(f'Rc-Rv: {(Rc-Rv)/3.28084}[m], Radius: {lv/3.28084}[m], Cloud height: {Hcloud/3.28084}[m]')
 
-DetermineCutout(3000, 200, plot=False)
+#DetermineCutout(3000, 200, plot=False)
 Trot1, Torquerot1, powrot1, addhprot1 = TakeoffRotor(200, True)
 Trot2, Torquerot2, powrot2, addhprot2 = SecondRotor(200, rotorParameters["blade_twist"], Trot1, prnt=True)
 RotorWash(44, 10)
 #PlotTransition()
 
-powmin_1, powmax_1, powmin_2, powmax_2, Tmin_1, Tmax_1, Tmin_2, Tmax_2 = OptimizeCruise(250, 112)
+powmin_1, powmax_1, powmin_2, powmax_2, Tmin_1, Tmax_1, Tmin_2, Tmax_2 = OptimizeCruise(200, 112)
 print(f"########TOTAL AIRCRAFT########")
 print(f"Total Lifting Capacity: {2*(Trot1+Trot2)/3.71} [kg]")
 print(f"Total Hover Power: {2*(powrot1+powrot2)/1000} [kW]")
