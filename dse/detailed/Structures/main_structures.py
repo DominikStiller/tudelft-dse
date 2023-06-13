@@ -8,9 +8,14 @@ import matplotlib.pyplot as plt
 from colorama import Fore
 
 
-def size_rotor_blades():
+def size_rotor_blades(overwrite=False):
     global rootBladeChord, tipBladeChord
 
+    R = 8.2
+    MTOM = 3000
+    g = 3.71
+    rpm = 232 * 2 * np.pi / 60
+    Airfoil = pd.read_csv("../../../tests/detailed/structures/S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
 
     print(Fore.WHITE + '\n### Rotor blade sizing started ###\n')
     # Define the blade
@@ -203,10 +208,10 @@ def size_rotor_blades():
         rearBlade.InternalStress(0, 0, 0)
         rearBlade.calculate_mass()
 
-        diff = np.maximum(np.abs(rotorMass - frontBlade.m - 5) / (rotorMass - 5),
-                          np.abs(rotorMass - rearBlade.m - 5) / (rotorMass - 5))
-        frontRotorMass = np.hstack((np.sum(frontBlade.masses(), 0), np.array([0]))) + 5 * np.ones(np.size(l_front)) / np.size(l_front)
-        rearRotorMass = np.hstack((np.sum(rearBlade.masses(), 0), np.array([0]))) + 5 * np.ones(
+        diff = np.maximum(np.abs(rotorMass - frontBlade.m - 2) / (rotorMass - 2),
+                          np.abs(rotorMass - rearBlade.m - 2) / (rotorMass - 2))
+        frontRotorMass = np.hstack((np.sum(frontBlade.masses(), 0), np.array([0]))) + 2 * np.ones(np.size(l_front)) / np.size(l_front)
+        rearRotorMass = np.hstack((np.sum(rearBlade.masses(), 0), np.array([0]))) + 2 * np.ones(
             np.size(l_rear)) / np.size(l_rear)
 
     def I(w, t):
@@ -221,15 +226,14 @@ def size_rotor_blades():
     rod_weight_1 = (2 * i*0.001 + 2*0.001 * (0.0840609-2*0.001)) * 0.5*R * materials["CFRCy"].rho
     print(f'This beam weights {rod_weight_1} [kg]')
 
-    m_r = rotorMass * 24
+    print(f'Each front blade weights {np.round(frontBlade.m, 2) + 2} kg, including 5 kg of reinforcements')
+    print(f'Each rear blade weights {np.round(rearBlade.m, 2) + 2} kg, including 5 kg of reinforcements')
+    print(f'Total rotor mass = {np.round(12 * (frontBlade.m + 2) + 12 * (rearBlade.m + 2), 2)} kg')
 
-    print(f'Each front blade weights {np.round(frontBlade.m, 2) + 5} kg, including 5 kg of reinforcements')
-    print(f'Each rear blade weights {np.round(rearBlade.m, 2) + 5} kg, including 5 kg of reinforcements')
-    print(f'Total rotor mass = {np.round(12 * (frontBlade.m + 5) + 12 * (rearBlade.m + 5), 2)} kg')
-
-    wn_rotor, x_rotor, U_rotor = rotor_vibrations(frontBlade)
-    wn_rotor, x_rotor, U_rotor = rotor_vibrations(rearBlade)
-    m_prop = 12 * (frontBlade.m + 5) + 12 * (rearBlade.m + 5) + rod_weight_1
+    if not overwrite:
+        wn_rotor, x_rotor, U_rotor = rotor_vibrations(frontBlade)
+        wn_rotor, x_rotor, U_rotor = rotor_vibrations(rearBlade)
+    m_prop = 12 * (frontBlade.m + 2) + 12 * (rearBlade.m + 2) + rod_weight_1
     print(Fore.BLUE + f'The total mass of the propulsion subsystem is {round(m_prop, 2)} [kg]')
     return frontBlade, rearBlade, m_prop
 
@@ -258,6 +262,7 @@ def equivalent_load(deflection, position, E, I):
 
 
 def rotor_vibrations(rotorBlade, reinforce=True, overwrite_I=None):
+    cutout = 0.15
     L1 = np.abs(np.min(rotorBlade.y))
     E1 = materials['CFRCy'].E
     if np.shape(rotorBlade.Bi) == np.shape(rotorBlade.z[:-1]):
@@ -342,6 +347,15 @@ def wing_vibrations(pars=None):
 
 
 def size_wing(span, chord_root, taper, wing_model=None):
+    mr = 500
+    MTOM = 3000
+    g = 3.71
+    q = 0.5 * 0.01 * 112 ** 2
+    fuselage_height = 1.67
+    m_e = 50
+    Airfoil = pd.read_csv("../../../tests/detailed/structures/S1223.dat", delimiter="\s+", dtype=float, skiprows=1,
+                          names=["x", "z"])
+
     l = np.linspace(-span, 0, 100)
     chord_array = np.linspace(chord_root*taper, chord_root, np.size(l))
 
@@ -511,6 +525,10 @@ def size_wing(span, chord_root, taper, wing_model=None):
 
 def size_tail():
     # span, 14.23/2  chord 2.7106, tip = 1.0834 NACA0012
+    R = 8.2
+    MTOM = 3000
+    g = 3.71
+    lengthTailPole = 15 - 2.1439
 
     # Assumptions
     m = 25
@@ -582,7 +600,7 @@ def size_tail():
         height=zv * vTailTaper,
         length=lv,
         cross_section=section,
-        material='Al/Si',
+        material='AL_light',
         fixing_points=np.array([[Xac], [Zac]]) * np.ones(m)
     )
 
@@ -650,7 +668,7 @@ if __name__ == '__main__':
     R = 8.2
     MTOM = 3000
     g = 3.71
-    rpm = 183 * 2 * np.pi / 60
+    rpm = 232 * 2 * np.pi / 60
     q = 0.5 * 0.01 * 112 ** 2
     rootChord = 3.35
     b = 16.8
@@ -663,7 +681,7 @@ if __name__ == '__main__':
     x_ac_t = x_cg + 10
     lengthTailPole = x_ac_t - cabin_length - rootChord
 
-    Airfoil = pd.read_csv("S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
+    Airfoil = pd.read_csv("../../../tests/detailed/structures/S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
 
     # Rotors
     frontBlade, rearBlade, mr = size_rotor_blades()
