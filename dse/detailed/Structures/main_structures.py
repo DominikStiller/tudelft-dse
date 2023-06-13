@@ -515,8 +515,8 @@ def size_tail():
 
     ### Horizontal stabilizer ###
     # Define the geometry
-    tailSpan = 4.19
-    tailChord = np.linspace(1.1996, 2.998, m)
+    tailSpan = 11.2555/2
+    tailChord = np.linspace(0.85756, 2.1439, m)
     NACA0012 = pd.read_csv('NACA 0012.dat', delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
 
     l = np.linspace(-tailSpan, 0, m)
@@ -558,8 +558,8 @@ def size_tail():
     ### Vertical stabilizer ###
     # Define geometry
 
-    vTailSpan = 14.23/2
-    vTailChord = np.linspace(1.0834, 2.7106, m)
+    vTailSpan = 4.76025
+    vTailChord = np.linspace(1.36007, 3.40018, m)
 
 
     lv = np.linspace(-vTailSpan, 0, m)

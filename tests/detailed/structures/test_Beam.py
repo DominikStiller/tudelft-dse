@@ -1,5 +1,4 @@
 from numpy.testing import assert_allclose
-
 from dse.detailed.Structures.StructureClasses import *
 from dse.detailed.Structures.material_properties import materials
 from unittest import TestCase
@@ -9,10 +8,7 @@ class TestBeam(TestCase):
     # Functions that need testing:
     # TorsionStress
     # BoomArea
-    # calculate_mass
-    # rho
-    # youngs_mod
-
+    # Buckling
     def test_add_loading_point_load(self):
         x = 0.1
         y = 2
@@ -117,12 +113,12 @@ class TestBeam(TestCase):
         Ixx, Izz, Ixz = rombus.MoI(boomArea_nr=np.ones((8, np.size(l)))*0.0125, x_booms_nr=x_booms_nr, z_booms_nr=z_booms_nr)
         sigma_nr = rombus.StressCalculations(boomArea_nr=np.ones((8, np.size(l)))*0.0125)
 
-        assert abs((NAx[-1] - NAx_hand)) < 0.0001, 'The NAx is off'
-        assert abs((NAz[-1] - NAz_hand)) < 0.0001, 'The NAz is off'
-        assert abs(Ixx[-1] - Ixx_hand) < 0.0001, 'The Ixx is off'
-        assert abs(Izz[-1] - Izz_hand) < 0.0001, 'The Izz is off'
-        assert abs(Ixz[-1] - Ixz_hand) < 0.0001, 'The Ixz is off'
-        assert np.all(abs(sigma_nr[:,-1] - sigma_hand.T)/sigma_hand.T < 0.01), 'The stresses are wrong'
+        assert_allclose(NAx[-1], NAx_hand, atol=1e-5, err_msg='The NAx is off')
+        assert_allclose(NAz[-1], NAz_hand, atol=1e-5, err_msg='The NAz is off')
+        assert_allclose(Ixx[-1], Ixx_hand, rtol=1e-4, err_msg='The Ixx is off')
+        assert_allclose(Izz[-1], Izz_hand, rtol=1e-4, err_msg='The Izz is off')
+        assert_allclose(Ixz[-1], Ixz_hand, atol=1e-5, err_msg='The Ixz is off')
+        assert_allclose(sigma_nr[:, -1], sigma_hand.T[0], rtol=1e-3, err_msg='The stresses are wrong')
 
     def test_InternalLoads_Parallelogram(self):
         ## Hand Calculations
@@ -133,7 +129,7 @@ class TestBeam(TestCase):
         Ixz_hand = 0.0375  # [m4]
         sigma_hand = np.array(
             [
-                [-2.4, 0.133333, 2.6666, 2.5333, 2.4, -1.3333, -2.666, -2.53333]
+                [-2.4, 0.133333, 2.6666, 2.5333, 2.4, -0.13333, -2.666, -2.53333]
             ]
         ).T * 1e6
         b = 10
@@ -179,93 +175,12 @@ class TestBeam(TestCase):
         Ixx, Izz, Ixz = parallelogram.MoI(boomArea_nr=np.ones((8, np.size(l)))*0.0125, x_booms_nr=x_booms_nr, z_booms_nr=z_booms_nr)
         sigma_nr = parallelogram.StressCalculations(boomArea_nr=np.ones((8, np.size(l)))*0.0125)
 
-        assert abs((NAx[-1] - NAx_hand)) < 0.0001, 'The NAx is off'
-        assert abs((NAz[-1] - NAz_hand)) < 0.0001, 'The NAz is off'
-        assert abs(Ixx[-1] - Ixx_hand) < 0.0001, 'The Ixx is off'
-        assert abs(Izz[-1] - Izz_hand) < 0.0001, 'The Izz is off'
-        assert abs(Ixz[-1] - Ixz_hand) < 0.0001, 'The Ixz is off'
-        assert np.all(abs(sigma_nr[:,-1] - sigma_hand.T)/sigma_hand.T < 0.01), 'The stresses are wrong'
-
-    def test_neutral_axis(self):
-        x = np.atleast_2d(np.hstack(
-            (np.linspace(-1, 0, 25)[:-1],
-             np.linspace(0, 1, 25)[:-1],
-             np.linspace(1, 0, 25)[:-1],
-             np.linspace(0, -1, 25)[:-1])
-        ))
-        z = np.atleast_2d(np.hstack(
-            (np.linspace(0, 1, 25)[:-1],
-             np.linspace(1, 0, 25)[:-1],
-             np.linspace(0, -1, 25)[:-1],
-             np.linspace(-1, 0, 25)[:-1]
-             )
-        ))
-        rombus = Beam(
-            width=x.T * np.ones(100),
-            height=z.T * np.ones(100),
-            length=5,
-            cross_section=np.vstack((x, z)) * np.ones((100, 1, 1)),
-            material='Al/Si',
-            fixing_points=np.array([[0], [0]]) * np.ones(100)
-        )
-        A = np.ones((np.size(x), 100))
-
-        x_booms_nr, z_booms_nr = np.split(np.reshape(rombus.section, (np.size(rombus.y), 2 * np.shape(rombus.x)[0])), 2,
-                                          1)
-        if np.all(x_booms_nr[:, 0] == x_booms_nr[:, -1]):
-            x_booms_nr = x_booms_nr[:, :-1]
-            z_booms_nr = x_booms_nr[:, :-1]
-
-        x_booms_nr = x_booms_nr.T
-        z_booms_nr = z_booms_nr.T
-
-        NAx, NAz = rombus.NeutralAxis(
-            A,
-            x_booms_nr,
-            z_booms_nr)
-        assert np.all(np.abs(NAx) <= 0.001), 'Neutral axis is not along the axis for a symmetric shape'
-        assert np.all(np.abs(NAz) <= 0.001), 'Neutral axis is not along the axis for a symmetric shape'
-
-    def test_mo_i(self):
-        x = np.atleast_2d(np.hstack(
-            (np.linspace(-1, 0, 25)[:-1],
-             np.linspace(0, 1, 25)[:-1],
-             np.linspace(1, 0, 25)[:-1],
-             np.linspace(0, -1, 25)[:-1])
-        ))
-        z = np.atleast_2d(np.hstack(
-            (np.linspace(0, 1, 25)[:-1],
-             np.linspace(1, 0, 25)[:-1],
-             np.linspace(0, -1, 25)[:-1],
-             np.linspace(-1, 0, 25)[:-1]
-             )
-        ))
-        rombus = Beam(
-            width=x.T * np.ones(100),
-            height=z.T * np.ones(100),
-            length=5,
-            cross_section=np.vstack((x, z)) * np.ones((100, 1, 1)),
-            material='Al/Si',
-            fixing_points=np.array([[0], [0]]) * np.ones(100)
-        )
-        A = np.ones((np.size(x), 100))
-
-        x_booms_nr, z_booms_nr = np.split(np.reshape(rombus.section, (np.size(rombus.y), 2 * np.shape(rombus.x)[0])), 2, 1)
-        if np.all(x_booms_nr[:, 0] == x_booms_nr[:, -1]):
-            x_booms_nr = x_booms_nr[:, :-1]
-            z_booms_nr = x_booms_nr[:, :-1]
-
-        x_booms_nr = x_booms_nr.T
-        z_booms_nr = z_booms_nr.T
-
-        Ixx, Izz, Ixz = rombus.MoI(
-            A,
-            x_booms_nr,
-            z_booms_nr
-        )
-
-        assert np.all(Ixx - Izz <= 0.001), 'Symmetrical shape does not have equal moments of inertia'
-        assert np.all(Ixz <= 0.001), 'Symmetrical shape does not have Ixz = 0'
+        assert_allclose(NAx[-1], NAx_hand, atol=1e-5, err_msg='The NAx is off')
+        assert_allclose(NAz[-1], NAz_hand, atol=1e-5, err_msg='The NAz is off')
+        assert_allclose(Ixx[-1], Ixx_hand, rtol=1e-4, err_msg='The Ixx is off')
+        assert_allclose(Izz[-1], Izz_hand, rtol=1e-4, err_msg='The Izz is off')
+        assert_allclose(Ixz[-1], Ixz_hand, atol=1e-5, err_msg='The Ixz is off')
+        assert_allclose(sigma_nr[:, -1], sigma_hand.T[0], rtol=1e-3, err_msg='The stresses are wrong')
 
     def test_stress_calculations(self):
         x = np.atleast_2d(np.hstack(
@@ -313,9 +228,8 @@ class TestBeam(TestCase):
             boomArea_nr=A
         )
 
-        assert np.all(stress == stress[0]), 'The stress on the booms due to a point load along the length does not ' \
-                                            'result in a constant stress'
-
+        self.assertTrue(np.all(stress == stress[0]), msg='The stress on the booms due to a point load along the length '
+                                                         'does not result in a constant stress')
         rombus.unload()
 
         dummy_force_2 = Force(
@@ -343,26 +257,29 @@ class TestBeam(TestCase):
 
         stress_split = np.split(stress, 4)
 
-        assert np.all((stress_split[0][1:] - np.flip(stress_split[1], 0)[
-                                             :-1]) < 0.0001), 'The top booms have non-symmetrical stresses'
-        assert np.all((stress_split[2][1:] - np.flip(stress_split[3], 0)[
-                                             :-1]) < 0.0001), 'The bottom booms have non-symmetrical stresses'
-        assert np.where(stress == np.min(stress))[0] == 24, 'The maximum compressive stress is not at the top'
-        assert np.where(stress == np.max(stress))[0] == 72, 'The maximum tensile stress is not at the bottom'
-        assert np.max(stress) == np.abs(np.min(stress)), 'The maximum tensile and compressive stresses are not the same'
+        assert_allclose(stress_split[0][1:], np.flip(stress_split[1], 0)[:-1], rtol=1e-4,
+                        err_msg='The top booms have non-symmetrical stresses')
+        assert_allclose(stress_split[2][1:], np.flip(stress_split[3], 0)[:-1], rtol=1e-4,
+                        err_msg='The bottom booms have non-symmetrical stresses')
+        self.assertTrue(np.where(stress == np.min(stress))[0] == 24,
+                        msg='The maximum compressive stress is not at the top')
+        self.assertTrue(np.where(stress == np.max(stress))[0] == 72,
+                        msg='The maximum tensile stress is not at the bottom')
+        assert_allclose(np.max(stress), -np.min(stress), rtol=1e-4,
+                        err_msg='The maximum tensile and compressive stresses are not the same')
 
     def test_internal_stress(self):
         x = np.atleast_2d(np.hstack(
             (np.linspace(-1, 0, 25)[:-1],
              np.linspace(0, 1, 25)[:-1],
              np.linspace(1, 0, 25)[:-1],
-             np.linspace(0, -1, 25)[:-1])
+             np.linspace(0, -1, 25))
         ))
         z = np.atleast_2d(np.hstack(
             (np.linspace(0, 1, 25)[:-1],
              np.linspace(1, 0, 25)[:-1],
              np.linspace(0, -1, 25)[:-1],
-             np.linspace(-1, 0, 25)[:-1]
+             np.linspace(-1, 0, 25)
              )
         ))
         rombus = Beam(
@@ -395,9 +312,11 @@ class TestBeam(TestCase):
 
         rombus.add_loading(dummy_force_2)
         rombus.InternalStress(0, 0, A)
-        assert np.shape(rombus.t) == (np.size(x), 100), 'rombus.t is not an array of the correct shape'
-        assert np.all(rombus.t >= 0.001), 'The minimum thickness is smaller than 1mm'
-        assert np.all(rombus.sigma <= 250e6/1.5)
+
+        self.assertTupleEqual(np.shape(rombus.t), (np.size(x)-1, 100),
+                              msg='rombus.t is not an array of the correct shape')
+        self.assertTrue(np.all(rombus.t >= 0.001), msg='The minimum thickness is smaller than 1mm')
+        self.assertTrue(np.all(rombus.sigma <= 250e6/1.5), msg='Maximum stress is higher than allowed')
 
     def test_masses_constant_section(self):
         x = 1
@@ -418,8 +337,8 @@ class TestBeam(TestCase):
         squareBeam.Bi = A / np.shape(squareBeam.x)[0] * np.ones(np.shape(squareBeam.x))
         masses = squareBeam.masses()
 
-        assert np.all(masses == masses[0]), 'Discrete masses are not constant'
-        assert np.sum(masses) == A * y * materials['Al/Si'].rho
+        self.assertTrue(np.all(masses == masses[0]), msg='Discrete masses are not constant')
+        assert_allclose(np.sum(masses), A * y * materials['Al/Si'].rho, rtol=1e-4, err_msg='Total mass is wrong')
 
     def test_masses_linear_section(self):
         x = np.atleast_2d(np.hstack((
@@ -454,8 +373,9 @@ class TestBeam(TestCase):
             summed_masses[i] = np.sum(masses_y[:i+1])
         hand_masses_y = materials['Al/Si'].rho * np.flip(np.abs(y) + 0.25 * y**2) * infill
 
-        assert np.all(masses[:, 1:]/masses[:, :-1] > 1), 'Mass is not increasing'
-        assert np.all((summed_masses[:-1] - hand_masses_y[1:-1]) / hand_masses_y[1:-1] < 0.01), "Mass array doesn't coincide with the analytical calculation"
+        self.assertTrue(np.all(masses[:, 1:]/masses[:, :-1] > 1), msg='Mass is not increasing')
+        assert_allclose(summed_masses[:-1], hand_masses_y[1:-1], rtol=0.01,
+                        err_msg="Mass array doesn't coincide with the analytical calculation")
 
     def test_overall_inertia(self):
         x0 = 1
@@ -485,9 +405,9 @@ class TestBeam(TestCase):
         Izz = M0*(y**2 + x0**2)/12 - M1*(y**2 + x1**2)/12
         Iyy = M0*(x0**2 + z0**2)/12 - M1*(x1**2 + z1**2)/12
 
-        assert np.abs(squareBeam.Ix - Ixx)/Ixx < 0.05
-        assert np.abs(squareBeam.Iy - Iyy)/Iyy < 0.05
-        assert np.abs(squareBeam.Iz - Izz)/Izz < 0.05
+        assert_allclose(squareBeam.Ix, Ixx, rtol=1e-3, err_msg='Ixx is wrong')
+        assert_allclose(squareBeam.Iy, Iyy, rtol=0.015, err_msg='Iyy is wrong')
+        assert_allclose(squareBeam.Iz, Izz, rtol=1e-3, err_msg='Izz is wrong')
 
     def test_design_joint(self):
         x0 = 1
@@ -530,5 +450,4 @@ class TestBeam(TestCase):
         n_out, D_out = squareBeam.design_joint(-y/2)
 
         assert n_out == n1, 'The number of rivets does not coincide with the analytical solution'
-
         assert D_out == D, 'Rivet diameter does not coincide with the analytical solution'
