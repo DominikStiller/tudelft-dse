@@ -126,7 +126,7 @@ class ValidateVibrations(TestCase):
 
         for i in range(3):
             for j in range(3):
-                #E, I, rho, A, L,
+                # parameters = [E, I, rho, A, L,]
                 I = dimensions[i][1] * dimensions[i][2]**3/12
                 A = dimensions[i][1] * dimensions[i][2]
                 parameters = np.array([E[j], I, rho[j], A, dimensions[i][0]])

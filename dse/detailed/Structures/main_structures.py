@@ -1,6 +1,7 @@
 from dse.detailed.Structures.StructureClasses import Beam, Force, xflr_forces
 from dse.detailed.Structures.rotor_sizing import y_transformation
 from dse.detailed.Structures.material_properties import materials
+from dse.detailed.Structures.constants import const
 import vibration_toolbox as vtb
 import pandas as pd
 import numpy as np
@@ -8,88 +9,82 @@ import matplotlib.pyplot as plt
 from colorama import Fore
 
 
+
 def size_rotor_blades(overwrite=False):
     global rootBladeChord, tipBladeChord
-
-    R = 8.2
-    MTOM = 3000
-    g = 3.71
-    rpm = 232 * 2 * np.pi / 60
-    Airfoil = pd.read_csv("../../../tests/detailed/structures/S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
-
+    
     print(Fore.WHITE + '\n### Rotor blade sizing started ###\n')
     # Define the blade
     frontBladeChord = np.flip(np.array([0.75,       0.75,       0.75,       0.75,       0.75,       0.75,
- 0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
- 0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
- 0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
- 0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
- 0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
- 0.73873874, 0.71929825, 0.7008547 , 0.68333333, 0.66666667, 0.65079365,
- 0.63565891, 0.62121212, 0.60740741, 0.5942029 , 0.58156028, 0.56944444,
- 0.55782313, 0.54666667, 0.53594771, 0.52564103, 0.51572327, 0.50617284,
- 0.4969697 , 0.48809524, 0.47953216, 0.47126437, 0.46327684, 0.45555556,
- 0.44808743, 0.44086022, 0.43386243, 0.42708333, 0.42051282, 0.41414141,
- 0.4079602 , 0.40196078, 0.39613527, 0.39047619, 0.38497653, 0.37962963,
- 0.37442922, 0.36936937, 0.36444444, 0.35964912, 0.35497835, 0.35042735,
- 0.34599156, 0.34166667, 0.33744856, 0.33333333, 0.32931727, 0.32539683,
- 0.32156863, 0.31782946, 0.31417625, 0.31060606, 0.3071161 , 0.3037037,
- 0.3003663 , 0.29710145, 0.29390681, 0.29078014, 0.2877193 , 0.28472222,
- 0.28178694, 0.27891156, 0.27609428, 0.27333333]))
+                                        0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
+                                        0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
+                                        0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
+                                        0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
+                                        0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
+                                        0.73873874, 0.71929825, 0.7008547 , 0.68333333, 0.66666667, 0.65079365,
+                                        0.63565891, 0.62121212, 0.60740741, 0.5942029 , 0.58156028, 0.56944444,
+                                        0.55782313, 0.54666667, 0.53594771, 0.52564103, 0.51572327, 0.50617284,
+                                        0.4969697 , 0.48809524, 0.47953216, 0.47126437, 0.46327684, 0.45555556,
+                                        0.44808743, 0.44086022, 0.43386243, 0.42708333, 0.42051282, 0.41414141,
+                                        0.4079602 , 0.40196078, 0.39613527, 0.39047619, 0.38497653, 0.37962963,
+                                        0.37442922, 0.36936937, 0.36444444, 0.35964912, 0.35497835, 0.35042735,
+                                        0.34599156, 0.34166667, 0.33744856, 0.33333333, 0.32931727, 0.32539683,
+                                        0.32156863, 0.31782946, 0.31417625, 0.31060606, 0.3071161 , 0.3037037,
+                                        0.3003663 , 0.29710145, 0.29390681, 0.29078014, 0.2877193 , 0.28472222,
+                                        0.28178694, 0.27891156, 0.27609428, 0.27333333]))
     frontBladeTwist = np.flip(np.radians(np.array([33.99075624, 29.02635514, 25.79106317, 23.48785964, 21.74919469, 20.38071012,
- 19.26947833, 18.34513154, 17.56138065, 16.88643083, 16.29765888, 15.77848867,
- 15.31647064, 14.9020547 , 14.52777995, 14.18772396, 13.87711921, 13.59207983,
- 13.32940333, 13.08642398, 12.8609029 , 12.65094437, 12.45493128, 12.27147489,
- 12.09937516, 11.93758919, 11.78520591, 11.64142554, 11.50554285, 11.37693341,
- 11.25504221, 11.13937418, 11.02948621, 10.92498055, 10.82549909, 10.73071857,
- 10.58391701, 10.40084922, 10.22734367, 10.06272334,  9.9063742 ,  9.75773828,
-  9.6163076 ,  9.48161888,  9.35324889,  9.23081039,  9.11394851,  9.00233764,
-  8.89567859,  8.79369613,  8.69613679,  8.60276691,  8.51337091,  8.42774973,
-  8.34571948,  8.26711019,  8.1917647 ,  8.11953772,  8.05029491,  7.98391214,
-  7.92027477,  7.85927704,  7.80082153,  7.74481867,  7.69118633,  7.63984947,
-  7.5907398 ,  7.54379556,  7.49896128,  7.45618765,  7.41543143,  7.37665536,
-  7.33982817,  7.30492467,  7.27192585,  7.24081906,  7.21159832,  7.18426462,
-  7.15882643,  7.13530023,  7.11371129,  7.0940945 ,  7.07649547,  7.06097192,
-  7.04759529,  7.03645278,  7.0276499 ,  7.02131364,  7.01759641,  7.01668105,
-  7.01878726,  7.0241799 ,  7.03317974,  7.04617788,  7.06365497,  7.08620763,
-  7.11458529,  7.14974278,  7.19291733,  7.24574486])))
+                                                   19.26947833, 18.34513154, 17.56138065, 16.88643083, 16.29765888, 15.77848867,
+                                                   15.31647064, 14.9020547 , 14.52777995, 14.18772396, 13.87711921, 13.59207983,
+                                                   13.32940333, 13.08642398, 12.8609029 , 12.65094437, 12.45493128, 12.27147489,
+                                                   12.09937516, 11.93758919, 11.78520591, 11.64142554, 11.50554285, 11.37693341,
+                                                   11.25504221, 11.13937418, 11.02948621, 10.92498055, 10.82549909, 10.73071857,
+                                                   10.58391701, 10.40084922, 10.22734367, 10.06272334,  9.9063742 ,  9.75773828,
+                                                   9.6163076 ,  9.48161888,  9.35324889,  9.23081039,  9.11394851,  9.00233764,
+                                                   8.89567859,  8.79369613,  8.69613679,  8.60276691,  8.51337091,  8.42774973,
+                                                   8.34571948,  8.26711019,  8.1917647 ,  8.11953772,  8.05029491,  7.98391214,
+                                                   7.92027477,  7.85927704,  7.80082153,  7.74481867,  7.69118633,  7.63984947,
+                                                   7.5907398 ,  7.54379556,  7.49896128,  7.45618765,  7.41543143,  7.37665536,
+                                                   7.33982817,  7.30492467,  7.27192585,  7.24081906,  7.21159832,  7.18426462,
+                                                   7.15882643,  7.13530023,  7.11371129,  7.0940945 ,  7.07649547,  7.06097192,
+                                                   7.04759529,  7.03645278,  7.0276499 ,  7.02131364,  7.01759641,  7.01668105,
+                                                   7.01878726,  7.0241799 ,  7.03317974,  7.04617788,  7.06365497,  7.08620763,
+                                                   7.11458529,  7.14974278,  7.19291733,  7.24574486])))
 
     rearBladeChord = np.flip(np.array([0.75,       0.75,       0.75,       0.75,       0.75,       0.75,
- 0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
- 0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
- 0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
- 0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
- 0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
- 0.73873874, 0.71929825, 0.7008547 , 0.68333333, 0.66666667, 0.65079365,
- 0.63565891, 0.62121212, 0.60740741, 0.5942029 , 0.58156028, 0.56944444,
- 0.55782313, 0.54666667, 0.53594771, 0.52564103, 0.51572327, 0.50617284,
- 0.4969697 , 0.48809524, 0.47953216, 0.47126437, 0.46327684, 0.45555556,
- 0.44808743, 0.44086022, 0.43386243, 0.42708333, 0.42051282, 0.41414141,
- 0.4079602 , 0.40196078, 0.39613527, 0.39047619, 0.38497653, 0.37962963,
- 0.37442922, 0.36936937, 0.36444444, 0.35964912, 0.35497835, 0.35042735,
- 0.34599156, 0.34166667, 0.33744856, 0.33333333, 0.32931727, 0.32539683,
- 0.32156863, 0.31782946, 0.31417625, 0.31060606, 0.3071161 , 0.3037037,
- 0.3003663 , 0.29710145, 0.29390681, 0.29078014, 0.2877193 , 0.28472222,
- 0.28178694, 0.27891156, 0.27609428, 0.27333333]))
+                                        0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
+                                        0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
+                                        0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
+                                        0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
+                                        0.75      , 0.75      , 0.75      , 0.75      , 0.75      , 0.75,
+                                        0.73873874, 0.71929825, 0.7008547 , 0.68333333, 0.66666667, 0.65079365,
+                                        0.63565891, 0.62121212, 0.60740741, 0.5942029 , 0.58156028, 0.56944444,
+                                        0.55782313, 0.54666667, 0.53594771, 0.52564103, 0.51572327, 0.50617284,
+                                        0.4969697 , 0.48809524, 0.47953216, 0.47126437, 0.46327684, 0.45555556,
+                                        0.44808743, 0.44086022, 0.43386243, 0.42708333, 0.42051282, 0.41414141,
+                                        0.4079602 , 0.40196078, 0.39613527, 0.39047619, 0.38497653, 0.37962963,
+                                        0.37442922, 0.36936937, 0.36444444, 0.35964912, 0.35497835, 0.35042735,
+                                        0.34599156, 0.34166667, 0.33744856, 0.33333333, 0.32931727, 0.32539683,
+                                        0.32156863, 0.31782946, 0.31417625, 0.31060606, 0.3071161 , 0.3037037,
+                                        0.3003663 , 0.29710145, 0.29390681, 0.29078014, 0.2877193 , 0.28472222,
+                                        0.28178694, 0.27891156, 0.27609428, 0.27333333]))
     rearBladeTwist = np.flip(np.radians(np.array([-6.42540236, 66.75500062, 63.4744395,  60.65207818, 58.14595431, 55.87845537,
- 53.80144934, 51.88248394, 50.09831685, 48.43151658, 46.86852311, 45.39846971,
- 44.01243121, 42.7029248 , 41.46356743, 30.46328578, 26.52970845, 23.88564539,
- 21.91245802, 20.35795523, 19.08961126, 18.02826272, 17.12272754, 16.33805522,
- 15.64939031, 15.03848704, 14.49160329, 13.99816545, 13.54988884, 13.14017971,
- 12.76371771, 12.41615764, 12.09391215, 11.79399069, 11.51387821, 11.25144265,
- 11.09342042, 11.00741149, 10.91889559, 10.82821403, 10.73569621, 10.64165453,
- 10.54638152, 10.45014846, 10.35320494, 10.25577921, 10.15807895, 10.06029224,
-  9.96258884,  9.86512146,  9.76802703,  9.67142804,  9.57543374,  9.4801414,
-  9.38563739,  9.29199823,  9.19929164,  9.10757736,  9.01690811,  8.92733025,
-  8.83888464,  8.7516072 ,  8.6655296 ,  8.58067984,  8.49708278,  8.41476068,
-  8.33373367,  8.25402024,  8.17563774,  8.09860278,  8.02293175,  7.9486413,
-  7.87574882,  7.80427304,  7.73423457,  7.66565665,  7.5985659 ,  7.53299321,
-  7.46897489,  7.40655396,  7.34578181,  7.28672024,  7.22944414,  7.17404485,
-  7.12063473,  7.06935319,  7.02037506,  6.97392224,  6.93028057,  6.88982467,
-  6.85305605,  6.8206637 ,  6.79362538,  6.77338704,  6.76220626,  6.76387969,
-  6.78552292,  6.84301442,  6.9862122 ,  6.97621516])))
+                                                    53.80144934, 51.88248394, 50.09831685, 48.43151658, 46.86852311, 45.39846971,
+                                                    44.01243121, 42.7029248 , 41.46356743, 30.46328578, 26.52970845, 23.88564539,
+                                                    21.91245802, 20.35795523, 19.08961126, 18.02826272, 17.12272754, 16.33805522,
+                                                    15.64939031, 15.03848704, 14.49160329, 13.99816545, 13.54988884, 13.14017971,
+                                                    12.76371771, 12.41615764, 12.09391215, 11.79399069, 11.51387821, 11.25144265,
+                                                    11.09342042, 11.00741149, 10.91889559, 10.82821403, 10.73569621, 10.64165453,
+                                                    10.54638152, 10.45014846, 10.35320494, 10.25577921, 10.15807895, 10.06029224,
+                                                     9.96258884,  9.86512146,  9.76802703,  9.67142804,  9.57543374,  9.4801414,
+                                                     9.38563739,  9.29199823,  9.19929164,  9.10757736,  9.01690811,  8.92733025,
+                                                     8.83888464,  8.7516072 ,  8.6655296 ,  8.58067984,  8.49708278,  8.41476068,
+                                                     8.33373367,  8.25402024,  8.17563774,  8.09860278,  8.02293175,  7.9486413,
+                                                     7.87574882,  7.80427304,  7.73423457,  7.66565665,  7.5985659 ,  7.53299321,
+                                                     7.46897489,  7.40655396,  7.34578181,  7.28672024,  7.22944414,  7.17404485,
+                                                     7.12063473,  7.06935319,  7.02037506,  6.97392224,  6.93028057,  6.88982467,
+                                                     6.85305605,  6.8206637 ,  6.79362538,  6.77338704,  6.76220626,  6.76387969,
+                                                     6.78552292,  6.84301442,  6.9862122 ,  6.97621516])))
 
-    cutout = 0.15
     discretization = 5
 
     frontTwist = np.zeros(discretization * (np.size(frontBladeTwist)-1))
@@ -100,30 +95,30 @@ def size_rotor_blades(overwrite=False):
     for i in range(np.size(frontBladeTwist)-1):
         rearTwist[i*discretization:i*discretization+discretization] = np.linspace(rearBladeTwist[i], rearBladeTwist[i+1], discretization)
 
-    frontTwist = frontTwist[:np.size(frontTwist)-round(cutout*np.size(frontTwist))]
-    l_front = np.linspace(-R, -R * cutout, np.size(frontTwist))
+    frontTwist = frontTwist[:np.size(frontTwist)-round(const['cutout']*np.size(frontTwist))]
+    l_front = np.linspace(-const['rotorRadius'], -const['rotorRadius'] * const['cutout'], np.size(frontTwist))
 
-    rearTwist = rearTwist[:np.size(rearTwist)-round(cutout*np.size(rearTwist))]
-    l_rear = np.linspace(-R, -R * cutout, np.size(frontTwist))
+    rearTwist = rearTwist[:np.size(rearTwist)-round(const['cutout']*np.size(rearTwist))]
+    l_rear = np.linspace(-const['rotorRadius'], -const['rotorRadius'] * const['cutout'], np.size(frontTwist))
 
     frontChord = np.linspace(frontBladeChord[0],
-                             frontBladeChord[np.size(frontBladeChord) - round(cutout * np.size(frontBladeChord))],
+                             frontBladeChord[np.size(frontBladeChord) - round(const['cutout'] * np.size(frontBladeChord))],
                              np.size(frontTwist))
 
     rearChord = np.linspace(rearBladeChord[0],
-                             rearBladeChord[np.size(rearBladeChord) - round(cutout * np.size(rearBladeChord))],
-                             np.size(rearTwist))
+                            rearBladeChord[np.size(rearBladeChord) - round(const['cutout'] * np.size(rearBladeChord))],
+                            np.size(rearTwist))
 
-    frontSect = np.vstack((Airfoil['x'], Airfoil['z']))
+    frontSect = np.vstack((const['Airfoil']['x'], const['Airfoil']['z']))
     frontSect = np.ones((np.size(l_front), 2, 1)) * frontSect * np.reshape(frontChord, (np.size(frontChord), 1, 1))
     frontSect = y_transformation(frontTwist, frontSect)
 
-    rearSect = np.vstack((Airfoil['x'], Airfoil['z']))
+    rearSect = np.vstack((const['Airfoil']['x'], const['Airfoil']['z']))
     rearSect = np.ones((np.size(l_rear), 2, 1)) * rearSect * np.reshape(rearChord, (np.size(rearChord), 1, 1))
     rearSect = y_transformation(rearTwist, rearSect)
 
     global Xac_rotor, Zac_rotor
-    Xac_rotor = np.max(Airfoil['x']) * frontChord[-1] / 4
+    Xac_rotor = np.max(const['Airfoil']['x']) * frontChord[-1] / 4
     Zac_rotor = 0.077 * frontChord[0] / 20
 
     frontBlade = Beam(
@@ -145,8 +140,9 @@ def size_rotor_blades(overwrite=False):
     )
 
     # Define the applied forces
-    liftOffperBlade = np.ones(np.shape(frontTwist)) * 1.1 * MTOM * g / 32 / np.size(frontTwist)
-    application = np.ones(np.shape(frontTwist)) * np.array([[Xac_rotor], [-R], [Zac_rotor]])
+    liftOffperBlade = np.ones(np.shape(frontTwist)) * 1.1 * const['MTOM'] * const['g'] / \
+                      (const['bladePerRotor'] * const['numRotors']) / np.size(frontTwist)
+    application = np.ones(np.shape(frontTwist)) * np.array([[Xac_rotor], [-const['rotorRadius']], [Zac_rotor]])
     application[1] = l_front
 
     liftOffForce_front = Force(
@@ -160,7 +156,7 @@ def size_rotor_blades(overwrite=False):
         point_of_application=application
     )
 
-    application2 = np.ones(np.shape(rearTwist)) * np.array([[Xac_rotor], [-R], [Zac_rotor]])
+    application2 = np.ones(np.shape(rearTwist)) * np.array([[Xac_rotor], [-const['rotorRadius']], [Zac_rotor]])
     application2[1] = l_rear
     liftOffForce_rear = Force(
         magnitude=liftOffperBlade * np.array(
@@ -181,13 +177,13 @@ def size_rotor_blades(overwrite=False):
         frontBlade.unload()
         rearBlade.unload()
 
-        rotationForce_front = frontRotorMass * rpm**2 * l_front
+        rotationForce_front = frontRotorMass * const['rpm']**2 * l_front
         rotatingForce_front = Force(
             magnitude=np.vstack((np.zeros(np.size(rotationForce_front)), rotationForce_front, np.zeros(np.size(rotationForce_front)))),
             point_of_application=application
         )
 
-        rotationForce_rear = rearRotorMass * rpm ** 2 * l_rear
+        rotationForce_rear = rearRotorMass * const['rpm'] ** 2 * l_rear
         rotatingForce_rear = Force(
             magnitude=np.vstack((np.zeros(np.size(rotationForce_rear)), rotationForce_rear,
                                  np.zeros(np.size(rotationForce_rear)))),
@@ -223,7 +219,7 @@ def size_rotor_blades(overwrite=False):
             break
 
     print(f'A hollow square beam of thickness 1[mm] and width {round(i*1e3, 2)} [mm] is needed before the cutout')
-    rod_weight_1 = (2 * i*0.001 + 2*0.001 * (0.0840609-2*0.001)) * 0.5*R * materials["CFRCy"].rho
+    rod_weight_1 = (2 * i*0.001 + 2*0.001 * (0.0840609-2*0.001)) * 0.5*const['rotorRadius'] * materials["CFRCy"].rho
     print(f'This beam weights {rod_weight_1} [kg]')
 
     print(f'Each front blade weights {np.round(frontBlade.m, 2) + 2} kg, including 5 kg of reinforcements')
@@ -262,7 +258,6 @@ def equivalent_load(deflection, position, E, I):
 
 
 def rotor_vibrations(rotorBlade, reinforce=True, overwrite_I=None):
-    cutout = 0.15
     L1 = np.abs(np.min(rotorBlade.y))
     E1 = materials['CFRCy'].E
     if np.shape(rotorBlade.Bi) == np.shape(rotorBlade.z[:-1]):
@@ -303,7 +298,7 @@ def rotor_vibrations(rotorBlade, reinforce=True, overwrite_I=None):
         print(f'Natural frequencies = {w} [rad/s]')
         print(f'Maximum deflection = {np.max(np.abs(U))} [m]')
         print(f'Required reinforcement area = {reinforcement_area}')
-        print(f'Required reinforcement mass = {reinforcement_area*R*(1-cutout)*materials["CFRCy"].rho} kg')
+        print(f'Required reinforcement mass = {reinforcement_area*const["rotorRadius"]*(1-const["cutout"])*materials["CFRCy"].rho} kg')
 
         # Calculate equivalent load and additional stress
         max_deflection = U[np.where(np.abs(U) == np.max(np.abs(U)))]
@@ -347,38 +342,29 @@ def wing_vibrations(pars=None):
 
 
 def size_wing(span, chord_root, taper, wing_model=None):
-    mr = 500
-    MTOM = 3000
-    g = 3.71
-    q = 0.5 * 0.01 * 112 ** 2
-    fuselage_height = 1.67
-    m_e = 50
-    Airfoil = pd.read_csv("../../../tests/detailed/structures/S1223.dat", delimiter="\s+", dtype=float, skiprows=1,
-                          names=["x", "z"])
-
     l = np.linspace(-span, 0, 100)
     chord_array = np.linspace(chord_root*taper, chord_root, np.size(l))
 
     # Define the geometry
     global Xac_wing, Zac_wing
-    Xac_wing = np.max(Airfoil['x']) * chord_array[-1] / 4
+    Xac_wing = np.max(const['Airfoil']['x']) * chord_array[-1] / 4
     Zac_wing = 0.077 * chord_array[-1]
 
-    section = np.vstack((Airfoil["x"], Airfoil["z"])) * np.reshape(chord_array, (np.size(chord_array), 1, 1))
+    section = np.vstack((const['Airfoil']["x"], const['Airfoil']["z"])) * np.reshape(chord_array, (np.size(chord_array), 1, 1))
 
     wing = Beam(
-        width=np.array([Airfoil['x']]).T * chord_array,
-        height=np.array([Airfoil['z']]).T * chord_array,
+        width=np.array([const['Airfoil']['x']]).T * chord_array,
+        height=np.array([const['Airfoil']['z']]).T * chord_array,
         length=l,
         cross_section=section,
         material='CFRPeek',
         fixing_points=np.array([[Xac_wing], [Zac_wing]]) * np.ones(np.size(l))
     )
 
-    theta = np.arctan(fuselage_height / span)
+    theta = np.arctan(const['fuselageHeight'] / span)
 
     # Define the forces during TO
-    bracing_TO_mag = g / np.sin(theta) * (1.1 * MTOM / 2 - (mr/2 + m_e))
+    bracing_TO_mag = const['g'] / np.sin(theta) * (1.1 * const['MTOM'] / 2 - (mr/2 + const['engineMass']))
     bracing_TO = Force(
         magnitude=bracing_TO_mag * np.array(
             [
@@ -400,7 +386,7 @@ def size_wing(span, chord_root, taper, wing_model=None):
             [
                 [0],
                 [0],
-                [-(mr/2 + m_e) * g]
+                [-(mr/2 + const['engineMass']) * const['g']]
             ]
         ),
         point_of_application=np.array(
@@ -416,7 +402,7 @@ def size_wing(span, chord_root, taper, wing_model=None):
             [
                 [0],
                 [0],
-                [1.1 * MTOM * g / 2]
+                [1.1 * const['MTOM'] * const['g'] / 2]
             ]
         ),
         point_of_application=np.array(
@@ -430,9 +416,9 @@ def size_wing(span, chord_root, taper, wing_model=None):
 
     # Define loads during cruise
     if wing_model is None:
-        aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', q, float(span))
+        aerodynamic_forces = xflr_forces('Test_xflr5_file.csv', const['q'], float(span))
     else:
-        cl, cd, y_L = xflr_forces('wings.csv', q, float(span), adrian=wing_model)
+        cl, cd, y_L = xflr_forces('wings.csv', const['q'], float(span), adrian=wing_model)
         dy = np.abs(wing.y[:-1] - wing.y[1:])
         c_arr = (chord_array[:-1] + chord_array[1:]) / 2
 
@@ -445,8 +431,8 @@ def size_wing(span, chord_root, taper, wing_model=None):
             Cd[i] = cd[indx]
             app[i] = wing.y[i]
 
-        lift = Cl * q * c_arr * dy
-        drag = Cd * q * c_arr * dy
+        lift = Cl * const['q'] * c_arr * dy
+        drag = Cd * const['q'] * c_arr * dy
 
         aerodynamic_forces = Force(
             magnitude=np.vstack((-drag, np.zeros(np.size(lift)), lift)),
@@ -473,7 +459,7 @@ def size_wing(span, chord_root, taper, wing_model=None):
     )
 
     liftMoment = -np.dot(aerodynamic_forces.F[2], aerodynamic_forces.application[1])
-    bracing_cr_mag = 1 / (span * np.sin(theta)) * (liftMoment - span * g * (mr/2 + m_e))
+    bracing_cr_mag = 1 / (span * np.sin(theta)) * (liftMoment - span * const['g'] * (mr/2 + const['engineMass']))
     bracing_cruise = Force(
         magnitude=bracing_cr_mag * np.array(
             [
@@ -525,15 +511,8 @@ def size_wing(span, chord_root, taper, wing_model=None):
 
 def size_tail():
     # span, 14.23/2  chord 2.7106, tip = 1.0834 NACA0012
-    MTOM = 3000
-    g = 3.71
-    lengthTailPole = 15 - 2.1439
-
     # Assumptions
     m = 25
-    tail_to_wing_lift = 0.1
-    lift_to_drag_tail = 15
-    extra_force = 500  # For control
     tail_taper = np.linspace(1, 0.7, m)
     vTailTaper = tail_taper
 
@@ -562,12 +541,12 @@ def size_tail():
 
     # Define the loads
     lift = Force(  # Assuming uniform distribution for now, will change later
-        magnitude=(tail_to_wing_lift*MTOM*g + extra_force) / m * np.vstack((np.zeros((2, m)), np.ones(m))),
+        magnitude=(const['tailWingLift'] * const['MTOM']* const['g'] + const['extraForceTail']) / m * np.vstack((np.zeros((2, m)), np.ones(m))),
         point_of_application=np.vstack((Xac*np.ones(m), l, Zac*np.ones(m)))
     )
 
     drag = Force(  # Assuming uniform distribution for now, will change later
-        magnitude=(tail_to_wing_lift*MTOM*g + extra_force) / (m * lift_to_drag_tail) * np.vstack((-1*np.ones(m), np.zeros((2, m)))),
+        magnitude=(const['tailWingLift'] * const['MTOM']* const['g'] + const['extraForceTail']) / (m * const['liftToDragTail']) * np.vstack((-1*np.ones(m), np.zeros((2, m)))),
         point_of_application=np.vstack((Xac*np.ones(m), l, Zac*np.ones(m)))
     )
 
@@ -605,7 +584,7 @@ def size_tail():
 
     # Define loads
     restoring = Force(
-        magnitude=extra_force / m * np.vstack((-np.ones(m)/lift_to_drag_tail, np.zeros(m), np.ones(m))),
+        magnitude=const['extraForceTail'] / m * np.vstack((-np.ones(m)/const['liftToDragTail'], np.zeros(m), np.ones(m))),
         point_of_application=np.vstack(
             ((Xac * np.min(vTailTaper) + (1-np.min(vTailTaper))*vTailChord) * np.ones(m),
              lv,
@@ -623,7 +602,7 @@ def size_tail():
 
     ### Tail pole ###
     margin = 0  # [kg] Mass margin for the tail assembly and reinforcements
-    boomMoments = vStabilizer.m_loading[-1] + lengthTailPole * (np.array(
+    boomMoments = vStabilizer.m_loading[-1] + const['tailPoleLength'] * (np.array(
         [
             [-hStabilizer.f_loading[-1][2][0]],
             [0],
@@ -637,7 +616,7 @@ def size_tail():
         ]
     ) + np.array(
         [
-            [g * (hStabilizer.m + vStabilizer.m + margin)],
+            [const['g'] * (hStabilizer.m + vStabilizer.m + margin)],
             [0],
             [0]
         ]
@@ -651,7 +630,7 @@ def size_tail():
     theta = np.arctan(Mx/Mz)
     D = (Fy + np.sqrt(Fy**2 + 8 * s_max * np.pi * t_min * np.abs(Mz*np.cos(theta) + Mx*np.sin(theta)))) / (2 * s_max * np.pi * t_min)
 
-    tailPoleMass = np.pi * D * 0.001 * lengthTailPole * materials['CFRPeek'].rho
+    tailPoleMass = np.pi * D * 0.001 * const['tailPoleLength'] * materials['CFRPeek'].rho
 
     print(f'Tail pole mass = {tailPoleMass} [kg]')
     print(Fore.BLUE + f'The total tail group mass is {2*hStabilizer.m + vStabilizer.m + tailPoleMass + margin} [kg], '
@@ -662,26 +641,6 @@ def size_tail():
 
 if __name__ == '__main__':
     global Xac_rotor, Zac_rotor, Xac_wing, Zac_wing, rootBladeChord, tipBladeChord
-
-    # Constants
-    R = 8.2
-    MTOM = 3000
-    g = 3.71
-    rpm = 232 * 2 * np.pi / 60
-    q = 0.5 * 0.01 * 112 ** 2
-    rootChord = 3.35
-    b = 16.8
-    fuselage_height = 1.67
-    m_e = 50
-
-    cabin_length = 1.73
-    x_ac_w = cabin_length + rootChord / 4
-    x_cg = x_ac_w + 1
-    x_ac_t = x_cg + 10
-    lengthTailPole = x_ac_t - cabin_length - rootChord
-
-    Airfoil = pd.read_csv("../../../tests/detailed/structures/S1223.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"])
-
     # Rotors
     frontBlade, rearBlade, mr = size_rotor_blades()
 
