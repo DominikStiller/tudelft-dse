@@ -3,7 +3,17 @@ import os
 
 
 class Material:
-    def __init__(self, density, E, G, yield_stress, thermal_exp_coefficient, tensile_strength, compressive_strength, shear_strength):
+    def __init__(
+        self,
+        density,
+        E,
+        G,
+        yield_stress,
+        thermal_exp_coefficient,
+        tensile_strength,
+        compressive_strength,
+        shear_strength,
+    ):
         self.rho = density
         self.E = E
         self.G = G
@@ -28,12 +38,12 @@ a = read_material_properties("materials.csv")
 materials = dict()
 for i, mat in enumerate(a.index):
     materials[mat.strip()] = Material(
-        E=a['E'][i]*1e9,
-        G=a['G'][i]*1e9,
-        density=a['rho'][i],
-        yield_stress=a['yield strength'][i]*1e6,
-        tensile_strength=a['tensile strength'][i]*1e6,
-        compressive_strength=a['compressive strength'][i]*1e6,
+        E=a["E"][i] * 1e9,
+        G=a["G"][i] * 1e9,
+        density=a["rho"][i],
+        yield_stress=a["yield strength"][i] * 1e6,
+        tensile_strength=a["tensile strength"][i] * 1e6,
+        compressive_strength=a["compressive strength"][i] * 1e6,
         thermal_exp_coefficient=None,
-        shear_strength=a['shear strength'][i]*1e6
+        shear_strength=a["shear strength"][i] * 1e6,
     )
