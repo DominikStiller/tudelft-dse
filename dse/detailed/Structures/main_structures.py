@@ -582,36 +582,4 @@ def size_tail():
 
 
 if __name__ == "__main__":
-    # global Xac_rotor, Zac_rotor, Xac_wing, Zac_wing, rootBladeChord, tipBladeChord
-    # # Rotors
-    # print(Fore.WHITE + "\n### Rotor blade sizing started ###\n")
-    # frontBlade, rearBlade, mr = size_rotor_blades()
-    #
-    # # Wings
-    # print(Fore.WHITE + "\n### Wing sizing started ###\n")
-    # span = np.flip(np.array([45, 40, 35, 30]))
-    # rootChord = np.flip(np.array([4, 4.3333, 4.9481, 5.78]))
-    # tr = 0.5
-    # min_mass = 1e6
-    # for i in range(len(span)):
-    #     b, c = span[i], rootChord[i]
-    #     wing, F, moments = size_wing(span=b / 2, chord_root=c, taper=tr, rotor_mass=mr, wing_model=i)
-    #     wing.calculate_mass()
-    #
-    #     if wing.m < min_mass:
-    #         best = i
-    #         best_wing = wing
-    #         min_mass = wing.m
-    #         best_wing.f_loading = F
-    #
-    #     print(f"Configuration {i} explored, m = {wing.m} [kg]")
-    #
-    # print(Fore.BLUE + f"Wing mass = {2*round(best_wing.m, 2)} [kg]")
-    # wn_wing, x_wing, U_wing = wing_vibrations(best_wing)
-    # n_rivets_0 = best_wing.design_joint(b=b/2)
-    # n_rivets_1 = best_wing.design_joint(b=0)
-    #
-    # print(Fore.WHITE + "\n### Tail sizing started ###\n")
-    # hStabilizer, vStabilizer, tailPoleMass = size_tail()
-
     structures = size_structure()
