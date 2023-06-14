@@ -12,7 +12,7 @@ class Test(TestCase):
         elif os.getcwd().split("\\")[-1] != "Structures":
             os.chdir("..\\dse\\detailed\\Structures")
 
-        force = xflr_forces(filename="Test_xflr5_file.csv", q=0.5 * 0.01 * 112 ** 2, b=16.8)
+        force = xflr_forces(filename="Test_xflr5_file.csv", q=0.5 * 0.01 * 112**2, b=16.8)
 
         if np.all(force.fy == 0):
             if np.all(force.fx < 0):
@@ -32,7 +32,7 @@ class Test(TestCase):
         from dse.detailed.Structures.StructureClasses import xflr_forces
 
         try:
-            Forces = xflr_forces(5, q=0.5 * 0.01 * 112 ** 2, b=16.8)
+            Forces = xflr_forces(5, q=0.5 * 0.01 * 112**2, b=16.8)
             a = False
         except TypeError:
             a = True
@@ -62,7 +62,7 @@ class Test(TestCase):
             os.chdir("..\\dse\\detailed\\Structures")
 
         try:
-            Forces = xflr_forces(filename="Test_xflr5_file.csv", q=0.5 * 0.01 * 112 ** 2, b="16.8")
+            Forces = xflr_forces(filename="Test_xflr5_file.csv", q=0.5 * 0.01 * 112**2, b="16.8")
             a = False
         except TypeError:
             a = True
