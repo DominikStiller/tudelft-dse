@@ -9,9 +9,27 @@ import matplotlib.pyplot as plt
 from colorama import Fore
 
 
-def size_rotor_blades(overwrite=False):
-    print(Fore.WHITE + "\n### Rotor blade sizing started ###\n")
 
+def size_structure():
+    # Rotors
+    print(Fore.WHITE + "\n### Rotor blade sizing started ###\n")
+    frontBlade, rearBlade, mr = size_rotor_blades()
+
+    # Wings
+    print(Fore.WHITE + "\n### Wing sizing started ###\n")
+    wing, f_loading, moments = size_wing(wingDims['span'], wingDims['rootChord'], wingDims['taper'], mr, 0)
+    wing.m_loading = moments
+    wn_wing, x_wing, U_wing = wing_vibrations(wing)
+    n_rivets_0 = wing.design_joint(b=np.min(wing.y) / 2)
+    n_rivets_1 = wing.design_joint(b=0)
+
+    # Tails
+    print(Fore.WHITE + "\n### Tail sizing started ###\n")
+    hStabilizer, vStabilizer, tailPoleMass = size_tail()
+    return frontBlade, rearBlade, wing, hStabilizer, vStabilizer
+
+
+def size_rotor_blades(overwrite=False):
     discretization = 5
     frontTwist = np.zeros(discretization * (np.size(rotorDims["frontBladeTwist"]) - 1))
     rearTwist = np.zeros(discretization * (np.size(rotorDims["rearBladeTwist"]) - 1))
@@ -288,12 +306,12 @@ def rotor_vibrations(rotorBlade, reinforce=True, overwrite_I=None):
     return w, x, U
 
 
-def wing_vibrations(pars=None):
+def wing_vibrations(wing, pars=None):
     # Define parameters
     if pars is None:
-        L = b / 2
-        I = np.mean(np.sum((best_wing.Bi * best_wing.z[:-1] ** 2), 0))
-        A = np.mean(np.sum(best_wing.Bi, 0))
+        L = -np.min(wing.y)
+        I = np.mean(np.sum((wing.Bi * wing.z[:-1] ** 2), 0))
+        A = np.mean(np.sum(wing.Bi, 0))
         parameters = np.array([materials["CFRPeek"].E, I, materials["CFRPeek"].rho, A, L])
     else:
         parameters = pars
@@ -308,14 +326,15 @@ def wing_vibrations(pars=None):
     # Report results
     print(Fore.WHITE + "\nVibration data:")
     print(f"Average moment of inertia of the airfoil = {parameters[1]}")
-    print(f"Natural frequency of the wing = {w}")
-    print(f"Max deflection = {np.max(np.abs(U))} [m]")
+    print(Fore.BLUE + f"Natural frequency of the wing = {w}")
+    print(Fore.WHITE + f"Max deflection = {np.max(np.abs(U))} [m]")
     plot_mode_response(x, U)
 
     return w, x, U
 
 
-def size_wing(span, chord_root, taper, wing_model=None):
+def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
+    mr = rotor_mass
     l = np.linspace(-span, 0, 100)
     chord_array = np.linspace(chord_root * taper, chord_root, np.size(l))
 
@@ -360,7 +379,13 @@ def size_wing(span, chord_root, taper, wing_model=None):
     if wing_model is None:
         aerodynamic_forces = xflr_forces("Test_xflr5_file.csv", const["q"], float(span))
     else:
-        cl, cd, y_L = xflr_forces("wings.csv", const["q"], float(span), adrian=wing_model)
+        if wing_model == -1:
+            cl = wingDims['cl']
+            cd = wingDims['cd']
+            y_L = wingDims['y']
+        else:
+            cl, cd, y_L = xflr_forces("wings.csv", const["q"], float(span), adrian=wing_model)
+
         dy = np.abs(wing.y[:-1] - wing.y[1:])
         c_arr = (chord_array[:-1] + chord_array[1:]) / 2
 
@@ -407,6 +432,7 @@ def size_wing(span, chord_root, taper, wing_model=None):
     wing.plot_internal_loading()
     wing.InternalStress(0, 0, 0)
     f_loading_Cr = wing.f_loading
+    moments = wing.m_loading
     thickness2 = wing.t
     B2 = wing.Bi
 
@@ -428,15 +454,13 @@ def size_wing(span, chord_root, taper, wing_model=None):
 
     wing.calculate_mass()
     print(f"Mass of each wing = {np.round(wing.m, 2)}kg")
-    return wing, f_loading_abs
+    return wing, f_loading_abs, moments
 
 
 def size_tail():
     # span, 14.23/2  chord 2.7106, tip = 1.0834 NACA0012
     # Assumptions
     m = 25
-    tail_taper = np.linspace(1, 0.7, m)
-    vTailTaper = tail_taper
 
     ### Horizontal stabilizer ###
     # Define the geometry
@@ -446,18 +470,16 @@ def size_tail():
     )
 
     l = np.linspace(-hTailDims["span"], 0, m)
-    x = np.reshape(NACA0012["x"], (len(NACA0012["x"]), 1)) * tailChord
-    z = np.reshape(NACA0012["z"], (len(NACA0012["z"]), 1)) * tailChord
-    section = np.vstack((NACA0012["x"], NACA0012["z"])) * np.reshape(
-        np.vstack((tailChord, tailChord)), (m, 2, 1)
-    )
+    x = np.reshape(NACA0012["x"], (len(NACA0012["x"]), 1))
+    z = np.reshape(NACA0012["z"], (len(NACA0012["z"]), 1))
+    section = np.vstack((NACA0012["x"], NACA0012["z"])) * np.reshape(tailChord, (m, 1, 1))
 
     Xac = np.max(NACA0012["x"]) * tailChord[0] / 4
     Zac = 0.077 * tailChord[0]
 
     hStabilizer = Beam(
-        width=x,
-        height=z,
+        width=x * tailChord,
+        height=z * tailChord,
         length=l,
         cross_section=section,
         material="CFRPeek",
@@ -492,18 +514,16 @@ def size_tail():
     vTailChord = np.linspace(vTailDims["tipChord"], vTailDims["rootChord"], m)
 
     lv = np.linspace(-vTailDims["span"], 0, m)
-    xv = np.reshape(NACA0012["x"], (len(NACA0012["x"]), 1)) * vTailChord
-    zv = np.reshape(NACA0012["z"], (len(NACA0012["x"]), 1)) * vTailChord
-    section = np.vstack((NACA0012["x"], NACA0012["z"])) * np.reshape(
-        np.vstack((vTailChord, vTailChord)), (m, 2, 1)
-    )
+    xv = np.reshape(NACA0012["x"], (len(NACA0012["x"]), 1))
+    zv = np.reshape(NACA0012["z"], (len(NACA0012["x"]), 1))
+    section = np.vstack((NACA0012["x"], NACA0012["z"])) * np.reshape(vTailChord, (m, 1, 1))
 
     Xac = np.max(NACA0012["x"]) * vTailChord[0] / 4
     Zac = 0.077 * vTailChord[0]
 
     vStabilizer = Beam(
-        width=xv * vTailTaper,
-        height=zv * vTailTaper,
+        width=xv * vTailChord,
+        height=zv * vTailChord,
         length=lv,
         cross_section=section,
         material="AL_light",
@@ -517,9 +537,9 @@ def size_tail():
         * np.vstack((-np.ones(m) / const["liftToDragTail"], np.zeros(m), np.ones(m))),
         point_of_application=np.vstack(
             (
-                (Xac * np.min(vTailTaper) + (1 - np.min(vTailTaper)) * vTailChord) * np.ones(m),
+                Xac * np.ones(m),
                 lv,
-                Zac * np.min(vTailTaper) * np.ones(m),
+                Zac * np.ones(m),
             )
         ),
     )
@@ -562,39 +582,36 @@ def size_tail():
 
 
 if __name__ == "__main__":
-    global Xac_rotor, Zac_rotor, Xac_wing, Zac_wing, rootBladeChord, tipBladeChord
-    # Rotors
-    frontBlade, rearBlade, mr = size_rotor_blades()
+    # global Xac_rotor, Zac_rotor, Xac_wing, Zac_wing, rootBladeChord, tipBladeChord
+    # # Rotors
+    # print(Fore.WHITE + "\n### Rotor blade sizing started ###\n")
+    # frontBlade, rearBlade, mr = size_rotor_blades()
+    #
+    # # Wings
+    # print(Fore.WHITE + "\n### Wing sizing started ###\n")
+    # span = np.flip(np.array([45, 40, 35, 30]))
+    # rootChord = np.flip(np.array([4, 4.3333, 4.9481, 5.78]))
+    # tr = 0.5
+    # min_mass = 1e6
+    # for i in range(len(span)):
+    #     b, c = span[i], rootChord[i]
+    #     wing, F, moments = size_wing(span=b / 2, chord_root=c, taper=tr, rotor_mass=mr, wing_model=i)
+    #     wing.calculate_mass()
+    #
+    #     if wing.m < min_mass:
+    #         best = i
+    #         best_wing = wing
+    #         min_mass = wing.m
+    #         best_wing.f_loading = F
+    #
+    #     print(f"Configuration {i} explored, m = {wing.m} [kg]")
+    #
+    # print(Fore.BLUE + f"Wing mass = {2*round(best_wing.m, 2)} [kg]")
+    # wn_wing, x_wing, U_wing = wing_vibrations(best_wing)
+    # n_rivets_0 = best_wing.design_joint(b=b/2)
+    # n_rivets_1 = best_wing.design_joint(b=0)
+    #
+    # print(Fore.WHITE + "\n### Tail sizing started ###\n")
+    # hStabilizer, vStabilizer, tailPoleMass = size_tail()
 
-    # Wings
-    print(Fore.WHITE + "\n### Wing sizing started ###\n")
-    span = np.flip(np.array([45, 40, 35, 30]))
-    rootChord = np.flip(np.array([4, 4.3333, 4.9481, 5.78]))
-    tr = 0.5
-    min_mass = 1e6
-    for i in range(len(span)):
-        b, c = span[i], rootChord[i]
-        wing, F = size_wing(span=b / 2, chord_root=c, taper=tr, wing_model=i)
-        wing.calculate_mass()
-
-        if wing.m < min_mass:
-            best = i
-            best_wing = wing
-            min_mass = wing.m
-            best_wing.f_loading = F
-
-        print(f"Configuration {i} explored, m = {wing.m} [kg]")
-
-    # b = 42.69
-    # rootChord = 3.7948
-    # tipChord = 1.8974
-    # best_wing, F = size_wing(span=b/2, chord_root=rootChord, taper=rootChord/tipChord)
-    # best_wing.calculate_mass()
-
-    print(Fore.BLUE + f"Wing mass = {2*round(best_wing.m, 2)} [kg]")
-    wn_wing, x_wing, U_wing = wing_vibrations()
-    n_rivets_0 = best_wing.design_joint(b=b / 2)
-    n_rivets_1 = best_wing.design_joint(b=0)
-
-    print(Fore.WHITE + "\n### Tail sizing started ###\n")
-    hStabilizer, vStabilizer, tailPoleMass = size_tail()
+    structures = size_structure()

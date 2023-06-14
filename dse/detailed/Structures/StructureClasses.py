@@ -620,9 +620,7 @@ class Beam:
         width = np.max(self.x[:, indx]) - np.min(self.x[:, indx])
         thickness = np.min(self.t[:, indx])
         plate_mat = self.material_types[self.mat[0, indx]]
-        Py = np.abs(self.f_loading[indx][1]) + np.abs(self.m_loading[indx][0]) * np.max(
-            np.abs(self.z[:, indx] - self.fix[1, indx])
-        )
+        Py = np.abs(self.f_loading[indx][1]) + np.abs(self.m_loading[indx][0] * (np.max(self.section[indx][1]) - self.fix[1][indx]))
 
         Py = Py / n_rows
         n_rivets = 1

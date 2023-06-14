@@ -357,3 +357,12 @@ hTailDims = {
 }
 
 vTailDims = {"span": 4.76025, "rootChord": 3.40018, "tipChord": 1.36007}
+
+wingDims = {
+    "span": 44.665/2,
+    "rootChord": 3.9103,
+    "taper": 1.9851/3.9103,
+    "cl": ...,
+    "cd": ...,
+    "y": ...,
+}
