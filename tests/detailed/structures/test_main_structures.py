@@ -3,6 +3,7 @@ from dse.detailed.Structures.main_structures import *
 from dse.detailed.Structures.StructureClasses import Beam
 from unittest import TestCase
 import numpy as np
+import vibration_toolbox as vtb
 
 
 class TestMainStructures(TestCase):
@@ -91,3 +92,46 @@ class TestMainStructures(TestCase):
         hs, vs, tp = size_tail()
         self.assertTrue(np.all(np.abs(hs.sigma) < s_max0), msg='Stress exceeds allowable compressive stress')
         self.assertTrue(np.all(np.abs(vs.sigma) < s_max1), msg='Stress exceeds allowable compressive stress')
+
+
+class ValidateVibrations(TestCase):
+    def test_natural_frequencies(self):
+        # From https://zenodo.org/record/3374467/files/EXPERIMENTAL%20INVESTIGATIONS%20ON%20FREE%20VIBRATION%20OF%20BEAMS%20-HBRP%20Publication.pdf?download=1
+        dimensions = np.array([
+            [0.35, 0.02, 0.003],
+            [0.55, 0.03, 0.003],
+            [0.55, 0.04, 0.003]
+        ])
+
+        E = [0.7*1e11, 2*1e11, 1.2*1e11]
+        rho = [2720, 7850, 8940]
+
+        nf = np.array([
+            [  # Dimension 1
+                [[18, 110, 345], [103, 345, 612]],  # Al
+                [[17, 110, 317], [110, 317, 558]],  # St
+                [[13, 84, 244], [84, 244, 468]]     # Cu
+            ],
+            [  # Dimension 2
+                [[7, 44, 130], [44, 130, 265]],     # Al
+                [[7, 44, 128], [44, 128, 255]],     # St
+                [[6, 36, 107], [36, 107, 211]]      # Cu
+            ],
+            [  # Dimension 3
+                [[8, 45, 133], [45, 133, 281]],     # Al
+                [[7, 44, 126], [42, 120, 235]],     # St
+                [[6, 41, 119], [36, 108, 210]]      # Cu
+            ]
+        ])
+
+        for i in range(3):
+            for j in range(3):
+                #E, I, rho, A, L,
+                I = dimensions[i][1] * dimensions[i][2]**3/12
+                A = dimensions[i][1] * dimensions[i][2]
+                parameters = np.array([E[j], I, rho[j], A, dimensions[i][0]])
+                w0 = vtb.euler_beam_modes(n=3, bctype=2, beamparams=parameters)[0] / (2 * np.pi)
+                w1 = vtb.euler_beam_modes(n=3, bctype=5, beamparams=parameters)[0] / (2 * np.pi)
+
+                assert_allclose(w0, nf[i][j][0], rtol=0.25, err_msg=f'C-F Natural frequency is wrong')
+                assert_allclose(w1, nf[i][j][1], rtol=0.25, err_msg=f'C-C Natural frequency is wrong')

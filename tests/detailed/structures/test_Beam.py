@@ -504,7 +504,7 @@ class TestBeam(TestCase):
 
 class ValidateBeam(TestCase):
     def test_internal_load(self):
-        # From https://www.studocu.com/row/document/university-of-engineering-and-technology-lahore/engineering-dynamics/lab-report-1-reaction-of-forces-on-a-simply-supported-beam/15764339
+        # From https://www.scribd.com/document/263390031/Experiment-Shearing-Forces#
         loads0 = np.array([
             [-10],
             [-10],

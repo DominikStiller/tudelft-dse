@@ -552,47 +552,48 @@ class Beam:
 
         return self.Ix, self.Iy, self.Iz, xcg_overall, ycg_overall, zcg_overall
 
-    def design_joint(self, b):
-        def determine_pitch_and_D(n_rows):
-            # Initial guesses for rivet properties
-            D = 0.005
-            rivet_mat = materials['Titanium Alloys']
-            n_safety = 3 * 1.5
+    def _determine_pitch_and_D(self, n_rows, b):
+        # Initial guesses for rivet properties
+        D = 0.005
+        rivet_mat = materials['Titanium Alloys']
+        n_safety = 3 * 1.5
 
-            # Plate properties
-            indx = (np.abs(self.y - b)).argmin()
-            width = np.max(self.x[:, indx]) - np.min(self.x[:, indx])
-            thickness = np.min(self.t[:, indx])
-            plate_mat = self.material_types[self.mat[0, indx]]
-            Py = np.abs(self.f_loading[indx][1]) + np.abs(self.m_loading[indx][0]) * np.max(
-                np.abs(self.z[:, indx] - self.fix[1, indx]))
+        # Plate properties
+        indx = (np.abs(self.y - b)).argmin()
+        width = np.max(self.x[:, indx]) - np.min(self.x[:, indx])
+        thickness = np.min(self.t[:, indx])
+        plate_mat = self.material_types[self.mat[0, indx]]
+        Py = np.abs(self.f_loading[indx][1]) + np.abs(self.m_loading[indx][0]) * np.max(
+            np.abs(self.z[:, indx] - self.fix[1, indx]))
 
-            Py = Py/n_rows
-            n_rivets = 1
-            # Shearing stress - failure of the rivet
-            tau = Py / (np.pi * D ** 2 / 4)
-            if tau >= rivet_mat.tau / n_safety:
-                D = np.ceil(1000 * np.sqrt(Py / (np.pi * rivet_mat.tau / n_safety / 4))) / 1e3
-                if D > 0.02:
-                    print(f'Rivet diameter is greater than 20 mm - consider increasing plate thickness instead')
+        Py = Py / n_rows
+        n_rivets = 1
+        # Shearing stress - failure of the rivet
+        tau = Py / (np.pi * D ** 2 / 4)
+        if tau >= rivet_mat.tau / n_safety:
+            D = np.ceil(1000 * np.sqrt(Py / (np.pi * rivet_mat.tau / n_safety / 4))) / 1e3
+            if D > 0.02:
+                print(f'Rivet diameter is greater than 20 mm - consider increasing plate thickness instead')
 
-            # Bearing stress - failure of the plate
-            bearing1 = (Py / n_rivets) / (D * thickness)
-            if bearing1 >= plate_mat.compressive / n_safety:
-                n_rivets = np.ceil(Py / (plate_mat.compressive / n_safety * D * thickness))
+        # Bearing stress - failure of the plate
+        bearing1 = (Py / n_rivets) / (D * thickness)
+        if bearing1 >= plate_mat.compressive / n_safety:
+            n_rivets = np.ceil(Py / (plate_mat.compressive / n_safety * D * thickness))
 
-            # Tensions failure - failure of the plate
+        # Tensions failure - failure of the plate
+        w = (width - D * n_rivets) / (n_rivets + 1)
+        sigma = Py / (w * thickness)
+        while sigma >= plate_mat.tensile / n_safety:
+            n_rivets += 1
             w = (width - D * n_rivets) / (n_rivets + 1)
             sigma = Py / (w * thickness)
-            while sigma >= plate_mat.tensile / n_safety:
-                n_rivets += 1
-                w = (width - D * n_rivets) / (n_rivets + 1)
-                sigma = Py / (w * thickness)
 
-            return n_rivets, D
+        return n_rivets, D
 
-        n0, D0 = determine_pitch_and_D(1)
-        n1, D1 = determine_pitch_and_D(2)
+    def design_joint(self, b):
+
+        n0, D0 = self._determine_pitch_and_D(1, b)
+        n1, D1 = self._determine_pitch_and_D(2, b)
 
         if n0*D0 < 2*n1*D1:
             print(f'The lightest option is to have 1 row of {n0} rivets of {D0 * 1e3} mm in diameter')

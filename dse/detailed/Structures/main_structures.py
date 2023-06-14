@@ -525,7 +525,6 @@ def size_wing(span, chord_root, taper, wing_model=None):
 
 def size_tail():
     # span, 14.23/2  chord 2.7106, tip = 1.0834 NACA0012
-    R = 8.2
     MTOM = 3000
     g = 3.71
     lengthTailPole = 15 - 2.1439
@@ -557,7 +556,7 @@ def size_tail():
         height=z,
         length=l,
         cross_section=section,
-        material='Al/Si',
+        material='CFRPeek',
         fixing_points=np.array([[Xac], [Zac]]) * np.ones(m)
     )
 
@@ -652,7 +651,7 @@ def size_tail():
     theta = np.arctan(Mx/Mz)
     D = (Fy + np.sqrt(Fy**2 + 8 * s_max * np.pi * t_min * np.abs(Mz*np.cos(theta) + Mx*np.sin(theta)))) / (2 * s_max * np.pi * t_min)
 
-    tailPoleMass = np.pi * D * 0.001 * R * materials['CFRPeek'].rho
+    tailPoleMass = np.pi * D * 0.001 * lengthTailPole * materials['CFRPeek'].rho
 
     print(f'Tail pole mass = {tailPoleMass} [kg]')
     print(Fore.BLUE + f'The total tail group mass is {2*hStabilizer.m + vStabilizer.m + tailPoleMass + margin} [kg], '
