@@ -54,7 +54,6 @@ class Coefficients:
         # self.C_h_delta = -0.124  # Dummy number, TBD
         # self.C_h_delta_t = -0.124  # Dummy number, TBD
         # self.C_m_delta = -2  # Dummy number, TBD
-        # self.C_m_delta_e = -1  # Dummy number, TBD
         # self.C_m_0 = 0.1119  # done
         # self.d_deltae_d_deltase = 2  # Dummy number, TBD
         # self.W0 = 1043*9.81  # done
@@ -162,7 +161,7 @@ class Coefficients:
         plt.legend()
         plt.show()
         control_force = self.d_deltae_d_deltase * area_tail * self.S * self.tail_chord * self.Vh_V**2 * \
-                        (self.W0 * self.C_h_delta * cg_chord * xn_free_chord / (self.S * C_m_delta) - 0.5 * self.rho * V**2 * self.C_h_delta_t * single_deflection)
+                        (self.W0 * self.C_h_delta * cg_chord * xn_free_chord / (self.S * C_m_delta) - 0.5 * self.rho * self.vel**2 * self.C_h_delta_t * single_deflection)
 
         elevator_deflection = (- 1 / C_m_delta) * (self.C_m_0 + self.W0 * (cg_chord - xn_fixed_chord) / (0.5 * self.rho * V**2 * self.S))
         plt.plot(V, elevator_deflection, color='tab:blue', label='Elevator trim curve')
@@ -281,42 +280,42 @@ class Equilibrium:
 
 
     def rudder_sizing(self, x_rudder):
-        v_cross_wind = 55 / 3.6    # 7.7m for/s cesna
-        s_fuselage_side = 15 * 3
-        drag_coefficient_fuselage = 1.28
-        safety_factor = 1.5
-        side_slip_angle = np.arctan2(v_cross_wind, self.vel)
-        cl_alpha = 2 * np.pi
-        cl_due_to_sideslip = side_slip_angle * cl_alpha  # or just get the exact number at the sideslip angle
-        force_engine = 430 / 2
-        x_rudder = 10 * (x_rudder / x_rudder)   # remove later just so the number is not crazy
-        distance_ratio = (43.73/2) / x_rudder    # just 10 for now
-        cl_deflection = 0.0504 * 180 / np.pi    # found in xflr5 will validate and verify the number
-        max_deflection = np.radians(20)
-        cl_due_to_deflection = cl_deflection * max_deflection
-        d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind**2
-        s_side_slip = (d_fuselage * safety_factor) / \
-                      (0.5 * self.rho * self.vel**2 * (cl_due_to_deflection - cl_due_to_sideslip))
-        s_engine = (force_engine * distance_ratio * safety_factor) / \
-                   (0.5 * self.rho * self.vel**2 * cl_due_to_deflection)
-
-        # # Verification and Validation
-        # v_cross_wind = 7.7
-        # s_fuselage_side = 9.43
+        # v_cross_wind = 55 / 3.6    # 7.7m for/s cesna
+        # s_fuselage_side = 15 * 3
         # drag_coefficient_fuselage = 1.28
-        # safety_factor = 1.
+        # safety_factor = 1.5
         # side_slip_angle = np.arctan2(v_cross_wind, self.vel)
-        # cl_alpha = 5.7116
-        # cl_due_to_sideslip = side_slip_angle * cl_alpha
-        # cl_deflection = 0.0504 * 180 / np.pi
+        # cl_alpha = 2 * np.pi
+        # cl_due_to_sideslip = side_slip_angle * cl_alpha  # or just get the exact number at the sideslip angle
+        # force_engine = 430 / 2
+        # x_rudder = 10 * (x_rudder / x_rudder)   # remove later just so the number is not crazy
+        # distance_ratio = (43.73/2) / x_rudder    # just 10 for now
+        # cl_deflection = 0.0504 * 180 / np.pi    # found in xflr5 will validate and verify the number
         # max_deflection = np.radians(20)
         # cl_due_to_deflection = cl_deflection * max_deflection
-        # d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind ** 2
-        #
+        # d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind**2
         # s_side_slip = (d_fuselage * safety_factor) / \
-        #               (0.5 * self.rho * self.vel ** 2 * (cl_due_to_deflection - cl_due_to_sideslip))
-        #
-        # s_engine = 0    # since only one engine
+        #               (0.5 * self.rho * self.vel**2 * (cl_due_to_deflection - cl_due_to_sideslip))
+        # s_engine = (force_engine * distance_ratio * safety_factor) / \
+        #            (0.5 * self.rho * self.vel**2 * cl_due_to_deflection)
+
+        # Verification and Validation
+        v_cross_wind = 7.7
+        s_fuselage_side = 9.43
+        drag_coefficient_fuselage = 1.28
+        safety_factor = 1.
+        side_slip_angle = np.arctan2(v_cross_wind, self.vel)
+        cl_alpha = 5.7116
+        cl_due_to_sideslip = side_slip_angle * cl_alpha
+        cl_deflection = 0.0504 * 180 / np.pi
+        max_deflection = np.radians(20)
+        cl_due_to_deflection = cl_deflection * max_deflection
+        d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind ** 2
+
+        s_side_slip = (d_fuselage * safety_factor) / \
+                      (0.5 * self.rho * self.vel ** 2 * (cl_due_to_deflection - cl_due_to_sideslip))
+
+        s_engine = 0    # since only one engine
         return s_side_slip, s_engine
 
 
