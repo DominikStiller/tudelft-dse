@@ -14,18 +14,24 @@ def size_structure():
     # Rotors
     print(Fore.WHITE + "\n### Rotor blade sizing started ###\n")
     frontBlade, rearBlade, mr = size_rotor_blades()
+    frontBlade.buckling()
+    rearBlade.buckling()
 
     # Wings
     print(Fore.WHITE + "\n### Wing sizing started ###\n")
     wing, f_loading, moments = size_wing(wingDims['span'], wingDims['rootChord'], wingDims['taper'], mr, 0)
     wing.m_loading = moments
-    wn_wing, x_wing, U_wing = wing_vibrations(wing)
-    n_rivets_0 = wing.design_joint(b=np.min(wing.y) / 2)
-    n_rivets_1 = wing.design_joint(b=0)
+    wing.buckling()
+    wing_vibrations(wing)
+    wing.design_joint(b=np.min(wing.y) / 2)
+    wing.design_joint(b=0)
 
     # Tails
     print(Fore.WHITE + "\n### Tail sizing started ###\n")
     hStabilizer, vStabilizer, tailPoleMass = size_tail()
+    hStabilizer.buckling()
+    vStabilizer.buckling()
+
     return frontBlade, rearBlade, wing, hStabilizer, vStabilizer
 
 
@@ -288,7 +294,7 @@ def rotor_vibrations(rotorBlade, reinforce=True, overwrite_I=None):
             parameters = np.array([E1, I0, materials["CFRCy"].rho, A0, L1])
             w, x, U = vtb.euler_beam_modes(n=modes, bctype=bc, beamparams=parameters)
 
-        print(f"Natural frequencies = {w} [rad/s]")
+        print(Fore.BLUE + f"Natural frequencies = {w} [rad/s]" + Fore.WHITE)
         print(f"Maximum deflection = {np.max(np.abs(U))} [m]")
         print(f"Required reinforcement area = {reinforcement_area}")
         print(
@@ -453,7 +459,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
     f_loading_abs = np.maximum(np.abs(f_loading_TO), np.abs(f_loading_Cr))
 
     wing.calculate_mass()
-    print(f"Mass of each wing = {np.round(wing.m, 2)}kg")
+    print(Fore.BLUE + f"Mass of each wing = {np.round(wing.m, 2)}kg" + Fore.WHITE)
     return wing, f_loading_abs, moments
 
 

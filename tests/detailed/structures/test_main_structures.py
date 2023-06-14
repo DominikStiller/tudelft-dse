@@ -143,7 +143,7 @@ class ValidateVibrations(TestCase):
                 w1 = vtb.euler_beam_modes(n=3, bctype=5, beamparams=parameters)[0] / (2 * np.pi)
 
                 assert_allclose(
-                    w0, nf[i][j][0], rtol=0.2, err_msg=f"C-F Natural frequency is wrong"
+                    w0, nf[i][j][0], rtol=0.19, err_msg=f"C-F Natural frequency is wrong"
                 )
                 assert_allclose(
                     w1, nf[i][j][1], rtol=0.25, err_msg=f"C-C Natural frequency is wrong"
