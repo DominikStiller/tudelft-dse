@@ -641,5 +641,5 @@ class ValidateBeam(TestCase):
 
     def test_buckling(self):
         # Experimental results
-        # Validated against data found in file:///C:/Users/javia/Downloads/229099116.pdf
+        # Validated against data found in pg 11 of file:///C:/Users/javia/Downloads/229099116.pdf
         self.assertTrue(True)

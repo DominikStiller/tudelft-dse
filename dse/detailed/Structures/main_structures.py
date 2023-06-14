@@ -19,7 +19,7 @@ def size_structure():
 
     # Wings
     print(Fore.WHITE + "\n### Wing sizing started ###\n")
-    wing, f_loading, moments = size_wing(wingDims['span'], wingDims['rootChord'], wingDims['taper'], mr, 0)
+    wing, f_loading, moments = size_wing(wingDims['span'], wingDims['rootChord'], wingDims['taper'], mr, -1)
     wing.m_loading = moments
     wing.buckling()
     wing_vibrations(wing)
@@ -223,7 +223,7 @@ def size_rotor_blades(overwrite=False):
     print(
         f"Each rear blade weights {np.round(rearBlade.m, 2) + 2} kg, including 2 kg of reinforcements"
     )
-    print(f"Total rotor mass = {np.round(12 * (frontBlade.m + 2) + 12 * (rearBlade.m + 2), 2)} kg")
+    print(Fore.BLUE + f"Total rotor mass = {np.round(12 * (frontBlade.m + 2) + 12 * (rearBlade.m + 2), 2)} kg" + Fore.WHITE)
 
     if not overwrite:
         wn_rotor, x_rotor, U_rotor = rotor_vibrations(frontBlade)
@@ -372,6 +372,10 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         magnitude=bracing_TO_mag * np.array([[0], [np.cos(theta)], [-np.sin(theta)]]),
         point_of_application=np.array([[Xac_wing], [-span], [Zac_wing]]),
     )
+
+    R_brace = bracing_TO_mag / (2 * np.pi * 0.001 * materials['CFRPeek'].compressive / 4.5)
+    m_brace = materials['CFRPeek'].rho * span/np.cos(theta) * 2 * np.pi * R_brace * 0.001
+    print(Fore.BLUE + f'The brace needs to have a radius of {R_brace} [m] and will weight {m_brace} [kg]')
     engine_and_rotor_weight = Force(
         magnitude=np.array([[0], [0], [-(mr / 2 + const["engineMass"]) * const["g"]]]),
         point_of_application=np.array([[Xac_wing], [-span], [Zac_wing]]),
@@ -386,9 +390,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         aerodynamic_forces = xflr_forces("Test_xflr5_file.csv", const["q"], float(span))
     else:
         if wing_model == -1:
-            cl = wingDims['cl']
-            cd = wingDims['cd']
-            y_L = wingDims['y']
+            cl, cd, y_L = xflr_forces("javier.csv", const["q"], float(span), adrian=wing_model)
         else:
             cl, cd, y_L = xflr_forces("wings.csv", const["q"], float(span), adrian=wing_model)
 

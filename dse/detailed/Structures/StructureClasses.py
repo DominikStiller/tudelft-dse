@@ -74,10 +74,16 @@ def xflr_forces(filename, q, b, adrian=None):
         return Force(magnitude=mag, point_of_application=application)
 
     else:
-        df = pd.read_csv(filename)
-        cl_array = np.fromstring(df["Cl_dist"].iloc[adrian][1:-1], sep=" ")
-        cd_array = np.fromstring(df["Cd_dist"].iloc[adrian][1:-1], sep=" ")
-        sp_array = np.fromstring(df["y_span"].iloc[adrian][1:-1], sep=" ")
+        if adrian == -1:
+            df = pd.read_csv(filename)
+            cl_array = np.fromstring(df["Cl_dist"][0][1:-1], sep=" ")
+            cd_array = np.fromstring(df["Cd_dist"][0][1:-1], sep=" ")
+            sp_array = np.fromstring(df["y_span"][0][1:-1], sep=" ")
+        else:
+            df = pd.read_csv(filename)
+            cl_array = np.fromstring(df["Cl_dist"].iloc[adrian][1:-1], sep=" ")
+            cd_array = np.fromstring(df["Cd_dist"].iloc[adrian][1:-1], sep=" ")
+            sp_array = np.fromstring(df["y_span"].iloc[adrian][1:-1], sep=" ")
 
         return cl_array, cd_array, sp_array
 
