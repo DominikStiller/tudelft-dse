@@ -7,63 +7,61 @@ import matplotlib.pyplot as plt
 class Coefficients:
 
     def __init__(self):
-        # # for scissor plot
-        # self.mass = np.array([2350, 100, 250])  # cg, payload, pilots
-        # self.location = np.array([0.34, 0.94, -0.24])  # expressed in x/c
-        # # for tail sizing
-        # self.CL_alpha_h = 2 * np.pi  # cl alpha curve for tail
-        # self.CL_alpha_A = 5.271  # cl alpha curve for aircraft
-        # self.downwash_angle = 0  # downwash induced angle
-        # self.length_h = 13  # xh - xw (distance between tail and main wing)
-        # self.main_wing_chord = 3.11  # main wing chord
-        # self.Vh_V = 1  # ratio of tail speed to wing speed
-        # self.X_ac = 0.25  # location of aerodynamic center with respect to the chord
-        # self.SM = 0.05  # safety margin
-        # self.CL_h = -0.95  # -1 for full moving tail (what is it? lift of tail)
-        # self.CL_A_h = 1.33  # Cl of the aircraft with no tail?
-        # self.Cmac = -0.33  # main wing moment coefficient
-        # self.C_N_h_delta = 3.37     # Dummy number, TBD
-        # self.C_h_alpha = 0.00001    # Dummy number, TBD
-        # self.C_h_delta = -0.124     # Dummy number, TBD
-        # self.C_h_delta_t = -0.124   # Dummy number, TBD
-        # self.C_m_delta = -2         # Dummy number, TBD
-        # self.C_m_delta_e = -1       # Dummy number, TBD
-        # self.C_m_0 = 1              # Dummy number, TBD
-        # self.d_deltae_d_deltase = 2    # Dummy number, TBD
-        # self.W0 = 3000 * 3.71   # weight
-        # self.rho = 0.01         # density
-        # self.S = 133      # main wing area
-        # self.vel = 400 / 3.6    # velocity
-        # self.tail_chord = 1.897     # tail chord
-
-        # reference plane parameters
         # for scissor plot
-        self.mass = np.array([1, 10000])  # cg, payload, pilots
-        self.location = np.array([0.409, 0.426])  # just min max cgs
-        self.CL_alpha_h = 5  # done
-        self.CL_alpha_A = 5.143  # done
-        self.downwash_angle = 0.25  # done
-        self.length_h = 4.03  # done
-        self.main_wing_chord = 1.47  # done
-        self.Vh_V = 0.9  # ratio of tail speed to wing speed
-        self.X_ac = 0.25  # done
-        self.SM = 0.1  # safety margin
-        self.CL_h = -0.35 * 2.83**(1/3)  # done
-        self.CL_A_h = 0.3  # done
-        self.Cmac = -0.04  # not sure
-        self.C_N_h_delta = 3.37  # Dummy number, TBD
-        self.C_h_alpha = 0.00001  # Dummy number, TBD
-        self.C_h_delta = -0.124  # Dummy number, TBD
-        self.C_h_delta_t = -0.124  # Dummy number, TBD
-        self.C_m_delta = -2  # Dummy number, TBD
-        self.C_m_delta_e = -1  # Dummy number, TBD
-        self.C_m_0 = 0.1119  # done
-        self.d_deltae_d_deltase = 2  # Dummy number, TBD
-        self.W0 = 1043*9.81  # done
-        self.rho = 1.225 * 0.742 # done
-        self.S = 16.2  # done
-        self.vel = 226 / 3.6  # done
-        self.tail_chord = 0.707  # done
+        self.mass = np.array([2350, 100, 250])  # cg, payload, pilots
+        self.location = np.array([0.34, 0.94, -0.24])  # expressed in x/c
+        # for tail sizing
+        self.CL_alpha_h = 2 * np.pi  # cl alpha curve for tail
+        self.CL_alpha_A = 5.271  # cl alpha curve for aircraft
+        self.downwash_angle = 0  # downwash induced angle
+        self.length_h = 13  # xh - xw (distance between tail and main wing)
+        self.main_wing_chord = 3.11  # main wing chord
+        self.Vh_V = 1  # ratio of tail speed to wing speed
+        self.X_ac = 0.25  # location of aerodynamic center with respect to the chord
+        self.SM = 0.05  # safety margin
+        self.CL_h = -0.95  # -1 for full moving tail (what is it? lift of tail)
+        self.CL_A_h = 1.33  # Cl of the aircraft with no tail?
+        self.Cmac = -0.33  # main wing moment coefficient
+        self.C_N_h_delta = 2.43     # Dummy number, TBD
+        self.C_h_alpha = -0.118    # Dummy number, TBD
+        self.C_h_delta = -0.279     # Dummy number, TBD
+        self.C_h_delta_t = -0.228   # Dummy number, TBD
+        self.C_m_0 = 0.08333325813508141    # Dummy number, TBD
+        self.d_deltae_d_deltase = 2.18    # Dummy number, TBD
+        self.W0 = 3000 * 3.71   # weight
+        self.rho = 0.01         # density
+        self.S = 133.5      # main wing area
+        self.vel = 400 / 3.6    # velocity
+        self.tail_chord = 1.897     # tail chord
+
+        # # reference plane parameters
+        # # for scissor plot
+        # self.mass = np.array([1, 10000])  # cg, payload, pilots
+        # self.location = np.array([0.409, 0.426])  # just min max cgs
+        # self.CL_alpha_h = 5  # done
+        # self.CL_alpha_A = 5.143  # done
+        # self.downwash_angle = 0.25  # done
+        # self.length_h = 4.03  # done
+        # self.main_wing_chord = 1.47  # done
+        # self.Vh_V = 0.9  # ratio of tail speed to wing speed
+        # self.X_ac = 0.25  # done
+        # self.SM = 0.1  # safety margin
+        # self.CL_h = -0.35 * 2.83**(1/3)  # done
+        # self.CL_A_h = 0.3  # done
+        # self.Cmac = -0.04  # not sure
+        # self.C_N_h_delta = 3.37  # Dummy number, TBD
+        # self.C_h_alpha = 0.00001  # Dummy number, TBD
+        # self.C_h_delta = -0.124  # Dummy number, TBD
+        # self.C_h_delta_t = -0.124  # Dummy number, TBD
+        # self.C_m_delta = -2  # Dummy number, TBD
+        # self.C_m_delta_e = -1  # Dummy number, TBD
+        # self.C_m_0 = 0.1119  # done
+        # self.d_deltae_d_deltase = 2  # Dummy number, TBD
+        # self.W0 = 1043*9.81  # done
+        # self.rho = 1.225 * 0.742 # done
+        # self.S = 16.2  # done
+        # self.vel = 226 / 3.6  # done
+        # self.tail_chord = 0.707  # done
 
     def loading_diagram(self):
         cgs = np.zeros(len(self.mass))
@@ -146,8 +144,9 @@ class Coefficients:
         return x_n_free
 
     def elevator_force(self, cg_chord, xn_free_chord, xn_fixed_chord, area_tail):
+        C_m_delta = - self.C_N_h_delta * self.Vh_V**2 * area_tail * self.length_h / self.main_wing_chord
         single_deflection = (2 * self.W0 * self.C_h_delta * (cg_chord - xn_free_chord)) / \
-                            (self.rho * self.S * (self.vel**2) * self.C_m_delta * self.C_h_delta)
+                            (self.rho * self.S * (self.vel**2) * C_m_delta * self.C_h_delta)
         print(f"the elevator deflection is {np.degrees(single_deflection)}")
         V = np.arange(60, 150, 1)
         dFe_dV = self.d_deltae_d_deltase * area_tail * self.S * self.tail_chord * (self.Vh_V**2) * \
@@ -155,7 +154,7 @@ class Coefficients:
         print(f"the control force stability (dFe/dV) at Fe=0 is {dFe_dV} Ns/m")
 
         Fe = self.d_deltae_d_deltase * area_tail * self.S * self.tail_chord * self.Vh_V**2 * \
-             (self.W0 * self.C_h_delta * (cg_chord - xn_free_chord) / (self.S * self.C_m_delta) - 0.5 * self.rho * V**2 * self.C_h_delta_t * single_deflection)
+             (self.W0 * self.C_h_delta * (cg_chord - xn_free_chord) / (self.S * C_m_delta) - 0.5 * self.rho * V**2 * self.C_h_delta_t * single_deflection)
 
         plt.plot(V, Fe, color='tab:blue', label='Elevator force')
         plt.axvline(x=self.vel, color='tab:orange', label='cruise velocity')
@@ -163,9 +162,9 @@ class Coefficients:
         plt.legend()
         plt.show()
         control_force = self.d_deltae_d_deltase * area_tail * self.S * self.tail_chord * self.Vh_V**2 * \
-                        (self.W0 * self.C_h_delta * cg_chord * xn_free_chord / (self.S * self.C_m_delta) - 0.5 * self.rho * V**2 * self.C_h_delta_t * single_deflection)
+                        (self.W0 * self.C_h_delta * cg_chord * xn_free_chord / (self.S * C_m_delta) - 0.5 * self.rho * V**2 * self.C_h_delta_t * single_deflection)
 
-        elevator_deflection = (- 1 / self.C_m_delta_e) * (self.C_m_0 + self.W0 * (cg_chord - xn_fixed_chord) / (0.5 * self.rho * V**2 * self.S))
+        elevator_deflection = (- 1 / C_m_delta) * (self.C_m_0 + self.W0 * (cg_chord - xn_fixed_chord) / (0.5 * self.rho * V**2 * self.S))
         plt.plot(V, elevator_deflection, color='tab:blue', label='Elevator trim curve')
         plt.axvline(x=self.vel, color='tab:orange', label='cruise velocity')
         plt.title("elevator trim curve")
@@ -185,52 +184,51 @@ elevator_force = coefficients.elevator_force(cg[0], neutral_point_free, neutral_
 class Equilibrium:
 
     def __init__(self):
-        # self.C_T_w = 0.054      # tangential force coefficient of wing done
-        # self.C_T_h = 0.054      # tangential force coefficient of tail
-        # self.C_T_b = 0.1        # tangential force coefficient of body 0.029
-        # self.S = coefficients.S         # area of wing
-        # self.Sb = 40            # area of the body
-        # self.Sh_S = area_t     # area of the tail to wing ratio
-        # self.rho = coefficients.rho     # density
-        # self.vel = coefficients.vel     # velocity
-        # self.Vh_V = coefficients.Vh_V   # ratio of tail speed to wing speed
-        # self.W0 = coefficients.W0       # The weight of the aircraft
-        # self.pitch = 0          # The pitch angle of aircraft in radians done
-        # self.C_N_w = 1.33       # Normal coefficient of the wing (CL) at 0.6 degrees done
-        # self.C_N_h = 0.4        # Normal coefficient of the tail
-        # self.C_M_ac_w = coefficients.Cmac   # Main wing moment coefficient
-        # self.C_M_ac_h = -0.69   # Tail moment coefficient
+        self.C_T_w = 0.054      # tangential force coefficient of wing done
+        self.C_T_h = 0.054      # tangential force coefficient of tail
+        self.C_T_b = 0.1        # tangential force coefficient of body 0.029
+        self.S = coefficients.S         # area of wing
+        self.Sb = 40            # area of the body
+        self.Sh_S = area_t     # area of the tail to wing ratio
+        self.rho = coefficients.rho     # density
+        self.vel = coefficients.vel     # velocity
+        self.Vh_V = coefficients.Vh_V   # ratio of tail speed to wing speed
+        self.W0 = coefficients.W0       # The weight of the aircraft
+        self.pitch = 0          # The pitch angle of aircraft in radians done
+        self.C_N_w = 1.33       # Normal coefficient of the wing (CL) at 0.6 degrees done
+        self.C_N_h = 0.327        # Normal coefficient of the tail
+        self.C_M_ac_w = coefficients.Cmac   # Main wing moment coefficient
+        self.C_M_ac_h = -0.69   # Tail moment coefficient
+        self.X_W = (max(cg) - coefficients.X_ac) * coefficients.main_wing_chord  # X location of main wing ac
+        self.Z_W = -1           # Z location of the wing center of pressure (or aerodynamic center)
+        self.X_T = 2            # X location of the thrust
+        self.Z_T = -1           # Z location of the thrust
+        self.Chord_w = coefficients.main_wing_chord     # Main wing chord
+        self.Chord_h = coefficients.tail_chord        # Tail chord
+
+        # # Verification and Validation: Cessna parameters
+        # self.C_T_w = 0.02  # tangential force coefficient of wing done
+        # self.C_T_h = 0.03  # tangential force coefficient of tail
+        # self.C_T_b = 0.029  # tangential force coefficient of body
+        # self.S = coefficients.S  # area of wing
+        # self.Sb = 5.75  # area of the body
+        # self.Sh_S = area_t + 0.03  # area of the tail to wing ratio
+        # self.rho = coefficients.rho  # density
+        # self.vel = coefficients.vel  # velocity
+        # self.Vh_V = coefficients.Vh_V  # ratio of tail speed to wing speed
+        # self.W0 = coefficients.W0  # The weight of the aircraft
+        # self.pitch = 0  # The pitch angle of aircraft in radians done
+        # self.C_N_w = 0.327  # aoa = 0.5 degrees for naca 2412
+        # self.C_N_h = 0.156  # aoa = 1.2 degrees for naca 0012
+        # self.C_M_ac_w = coefficients.Cmac  # Main wing moment coefficient
+        # self.C_M_ac_h = -0.060  # Tail moment coefficient
         # # make sure that these are the same as the ones expressed in x/c under coefficients
         # self.X_W = (max(cg) - coefficients.X_ac) * coefficients.main_wing_chord  # X location of main wing ac
-        # self.Z_W = -1           # Z location of the wing center of pressure (or aerodynamic center)
-        # self.X_T = 2            # X location of the thrust
-        # self.Z_T = -1           # Z location of the thrust
-        # self.Chord_w = coefficients.main_wing_chord     # Main wing chord
-        # self.Chord_h = coefficients.tail_chord        # Tail chord
-
-        #cesna parameters
-        self.C_T_w = 0.02  # tangential force coefficient of wing done
-        self.C_T_h = 0.03  # tangential force coefficient of tail
-        self.C_T_b = 0.029  # tangential force coefficient of body
-        self.S = coefficients.S  # area of wing
-        self.Sb = 5.75  # area of the body
-        self.Sh_S = area_t + 0.03  # area of the tail to wing ratio
-        self.rho = coefficients.rho  # density
-        self.vel = coefficients.vel  # velocity
-        self.Vh_V = coefficients.Vh_V  # ratio of tail speed to wing speed
-        self.W0 = coefficients.W0  # The weight of the aircraft
-        self.pitch = 0  # The pitch angle of aircraft in radians done
-        self.C_N_w = 0.327  # aoa = 0.5 degrees for naca 2412
-        self.C_N_h = 0.156  # aoa = 1.2 degrees for naca 0012
-        self.C_M_ac_w = coefficients.Cmac  # Main wing moment coefficient
-        self.C_M_ac_h = -0.060  # Tail moment coefficient
-        # make sure that these are the same as the ones expressed in x/c under coefficients
-        self.X_W = (max(cg) - coefficients.X_ac) * coefficients.main_wing_chord  # X location of main wing ac
-        self.Z_W = -1  # Z location of the wing center of pressure (or aerodynamic center)
-        self.X_T = 2  # X location of the thrust
-        self.Z_T = 0  # Z location of the thrust
-        self.Chord_w = coefficients.main_wing_chord  # Main wing chord
-        self.Chord_h = coefficients.tail_chord  # Tail chord
+        # self.Z_W = -1  # Z location of the wing center of pressure (or aerodynamic center)
+        # self.X_T = 2  # X location of the thrust
+        # self.Z_T = 0  # Z location of the thrust
+        # self.Chord_w = coefficients.main_wing_chord  # Main wing chord
+        # self.Chord_h = coefficients.tail_chord  # Tail chord
 
     def sum_in_x(self):
         tx = (self.C_T_b * (self.Sb / self.S) + self.C_T_h * self.Sh_S * self.Vh_V**2 + self.C_T_w)\
@@ -278,46 +276,47 @@ class Equilibrium:
         momenttail = (self.C_M_ac_h * self.Chord_h - C_T_h * z_h + C_N_h * x_h) * (
                     (self.Vh_V ** 2) * self.Sh_S / self.Chord_w)
         summoment = momenttail + momentthrust + momentwing
-        print(f"moment coefficient  : {summoment}")
+        # print(f"moment coefficient  : {summoment}")
+        return summoment
 
 
     def rudder_sizing(self, x_rudder):
-        # v_cross_wind = 55 / 3.6    # 7.7m for/s cesna
-        # s_fuselage_side = 15 * 3
-        # drag_coefficient_fuselage = 1.28
-        # safety_factor = 1.5
-        # side_slip_angle = np.arctan2(v_cross_wind, self.vel)
-        # cl_alpha = 2 * np.pi
-        # cl_due_to_sideslip = side_slip_angle * cl_alpha  # or just get the exact number at the sideslip angle
-        # force_engine = 430 / 2
-        # x_rudder = 10 * (x_rudder / x_rudder)   # remove later just so the number is not crazy
-        # distance_ratio = (43.73/2) / x_rudder    # just 10 for now
-        # cl_deflection = 0.0504 * 180 / np.pi    # found in xflr5 will validate and verify the number
-        # max_deflection = np.radians(20)
-        # cl_due_to_deflection = cl_deflection * max_deflection
-        # d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind**2
-        # s_side_slip = (d_fuselage * safety_factor) / \
-        #               (0.5 * self.rho * self.vel**2 * (cl_due_to_deflection - cl_due_to_sideslip))
-        # s_engine = (force_engine * distance_ratio * safety_factor) / \
-        #            (0.5 * self.rho * self.vel**2 * cl_due_to_deflection)
-
-
-        v_cross_wind = 7.7
-        s_fuselage_side = 9.43
+        v_cross_wind = 55 / 3.6    # 7.7m for/s cesna
+        s_fuselage_side = 15 * 3
         drag_coefficient_fuselage = 1.28
-        safety_factor = 1.
+        safety_factor = 1.5
         side_slip_angle = np.arctan2(v_cross_wind, self.vel)
-        cl_alpha = 5.7116
-        cl_due_to_sideslip = side_slip_angle * cl_alpha
-        cl_deflection = 0.0504 * 180 / np.pi
+        cl_alpha = 2 * np.pi
+        cl_due_to_sideslip = side_slip_angle * cl_alpha  # or just get the exact number at the sideslip angle
+        force_engine = 430 / 2
+        x_rudder = 10 * (x_rudder / x_rudder)   # remove later just so the number is not crazy
+        distance_ratio = (43.73/2) / x_rudder    # just 10 for now
+        cl_deflection = 0.0504 * 180 / np.pi    # found in xflr5 will validate and verify the number
         max_deflection = np.radians(20)
         cl_due_to_deflection = cl_deflection * max_deflection
-        d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind ** 2
-
+        d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind**2
         s_side_slip = (d_fuselage * safety_factor) / \
-                      (0.5 * self.rho * self.vel ** 2 * (cl_due_to_deflection - cl_due_to_sideslip))
+                      (0.5 * self.rho * self.vel**2 * (cl_due_to_deflection - cl_due_to_sideslip))
+        s_engine = (force_engine * distance_ratio * safety_factor) / \
+                   (0.5 * self.rho * self.vel**2 * cl_due_to_deflection)
 
-        s_engine = 0    # since only one engine
+        # # Verification and Validation
+        # v_cross_wind = 7.7
+        # s_fuselage_side = 9.43
+        # drag_coefficient_fuselage = 1.28
+        # safety_factor = 1.
+        # side_slip_angle = np.arctan2(v_cross_wind, self.vel)
+        # cl_alpha = 5.7116
+        # cl_due_to_sideslip = side_slip_angle * cl_alpha
+        # cl_deflection = 0.0504 * 180 / np.pi
+        # max_deflection = np.radians(20)
+        # cl_due_to_deflection = cl_deflection * max_deflection
+        # d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind ** 2
+        #
+        # s_side_slip = (d_fuselage * safety_factor) / \
+        #               (0.5 * self.rho * self.vel ** 2 * (cl_due_to_deflection - cl_due_to_sideslip))
+        #
+        # s_engine = 0    # since only one engine
         return s_side_slip, s_engine
 
 
@@ -329,9 +328,14 @@ print("minimum x location of tail", x_location_tail)
 s1, s2 = equilibrium.rudder_sizing(x_location_tail)
 print(f"minimum tail size for sideslip {s1}, and engine off {s2}")
 
-# for aoa in np.arange(np.radians(0), np.radians(5), np.radians(0.1)):
-#     equilibrium.moments_change_alpha(x_location_tail, z_location_tail, aoa)
+cmintime = []
+for aoa in np.arange(np.radians(0), np.radians(5), np.radians(0.1)):
+    a = equilibrium.moments_change_alpha(x_location_tail, z_location_tail, aoa)
+    cmintime.append(a)
 
+plt.plot(np.arange(0, 5, 0.1), cmintime)
+plt.title("Cm vs alpha")
+plt.show()
 def landing_distance():
     m = 3000
     g = 3.71
@@ -368,7 +372,7 @@ def wing_stuff(area, aspect, taper):
     temp = c * 2 / (taper+1)
     croot = temp * taper
     ctip = temp
-    print(f"b = {b}, c = {c}, croot = {croot}, ctip = {ctip}")
+    print(f"b = {b}, croot = {croot}, ctip = {ctip}")
 
 print("Main wing:")
 wing_stuff(coefficients.S, 15, 2)
@@ -376,5 +380,5 @@ print("Horizontal tail:")
 wing_stuff(coefficients.S*(area_t + equilibrium.Sh_S), 7.5, 2.5)
 print("Vertical tail:")
 wing_stuff(11.33, 2, 2.5)
-# print(coefficients.S)
-# print(coefficients.S*(area_t + equilibrium.Sh_S))
+print(coefficients.S)
+print(coefficients.S*(area_t + equilibrium.Sh_S))
