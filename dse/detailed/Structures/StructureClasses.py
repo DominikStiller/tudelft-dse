@@ -486,7 +486,10 @@ class Beam:
         for i in range(np.shape(self.mat)[0]-1):
             for j in range(np.shape(self.mat)[1]-1):
                 rho[i, j] = self.material_types[self.mat[i, j]].rho
-        self.m = np.sum(volume * rho)
+        ItInfo = self.buckling()
+        print(
+            f"The best stringer distribution is {ItInfo[1]}, having a mass of {ItInfo[0]} [kg], and the {len(ItInfo[1]) - 1} ribs")
+        self.m = np.sum(volume * rho) + ItInfo[0]
 
     def rho(self):
         rho = np.zeros(np.shape((self.Bi[:, :-1] * self.y[1:] - self.y[:-1])))
@@ -504,6 +507,9 @@ class Beam:
         dy = self.y[1:] - self.y[:-1]
         volumes = (self.Bi[:, :-1] * dy)
         rho = self.rho()
+        ItInfo = self.buckling()
+        print(
+            f"The best stringer distribution is {ItInfo[1]}, having a mass of {ItInfo[0]} [kg], and the {len(ItInfo[1]) - 1} ribs")
         return volumes * rho
 
     def youngs_mod(self):
@@ -601,6 +607,18 @@ class Beam:
             print(f'The lightest option is to have 2 rows of {n1} rivets of {D1 * 1e3} mm in diameter')
             return n1, D1
 
+    def wingbox_beam(self, b=44.665, t=0.001, d=0.0225, rho=materials['CFRPeek'].rho):
+        r = d / 2
+        mass_rod = b * (2 * np.pi * r * t) * rho
+        l_overlap = 1  # [m]
+        l_beam = (b - 2 * l_overlap) / 3  # [m] The length of the beam
+        m_rib = rho * (np.pi * (r - t) ** 2 - np.pi * (.200 / 2) ** 2) * t
+        m_overlap = 2 * np.pi * (r - t) * 2 * t * rho * l_overlap
+        m_end = b / 3 * 2 * np.pi * r * t * rho + 5 * m_rib + m_overlap
+        m_middle = b / 3 * 2 * np.pi * r * t * rho + m_rib * 5
+        m_fastener = 0.01  # [kg] estimate on the mass of the fastener
+        print(f"The mass of the beam through the wingbox is {mass_rod} [kg]")
+        return mass_rod
 
     def buckling(self):
         ## Wingbox Geometry
@@ -650,12 +668,6 @@ class Beam:
             ItInfo.append([mass, strdis, sig])
         np.array(iteration_mass)
         I = np.where(iteration_mass[1:] == np.min(iteration_mass[1:]))[0][0]
-        print(f"The best stringer distribution is {ItInfo[I + 1][1]}, having a mass of {ItInfo[I + 1][0]} [kg]")
-        N_ribs = len(ItInfo[I + 1][1])
-        for j in range(N_ribs):
-            yi = j * int(len(y) / (N_ribs + 1))
-            yi1 = (j + 1) * int(len(y) / (N_ribs + 1))
-            plt.hlines(ItInfo[I + 1][2][j], y[yi], y[yi1])
         return ItInfo[I + 1]
 
 
@@ -682,6 +694,94 @@ class Beam:
         plt.tight_layout()
         plt.show()
 
+
+class TailVibes():
+    def __init__(self, E, density, radius, length, thickness, tail_mass, surface_area):
+        # Material properties
+        self.E = E
+        self.rho = density
+        # Beam geometry
+        self.r = radius  # [m] Radius of the tail beam
+        self.l = length  # [m] length of the beam
+        self.t_skin = thickness  # [m] thickness of the beam skin
+        self.m_beam = self.rho * np.pi * (
+                    (self.r + self.t_skin) ** 2 - (self.r - self.t_skin) ** 2) * self.l  # [kg] Mass of the tail beam
+        self.I = np.pi * (2 * self.r) ** 3 * self.t_skin / 8
+        self.m_tail = tail_mass
+        self.S = surface_area
+
+    def simsetting(self, dt=1e-6, t_start=0, t_end=5):
+        # Simulation Parameters
+        self.dt = dt  # [s] Time step
+        self.t = np.arange(t_start, t_end + self.dt, self.dt)
+
+    def sysparam(self):
+        Cd = 1.28
+        rho0 = 0.01
+        V = 400 / 3.6
+        q = 0.5 * rho0 * V ** 2
+        self.ceq = (Cd * self.S * 0.5 * rho0) / self.m_tail
+        self.keq = ((2 * np.pi * 3 / (2 * self.l) * q * self.S + (3 * self.E * self.I) / (
+                    self.l ** 3))) / self.m_tail  # Stiffness of the spring
+
+    def userinput(self, ah):
+        q = 0.5 * 0.01 * (400 / 3.6) ** 2
+        self.i = 0
+        if self.i == 0:
+            self.F_u = (-2 * np.pi * q * self.S * ah) / self.m_tail * np.ones(len(self.t))
+        elif self.i == 1:
+            self.F_u = (-2 * np.pi * q * self.S * ah) / self.m_tail * np.hstack(
+                (np.arange(0, 1 + self.dt, self.dt), np.ones(len(self.t) - len(np.arange(0, 1 + self.dt, self.dt)))))
+        elif self.i == 2:
+            self.F_u = np.zeros(len(self.t))
+            self.F_u[0] = 1 / self.dt
+        elif self.i == 3:
+            w = np.pi
+            i_end = int(2 / self.dt)
+            self.F_u = np.sin(w * self.t[:i_end])
+            self.F_u = np.hstack((self.F_u, np.zeros(len(self.t) - i_end)))
+        print(f"The applied aerodynamic load is {max(abs(self.F_u)) * self.m_tail} [N]")
+
+    def syssim(self):
+        X_init = np.array([0., 0.])
+        X = []
+        X.append(X_init)
+
+        for i in range(len(self.t) - 1):
+            x_i = X[-1][0]
+            x_dot_i = X[-1][1]
+            X.append(X[-1] + self.dt * np.array(
+                [x_dot_i, float(self.F_u[i] - self.ceq * np.sign(x_dot_i) * x_dot_i ** 2 - self.keq * x_i)]))
+        self.x = np.array(X)[:, 0]
+        self.v = np.array(X)[:, 1]
+        print('k')
+
+    def results(self):
+        period = []
+        for i in range(int(len(self.t) / 2), len(self.x) - 1):
+            if self.x[i - 1] < self.x[i] > self.x[i + 1]:
+                period.append(i)
+                print('k')
+        P = self.t[period[2]] - self.t[period[1]]
+        self.avg = (max(self.x[int(len(self.t) / 2):]) + min(self.x[int(len(self.t) / 2):])) / 2
+        deflection = max(self.x[int(len(self.t) / 2):] - self.avg)
+        print(f"The period of the response is {P} [s]")
+        print(f"The natural frequency is {1 / P} [Hz]")
+        print(f"The extra deflection is {deflection} [m]")
+        print(f"The new steady state is {self.avg} [m]")
+        self.pi = 3 * self.E * self.I / self.l ** 3 * deflection
+        print(f"The induced load due to the vibration is {self.pi} [N]")
+
+    def plot(self):
+        nth = int((1 / self.dt) / 1e4)
+        plt.figure()
+        plt.plot(self.t[::nth], self.x[::nth], label="Displacement")
+        plt.plot(self.t[::nth], self.v[::nth], label="Velocity")
+        # plt.plot(self.t[::nth], self.F_u[::nth]/self.keq, label="Force")
+        # plt.axhline(self.avg)
+        plt.legend()
+        plt.show()
+        print('l')
 
 if __name__ == "__main__":
     ...

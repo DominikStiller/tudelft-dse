@@ -1,6 +1,7 @@
-from dse.detailed.Structures.StructureClasses import Beam, Force, xflr_forces
+from dse.detailed.Structures.StructureClasses import Beam, Force, xflr_forces, TailVibes
 from dse.detailed.Structures.rotor_sizing import y_transformation
 from dse.detailed.Structures.material_properties import materials
+
 import vibration_toolbox as vtb
 import pandas as pd
 import numpy as np
@@ -525,7 +526,6 @@ def size_wing(span, chord_root, taper, wing_model=None):
 
 def size_tail():
     # span, 14.23/2  chord 2.7106, tip = 1.0834 NACA0012
-    R = 8.2
     MTOM = 3000
     g = 3.71
     lengthTailPole = 15 - 2.1439
@@ -652,7 +652,7 @@ def size_tail():
     theta = np.arctan(Mx/Mz)
     D = (Fy + np.sqrt(Fy**2 + 8 * s_max * np.pi * t_min * np.abs(Mz*np.cos(theta) + Mx*np.sin(theta)))) / (2 * s_max * np.pi * t_min)
 
-    tailPoleMass = np.pi * D * 0.001 * R * materials['CFRPeek'].rho
+    tailPoleMass = np.pi * D * 0.001 * lengthTailPole * materials['CFRPeek'].rho
 
     print(f'Tail pole mass = {tailPoleMass} [kg]')
     print(Fore.BLUE + f'The total tail group mass is {2*hStabilizer.m + vStabilizer.m + tailPoleMass + margin} [kg], '
@@ -711,10 +711,24 @@ if __name__ == '__main__':
     # best_wing, F = size_wing(span=b/2, chord_root=rootChord, taper=rootChord/tipChord)
     # best_wing.calculate_mass()
 
-    print(Fore.BLUE + f'Wing mass = {2*round(best_wing.m, 2)} [kg]')
+    print(Fore.BLUE + f'Wing mass = {2*round(best_wing.m, 2) + best_wing.wingbox_beam()} [kg]')
     wn_wing, x_wing, U_wing = wing_vibrations()
     n_rivets_0 = best_wing.design_joint(b=b/2)
     n_rivets_1 = best_wing.design_joint(b=0)
 
     print(Fore.WHITE + '\n### Tail sizing started ###\n')
     hStabilizer, vStabilizer, tailPoleMass = size_tail()
+    l = 15 - 2.1439
+    t = 0.001
+    r = tailPoleMass/(2 * np.pi * t * l * materials['CFRPeek'].rho)
+    tail_mass = hStabilizer.m + vStabilizer.m + tailPoleMass
+    T = TailVibes(E=materials['CFRPeek'].E, density=materials['CFRPeek'].rho, radius=r, length=l, thickness=t, tail_mass=tail_mass, surface_area=20)
+
+    T.simsetting()
+    T.sysparam()
+    T.userinput(ah=0.1)
+    T.syssim()
+    # T.results()
+    T.plot()
+
+
