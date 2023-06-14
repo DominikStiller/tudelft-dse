@@ -45,15 +45,19 @@ class Controller2:
 
     def __call__(self, error_velocity):
         T = self.PID_thrust(error_velocity, self.dt)
-        Tlx = T/2
-        Trx = T/2
-        if Tlx > 430:
-            Tlx = 430
-            Trx = 430
-        elif Tlx < 0:
-            Tlx = 0
-            Trx = 0
-        return Tlx, Trx
+        # for our plane
+        # Tlx = T/2
+        # Trx = T/2
+        # if Tlx > 900:
+        #     Tlx = 900
+        #     Trx = 900
+        # elif Tlx < 0:
+        #     Tlx = 0
+        #     Trx = 0
+        # return Tlx, Trx
+
+        # for Cessna 172 verification and validation
+        return T
 
 
 class Controller3:
