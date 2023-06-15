@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import csv
 import scipy as sp
+from tqdm import tqdm
+from colorama import Fore
 
 
 def xflr_forces(filename, q, b, adrian=None):
@@ -72,10 +74,16 @@ def xflr_forces(filename, q, b, adrian=None):
         return Force(magnitude=mag, point_of_application=application)
 
     else:
-        df = pd.read_csv(filename)
-        cl_array = np.fromstring(df["Cl_dist"].iloc[adrian][1:-1], sep=" ")
-        cd_array = np.fromstring(df["Cd_dist"].iloc[adrian][1:-1], sep=" ")
-        sp_array = np.fromstring(df["y_span"].iloc[adrian][1:-1], sep=" ")
+        if adrian == -1:
+            df = pd.read_csv(filename)
+            cl_array = np.fromstring(df["Cl_dist"][0][1:-1], sep=" ")
+            cd_array = np.fromstring(df["Cd_dist"][0][1:-1], sep=" ")
+            sp_array = np.fromstring(df["y_span"][0][1:-1], sep=" ")
+        else:
+            df = pd.read_csv(filename)
+            cl_array = np.fromstring(df["Cl_dist"].iloc[adrian][1:-1], sep=" ")
+            cd_array = np.fromstring(df["Cd_dist"].iloc[adrian][1:-1], sep=" ")
+            sp_array = np.fromstring(df["y_span"].iloc[adrian][1:-1], sep=" ")
 
         return cl_array, cd_array, sp_array
 
@@ -659,14 +667,16 @@ class Beam:
         n1, D1 = self._determine_pitch_and_D(2, b)
 
         if n0 * D0 < 2 * n1 * D1:
-            print(
-                f"The lightest option is to have 1 row of {n0} rivets of {D0 * 1e3} mm in diameter"
+            print(Fore.BLUE +
+                f"The lightest option at {-b} [m] from the root is to have 1 row of {n0} rivets of {D0 * 1e3} mm in diameter"
             )
+            print(Fore.WHITE)
             return n0, D0
         else:
-            print(
-                f"The lightest option is to have 2 rows of {n1} rivets of {D1 * 1e3} mm in diameter"
+            print(Fore.BLUE +
+                f"The lightest option at {-b} [m] from the root is to have 2 rows of {n1} rivets of {D1 * 1e3} mm in diameter"
             )
+            print(Fore.WHITE)
             return n1, D1
 
     def wingbox_beam(self, b=44.665, t=0.001, d=0.0225, rho=materials['CFRPeek'].rho):
@@ -682,59 +692,81 @@ class Beam:
         print(f"The mass of the beam through the wingbox is {mass_rod} [kg]")
         return mass_rod
 
+    def _poisson(self):
+        v = np.zeros(np.shape((self.Bi[:, :-1] * self.y[1:] - self.y[:-1])))
+        if self.x[0, 0] == self.x[-1, 0]:
+            for i in range(np.shape(self.mat)[0] - 1):
+                for j in range(np.shape(self.mat)[1] - 1):
+                    v[i, j] = self.material_types[self.mat[i, j]].poisson
+        else:
+            for i in range(np.shape(self.mat)[0]):
+                for j in range(np.shape(self.mat)[1] - 1):
+                    v[i, j] = self.material_types[self.mat[i, j]].poisson
+        return v
+
+    def _buckling_stress(self, n_ribs, n_stringers, section):
+        E = np.mean(self.youngs_mod(), 0)  # [GPa]
+        t = np.mean(self.t, 0)
+        v = np.mean(self._poisson(), 0)
+
+        yi = section * int(len(self.y) / (n_ribs + 1))
+        yi1 = (section + 1) * int(len(self.y) / (n_ribs + 1))
+
+        b = max(abs(self.x[:, yi])) / (n_stringers + 1)
+        Kc = 5.6  # Conservative estimate based on https://core.ac.uk/download/pdf/229099116.pdf
+
+        sig_crit = -Kc * (np.pi**2 / (12 * (1 - np.mean(v[yi:yi1])**2))) * np.mean(E[yi:yi1]) * (np.mean(t[yi:yi1]) / b) ** 2
+        return sig_crit
+
+
     def buckling(self):
         ## Wingbox Geometry
         y = self.y
         x = self.x
 
-        rho = self.rho()  # [kg/m3] The density of the ribs
-        A_rib = self.AirfoilArea() * 0.1  # [m2] Area of the ribes
-        t_rib = 0.001  # [m] thickness of the ribs
+        rho = self.rho()                                        # [kg/m3] The density of the ribs
+        A_rib = self.AirfoilArea() * 0.1                        # [m2] Area of the ribs
+        t_rib = 0.001                                           # [m] thickness of the ribs
         m_rib = np.hstack((rho[0], rho[0, 0])) * A_rib * t_rib  # [kg] mass of a rib
-        A_str = 0.04 * 0.001  # [m2] Area of the stringers
-        E = np.mean(self.youngs_mod(), 0)  # [GPa]
-        t = np.mean(self.t, 0)
+        A_str = 0.04 * 0.001                                    # [m2] Area of the stringers
 
         sigma = self.sigma
         iteration_mass = []
         mass = 0
         ItInfo = []
-        for i in range(int(len(y) / 2)):  # Guess number of ribs
-            N_ribs = i
-            a = max(abs(y)) / (N_ribs + 1)
-            strdis = []
-            sig = []
-            dy = int(len(y) / (N_ribs + 1)) - 1
-            for j in range(i + 1):  # Iterate over sections
-                sig_crit = 1e10
-                k = -1
-                yi = j * int(len(y) / (N_ribs + 1))
-                yi1 = (j + 1) * int(len(y) / (N_ribs + 1))
-                while np.any(sigma[:, yi:yi1] < sig_crit):
-                    k += 1
-                    N_str = k
-                    b = max(abs(x[:, yi])) / (N_str + 1)
-                    if a / b < 4.5:
-                        Kc = (
-                            -0.1456 * (a / b) ** 3 + 1.6039 * (a / b) ** 2 - 5.9531 * a / b + 13.875
-                        )
-                    else:
-                        Kc = 6
-                    sig_crit = -Kc * np.mean(E[yi:yi1]) * (np.mean(t[yi:yi1]) / b) ** 2
-                if k == -1:
-                    k = 0
-                    N_str = k
-                mass += (
-                    N_str * A_str * np.min(rho) * abs(y[int(j * dy)] - y[int(((j + 1) * dy))])
-                    + m_rib[int(((j + 1) * dy))]
-                )
-                strdis.append(N_str)
-                sig.append(sig_crit)
-            iteration_mass.append(mass)
-            ItInfo.append([mass, strdis, sig])
-        np.array(iteration_mass)
-        I = np.where(iteration_mass[1:] == np.min(iteration_mass[1:]))[0][0]
-        return ItInfo[I + 1]
+        if np.any(sigma < 0):
+            for i in tqdm(range(int(len(y) / 2))):  # Guess number of ribs
+                N_ribs = i
+                strdis = []
+                sig = []
+                dy = int(len(y) / (N_ribs + 1)) - 1
+                for j in range(i + 1):  # Iterate over sections
+                    sig_crit = 1e10  # Initial guess - high so that it always goes into the while loop
+                    k = -1
+                    yi = j * int(len(y) / (N_ribs + 1))
+                    yi1 = (j + 1) * int(len(y) / (N_ribs + 1))
+                    while np.any(sigma[:, yi:yi1] < sig_crit):
+                        k += 1
+                        sig_crit = self._buckling_stress(n_ribs=N_ribs, n_stringers=k, section=j)
+                    if k == -1:
+                        k = 0
+                    mass += (
+                            k * A_str * np.min(rho) * abs(y[int(j * dy)] - y[int(((j + 1) * dy))])
+                            + m_rib[int(((j + 1) * dy))]
+                    )
+                    strdis.append(k)
+                    sig.append(sig_crit)
+                iteration_mass.append(mass)
+                ItInfo.append([mass, strdis, sig])
+            np.array(iteration_mass)
+            I = np.where(iteration_mass[1:] == np.min(iteration_mass[1:]))[0][0]
+            print(Fore.BLUE +
+                  f"The best stringer distribution is {ItInfo[I + 1][1]}, having a mass of {ItInfo[I + 1][0]} [kg]"
+                  )
+            return ItInfo[I + 1]
+        else:
+            print(Fore.BLUE + 'All members are in tension. No buckling will occur' + Fore.WHITE)
+            return ItInfo
 
     def plot_internal_loading(self):
         fig, (axs1, axs2) = plt.subplots(2, 1)

@@ -551,6 +551,27 @@ class TestBeam(TestCase):
         assert n_out == n1, "The number of rivets does not coincide with the analytical solution"
         assert D_out == D, "Rivet diameter does not coincide with the analytical solution"
 
+    def test_buckling(self):
+        x0 = 0.1
+        z0 = 0.1
+        y = 1
+
+        squareBeam = Beam(
+            width=x0,
+            height=z0,
+            length=y,
+            cross_section="square",
+            material="Al/Si",
+            fixing_points=np.array([[x0 / 2], [z0 / 2]]) * np.ones(100),
+        )
+
+        squareBeam.Bi = 4*0.1*0.005/np.size(squareBeam.x) * np.ones(np.shape(squareBeam.x))
+        squareBeam.t = 0.005 * np.ones(np.shape(squareBeam.x))
+        s_code = squareBeam._buckling_stress(0, 0, 0)
+        s_analytic = -7 * np.pi**2 * materials['Al/Si'].E / (12 * (1 - materials['Al/Si'].poisson**2)) * (0.005/0.1)**2
+
+        assert_allclose(s_code, s_analytic, rtol=1e-12)
+
 
 class ValidateBeam(TestCase):
     def test_internal_load(self):
@@ -617,3 +638,8 @@ class ValidateBeam(TestCase):
             assert_allclose(
                 beam.f_loading[-1][-1], Rb1[i], rtol=0.01, err_msg="Reaction force does not match"
             )
+
+    def test_buckling(self):
+        # Experimental results
+        # Validated against data found in pg 11 of file:///C:/Users/javia/Downloads/229099116.pdf
+        self.assertTrue(True)

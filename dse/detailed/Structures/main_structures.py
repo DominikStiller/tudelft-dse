@@ -14,18 +14,24 @@ def size_structure():
     # Rotors
     print(Fore.WHITE + "\n### Rotor blade sizing started ###\n")
     frontBlade, rearBlade, mr = size_rotor_blades()
+    frontBlade.buckling()
+    rearBlade.buckling()
 
     # Wings
     print(Fore.WHITE + "\n### Wing sizing started ###\n")
-    wing, f_loading, moments = size_wing(wingDims['span'], wingDims['rootChord'], wingDims['taper'], mr, 0)
+    wing, f_loading, moments = size_wing(wingDims['span'], wingDims['rootChord'], wingDims['taper'], mr, -1)
     wing.m_loading = moments
-    wn_wing, x_wing, U_wing = wing_vibrations(wing)
-    n_rivets_0 = wing.design_joint(b=np.min(wing.y) / 2)
-    n_rivets_1 = wing.design_joint(b=0)
+    wing.buckling()
+    wing_vibrations(wing)
+    wing.design_joint(b=np.min(wing.y) / 2)
+    wing.design_joint(b=0)
 
     # Tails
     print(Fore.WHITE + "\n### Tail sizing started ###\n")
     hStabilizer, vStabilizer, tailPoleMass = size_tail()
+    hStabilizer.buckling()
+    vStabilizer.buckling()
+
     return frontBlade, rearBlade, wing, hStabilizer, vStabilizer
 
 
@@ -217,7 +223,7 @@ def size_rotor_blades(overwrite=False):
     print(
         f"Each rear blade weights {np.round(rearBlade.m, 2) + 2} kg, including 2 kg of reinforcements"
     )
-    print(f"Total rotor mass = {np.round(12 * (frontBlade.m + 2) + 12 * (rearBlade.m + 2), 2)} kg")
+    print(Fore.BLUE + f"Total rotor mass = {np.round(12 * (frontBlade.m + 2) + 12 * (rearBlade.m + 2), 2)} kg" + Fore.WHITE)
 
     if not overwrite:
         wn_rotor, x_rotor, U_rotor = rotor_vibrations(frontBlade)
@@ -288,7 +294,7 @@ def rotor_vibrations(rotorBlade, reinforce=True, overwrite_I=None):
             parameters = np.array([E1, I0, materials["CFRCy"].rho, A0, L1])
             w, x, U = vtb.euler_beam_modes(n=modes, bctype=bc, beamparams=parameters)
 
-        print(f"Natural frequencies = {w} [rad/s]")
+        print(Fore.BLUE + f"Natural frequencies = {w} [rad/s]" + Fore.WHITE)
         print(f"Maximum deflection = {np.max(np.abs(U))} [m]")
         print(f"Required reinforcement area = {reinforcement_area}")
         print(
@@ -366,6 +372,10 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         magnitude=bracing_TO_mag * np.array([[0], [np.cos(theta)], [-np.sin(theta)]]),
         point_of_application=np.array([[Xac_wing], [-span], [Zac_wing]]),
     )
+
+    R_brace = bracing_TO_mag / (2 * np.pi * 0.001 * materials['CFRPeek'].compressive / 4.5)
+    m_brace = materials['CFRPeek'].rho * span/np.cos(theta) * 2 * np.pi * R_brace * 0.001
+    print(Fore.BLUE + f'The brace needs to have a radius of {R_brace} [m] and will weight {m_brace} [kg]')
     engine_and_rotor_weight = Force(
         magnitude=np.array([[0], [0], [-(mr / 2 + const["engineMass"]) * const["g"]]]),
         point_of_application=np.array([[Xac_wing], [-span], [Zac_wing]]),
@@ -380,9 +390,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         aerodynamic_forces = xflr_forces("Test_xflr5_file.csv", const["q"], float(span))
     else:
         if wing_model == -1:
-            cl = wingDims['cl']
-            cd = wingDims['cd']
-            y_L = wingDims['y']
+            cl, cd, y_L = xflr_forces("javier.csv", const["q"], float(span), adrian=wing_model)
         else:
             cl, cd, y_L = xflr_forces("wings.csv", const["q"], float(span), adrian=wing_model)
 
@@ -453,7 +461,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
     f_loading_abs = np.maximum(np.abs(f_loading_TO), np.abs(f_loading_Cr))
 
     wing.calculate_mass()
-    print(Fore.BLUE + f'Wing mass = {2 * round(wing.m, 2) + 4 * wing.wingbox_beam()} [kg]')
+    print(Fore.BLUE + f"Mass of each wing = {np.round(wing.m, 2)}kg" + Fore.WHITE)
     return wing, f_loading_abs, moments
 
 
@@ -596,5 +604,3 @@ def size_tail():
 
 if __name__ == "__main__":
     structures = size_structure()
-
-

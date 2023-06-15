@@ -13,6 +13,7 @@ class Material:
         tensile_strength,
         compressive_strength,
         shear_strength,
+        poisson_ratio
     ):
         self.rho = density
         self.E = E
@@ -22,6 +23,7 @@ class Material:
         self.tensile = tensile_strength
         self.compressive = compressive_strength
         self.tau = shear_strength
+        self.poisson = poisson_ratio
 
 
 def read_material_properties(filename):
@@ -46,4 +48,5 @@ for i, mat in enumerate(a.index):
         compressive_strength=a["compressive strength"][i] * 1e6,
         thermal_exp_coefficient=None,
         shear_strength=a["shear strength"][i] * 1e6,
+        poisson_ratio=a["poisson"][i]
     )
