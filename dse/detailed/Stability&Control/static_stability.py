@@ -204,6 +204,9 @@ class Equilibrium:
         self.Z_T = -1           # Z location of the thrust
         self.Chord_w = coefficients.main_wing_chord     # Main wing chord
         self.Chord_h = coefficients.tail_chord        # Tail chord
+        self.max_deflection = np.radians(20)           # max rudder deflection
+        self.v_cross_wind = 55 / 3.6                    # cross wind
+        self.cl_alpha_rud = 2 * np.pi                   # slope of rudder
 
         # # Verification and Validation: Cessna parameters
         # self.C_T_w = 0.02  # tangential force coefficient of wing done
@@ -280,42 +283,38 @@ class Equilibrium:
 
 
     def rudder_sizing(self, x_rudder):
-        # v_cross_wind = 55 / 3.6    # 7.7m for/s cesna
-        # s_fuselage_side = 15 * 3
+        s_fuselage_side = 15 * 3
+        drag_coefficient_fuselage = 1.28
+        safety_factor = 1.5
+        force_engine = 430 / 2
+        side_slip_angle = np.arctan2(self.v_cross_wind, self.vel)
+        cl_due_to_sideslip = side_slip_angle * self.cl_alpha_rud  # or just get the exact number at the sideslip angle
+        distance_ratio = (43.73/2) / x_rudder
+        cl_deflection = 0.0504 * 180 / np.pi    # found in xflr5 will validate and verify the number
+        cl_due_to_deflection = cl_deflection * self.max_deflection
+        d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind**2
+        s_side_slip = (d_fuselage * safety_factor) / \
+                      (0.5 * self.rho * self.vel**2 * (cl_due_to_deflection - cl_due_to_sideslip))
+        s_engine = (force_engine * distance_ratio * safety_factor) / \
+                   (0.5 * self.rho * self.vel**2 * cl_due_to_deflection)
+
+        # # Verification and Validation
+        # v_cross_wind = 7.7
+        # s_fuselage_side = 9.43
         # drag_coefficient_fuselage = 1.28
-        # safety_factor = 1.5
+        # safety_factor = 1.
         # side_slip_angle = np.arctan2(v_cross_wind, self.vel)
-        # cl_alpha = 2 * np.pi
-        # cl_due_to_sideslip = side_slip_angle * cl_alpha  # or just get the exact number at the sideslip angle
-        # force_engine = 430 / 2
-        # x_rudder = 10 * (x_rudder / x_rudder)   # remove later just so the number is not crazy
-        # distance_ratio = (43.73/2) / x_rudder    # just 10 for now
-        # cl_deflection = 0.0504 * 180 / np.pi    # found in xflr5 will validate and verify the number
+        # cl_alpha = 5.7116
+        # cl_due_to_sideslip = side_slip_angle * cl_alpha
+        # cl_deflection = 0.0504 * 180 / np.pi
         # max_deflection = np.radians(20)
         # cl_due_to_deflection = cl_deflection * max_deflection
-        # d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind**2
+        # d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind ** 2
+        #
         # s_side_slip = (d_fuselage * safety_factor) / \
-        #               (0.5 * self.rho * self.vel**2 * (cl_due_to_deflection - cl_due_to_sideslip))
-        # s_engine = (force_engine * distance_ratio * safety_factor) / \
-        #            (0.5 * self.rho * self.vel**2 * cl_due_to_deflection)
-
-        # Verification and Validation
-        v_cross_wind = 7.7
-        s_fuselage_side = 9.43
-        drag_coefficient_fuselage = 1.28
-        safety_factor = 1.
-        side_slip_angle = np.arctan2(v_cross_wind, self.vel)
-        cl_alpha = 5.7116
-        cl_due_to_sideslip = side_slip_angle * cl_alpha
-        cl_deflection = 0.0504 * 180 / np.pi
-        max_deflection = np.radians(20)
-        cl_due_to_deflection = cl_deflection * max_deflection
-        d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind ** 2
-
-        s_side_slip = (d_fuselage * safety_factor) / \
-                      (0.5 * self.rho * self.vel ** 2 * (cl_due_to_deflection - cl_due_to_sideslip))
-
-        s_engine = 0    # since only one engine
+        #               (0.5 * self.rho * self.vel ** 2 * (cl_due_to_deflection - cl_due_to_sideslip))
+        #
+        # s_engine = 0    # since only one engine
         return s_side_slip, s_engine
 
 
