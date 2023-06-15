@@ -578,6 +578,19 @@ def size_tail():
         Fore.BLUE
         + f"The total tail group mass is {2*hStabilizer.m + vStabilizer.m + tailPoleMass} [kg]"
     )
+    # l = 15 - 2.1439
+    # t = 0.001
+    # r = tailPoleMass / (2 * np.pi * t * l * materials['CFRPeek'].rho)
+    # tail_mass = hStabilizer.m + vStabilizer.m + tailPoleMass
+    # T = TailVibes(E=materials['CFRPeek'].E, density=materials['CFRPeek'].rho, radius=r, length=l, thickness=t,
+    #               tail_mass=tail_mass, surface_area=20)
+    #
+    # T.simsetting()
+    # T.sysparam()
+    # T.userinput(ah=0.1)
+    # T.syssim()
+    # # T.results()
+    # T.plot()
     return hStabilizer, vStabilizer, tailPoleMass
 
 
@@ -585,15 +598,3 @@ if __name__ == "__main__":
     structures = size_structure()
 
 
-    l = 15 - 2.1439
-    t = 0.001
-    r = tailPoleMass/(2 * np.pi * t * l * materials['CFRPeek'].rho)
-    tail_mass = hStabilizer.m + vStabilizer.m + tailPoleMass
-    T = TailVibes(E=materials['CFRPeek'].E, density=materials['CFRPeek'].rho, radius=r, length=l, thickness=t, tail_mass=tail_mass, surface_area=20)
-
-    T.simsetting()
-    T.sysparam()
-    T.userinput(ah=0.1)
-    T.syssim()
-    # T.results()
-    T.plot()
