@@ -292,7 +292,7 @@ class Equilibrium:
         distance_ratio = (43.73/2) / x_rudder
         cl_deflection = 0.0504 * 180 / np.pi    # found in xflr5 will validate and verify the number
         cl_due_to_deflection = cl_deflection * self.max_deflection
-        d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * v_cross_wind**2
+        d_fuselage = 0.5 * self.rho * s_fuselage_side * drag_coefficient_fuselage * self.v_cross_wind**2
         s_side_slip = (d_fuselage * safety_factor) / \
                       (0.5 * self.rho * self.vel**2 * (cl_due_to_deflection - cl_due_to_sideslip))
         s_engine = (force_engine * distance_ratio * safety_factor) / \
