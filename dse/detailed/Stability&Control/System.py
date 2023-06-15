@@ -6,18 +6,18 @@ class System:
     def __init__(self):
         self.geometry = Aircraft.define_geometry()
         self.area, self.imain, self.itail, self.m, self.I, self.W0 = Aircraft.define_areas()
-        # self.rho = 0.01   # for Mars
-        self.rho = 1.225 * 0.742    # for Cessna
+        self.rho = 0.01   # for Mars
+        # self.rho = 1.225 * 0.742    # for Cessna
 
-        # Test for verification and validation Cesssna 172
-        self.euler_prev = np.array([0, np.radians(10), 0])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
-        self.velocity_linear_prev = np.array([226/3.6, 0, 0.])
-        self.velocity_angular_prev = np.array([0, 0, 0.])
+        # # Test for verification and validation Cesssna 172
+        # self.euler_prev = np.array([0, np.radians(10), 0])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
+        # self.velocity_linear_prev = np.array([226/3.6, 0, 0.])
+        # self.velocity_angular_prev = np.array([0, 0, 0.])
 
         # Test for stability our plane
-        # self.euler_prev = np.array([0, 0, 0])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
-        # self.velocity_linear_prev = np.array([400/3.6, 0, 0.])
-        # self.velocity_angular_prev = np.array([0, np.radians(15), 0.])
+        self.euler_prev = np.array([0, 0, 0])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
+        self.velocity_linear_prev = np.array([400/3.6, 0, 0.])
+        self.velocity_angular_prev = np.array([0, np.radians(15), 0.])
 
         # Test for controllers
         # self.euler_prev = np.array([np.radians(5), np.radians(-5), np.radians(5)])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
