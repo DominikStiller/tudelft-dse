@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# import matplotlib as mpl
-# mpl.use("TkAgg")
+import matplotlib as mpl
+mpl.use("TkAgg")
 
 
 class Coefficients:
@@ -15,7 +15,7 @@ class Coefficients:
         self.CL_alpha_A = 5.271  # cl alpha curve for aircraft
         self.downwash_angle = 0  # downwash induced angle
         self.length_h = 13  # xh - xw (distance between tail and main wing)
-        self.main_wing_chord = 3.11  # main wing chord
+        self.main_wing_chord = 3.11  # main wing chord 3.978    
         self.Vh_V = 1  # ratio of tail speed to wing speed
         self.X_ac = 0.25  # location of aerodynamic center with respect to the chord
         self.SM = 0.05  # safety margin
@@ -26,7 +26,7 @@ class Coefficients:
         self.C_h_alpha = -0.118    # Dummy number, TBD
         self.C_h_delta = -0.279     # Dummy number, TBD
         self.C_h_delta_t = -0.228   # Dummy number, TBD
-        self.C_m_0 = 0.08333325813508141    # Dummy number, TBD
+        self.C_m_0 = 0.0  # Dummy number, TBD
         self.d_deltae_d_deltase = 2.18    # Dummy number, TBD
         self.W0 = 3000 * 3.71   # weight
         self.rho = 0.01         # density
@@ -164,6 +164,8 @@ class Coefficients:
                         (self.W0 * self.C_h_delta * cg_chord * xn_free_chord / (self.S * C_m_delta) - 0.5 * self.rho * self.vel**2 * self.C_h_delta_t * single_deflection)
 
         elevator_deflection = (- 1 / C_m_delta) * (self.C_m_0 + self.W0 * (cg_chord - xn_fixed_chord) / (0.5 * self.rho * V**2 * self.S))
+        print(C_m_delta, self.C_m_0, "aaaaaaaaaaaa")
+
         plt.plot(V, elevator_deflection, color='tab:blue', label='Elevator trim curve')
         plt.axvline(x=self.vel, color='tab:orange', label='cruise velocity')
         plt.title("elevator trim curve")
