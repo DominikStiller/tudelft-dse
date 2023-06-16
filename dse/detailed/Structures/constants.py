@@ -7,8 +7,7 @@ const = {
     "MTOM": 3000,
     "g": 3.71,
     "rpm": 232 * 2 * 3.141592 / 60,
-    "Airfoil": pd.read_csv(
-        "../../../tests/detailed/structures/S1223.dat",
+    "Airfoil": pd.read_csv("./dse/detailed/Structures/S1223.dat",
         delimiter="\s+",
         dtype=float,
         skiprows=1,

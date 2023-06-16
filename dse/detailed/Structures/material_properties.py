@@ -30,12 +30,8 @@ def read_material_properties(filename):
     material_properties = pd.read_csv(filename, delimiter=";", index_col=0)
     return material_properties
 
-
-if os.getcwd().split("\\")[-1] == "structures":
-    os.chdir("..\\..\\..\\dse\\detailed\\Structures")
-elif os.getcwd().split("\\")[-1] != "Structures":
-    os.chdir("..\\dse\\detailed\\Structures")
-a = read_material_properties("materials.csv")
+print(os.getcwd())
+a = read_material_properties(".\\dse\\detailed\\Structures\\materials.csv")
 
 materials = dict()
 for i, mat in enumerate(a.index):
