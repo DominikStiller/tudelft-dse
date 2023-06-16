@@ -8,29 +8,23 @@ import matplotlib.pyplot as plt
 import seaborn as sb
 from matplotlib.font_manager import fontManager
 
-# Load fonts
-for f in glob.glob(os.path.abspath(os.path.dirname(__file__)) + "/../fonts/*.ttf"):
-    fontManager.addfont(f)
 
-assert (
-    "Bookman Old Style" in fontManager.get_font_names()
-), "Could not find plot font. Contact Dominik."
-
-sb.set(
-    context="paper",
-    style="ticks",
-    font="serif",
-    rc={
-        "lines.linewidth": 1.2,
-        "axes.titleweight": "bold",
-        "font.serif": "Bookman Old Style",
-        "mathtext.fontset": "custom",
-        "mathtext.it": "Cambria Math:italic",
-        "mathtext.cal": "Cambria Math",
-        "mathtext.rm": "Cambria Math",
-        "figure.dpi": 300,
-    },
-)
+def set_plotting_theme():
+    sb.set_theme(
+        context="paper",
+        style="ticks",
+        font="serif",
+        rc={
+            "lines.linewidth": 1.2,
+            "axes.titleweight": "bold",
+            "font.serif": "Bookman Old Style",
+            "mathtext.fontset": "custom",
+            "mathtext.it": "Cambria Math:italic",
+            "mathtext.cal": "Cambria Math",
+            "mathtext.rm": "Cambria Math",
+            "figure.dpi": 300,
+        },
+    )
 
 
 def save_plot(results_folder: Union[Path, str], name: str, fig=None, type="pdf"):
@@ -87,3 +81,14 @@ def format_plot(
 
     if tight_layout:
         fig.tight_layout(pad=0.1, h_pad=0.4, w_pad=0.4)
+
+
+# Load fonts
+for f in glob.glob(os.path.abspath(os.path.dirname(__file__)) + "/../fonts/*.ttf"):
+    fontManager.addfont(f)
+
+assert (
+    "Bookman Old Style" in fontManager.get_font_names()
+), "Could not find plot font. Contact Dominik."
+
+set_plotting_theme()
