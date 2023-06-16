@@ -554,7 +554,7 @@ class Beam:
                 rho[i, j] = self.material_types[self.mat[i, j]].rho
         ItInfo = self.buckling()
         print(
-            f"The best stringer distribution is {ItInfo[1]}, having a mass of {ItInfo[0]} [kg], and the {len(ItInfo[1]) - 1} ribs")
+            f"The best stringer distribution is {ItInfo[1]} and {len(ItInfo[1]) - 1} ribs, having a mass of {ItInfo[0]} [kg]")
         self.m = np.sum(volume * rho) + ItInfo[0]
 
     def rho(self):
@@ -716,85 +716,87 @@ class Beam:
         v = np.mean(self._poisson(), 0)
 
         yi = section * int(len(self.y) / (n_ribs + 1))
-        yi1 = (section + 1) * int(len(self.y) / (n_ribs + 1))
+        yi1 = (section + 1) * int(len(self.y) / (n_ribs + 1)) - 1
 
-        b = max(abs(self.x[:, yi])) / (n_stringers + 1)
+        b = max(abs(self.x[:, yi1])) / (n_stringers + 1)
         Kc = 5.6  # Conservative estimate based on https://core.ac.uk/download/pdf/229099116.pdf
 
-        sig_crit = -Kc * (np.pi**2 / (12 * (1 - np.mean(v[yi:yi1])**2))) * np.mean(E[yi:yi1]) * (np.mean(t[yi:yi1]) / b) ** 2
+        sig_crit = -Kc * np.pi**2 * np.mean(E[yi:yi1]) / ((12 * (1 - np.mean(v[yi:yi1])**2)) * (b / np.mean(t[yi:yi1])) ** 2)
         return sig_crit
+
+
+    def _determine_stringers(self, n_ribs, section, x1, x2):
+        sig_crit = 1e10  # Initial guess - high so that it always goes into the while loop
+        k = -1
+        yi = section * int(len(self.y) / (n_ribs + 1))
+        yi1 = (section + 1) * int(len(self.y) / (n_ribs + 1)) - 1
+        while np.any(self.sigma[x1:x2, yi:yi1] < sig_crit):
+            k += 1
+            sig_crit = self._buckling_stress(n_ribs=n_ribs, n_stringers=k, section=section)
+        return k
 
 
     def buckling(self):
         ## Wingbox Geometry
         y = self.y
-        x = self.x
+        x = (self.x[:, 0]).argmin()
 
-        rho = self.rho()                                        # [kg/m3] The density of the ribs
+        rho = np.mean(self.rho())                             # [kg/m3] The density of the ribs
         A_rib = self.AirfoilArea() * 0.1                        # [m2] Area of the ribs
         t_rib = 0.001                                           # [m] thickness of the ribs
-        m_rib = np.hstack((rho[0], rho[0, 0])) * A_rib * t_rib  # [kg] mass of a rib
+        m_rib = rho * A_rib * t_rib  # [kg] mass of a rib
         A_str = 0.04 * 0.001                                    # [m2] Area of the stringers
 
         sigma = self.sigma
         iteration_mass = []
-        mass = 0
         ItInfo = []
+        L = np.max(np.abs(self.y))
         if np.any(sigma < 0):
             for i in tqdm(range(int(len(y) / 2))):  # Guess number of ribs
+                mass = 0
                 N_ribs = i
                 strdis = []
-                sig = []
-                dy = int(len(y) / (N_ribs + 1)) - 1
+                k = list()
                 for j in range(i + 1):  # Iterate over sections
-                    sig_crit = 1e10  # Initial guess - high so that it always goes into the while loop
-                    k = -1
-                    yi = j * int(len(y) / (N_ribs + 1))
-                    yi1 = (j + 1) * int(len(y) / (N_ribs + 1))
-                    while np.any(sigma[:, yi:yi1] < sig_crit):
-                        k += 1
-                        sig_crit = self._buckling_stress(n_ribs=N_ribs, n_stringers=k, section=j)
-                    if k == -1:
-                        k = 0
+                    yi1 = (j + 1) * int(len(self.y) / (N_ribs + 1)) - 1
+                    k_top = self._determine_stringers(n_ribs=N_ribs, section=j, x1=0, x2=x)
+                    k_bot = self._determine_stringers(n_ribs=N_ribs, section=j, x1=x, x2=-1)
+                    k.append(k_top + k_bot)
                     mass += (
-                            k * A_str * np.min(rho) * abs(y[int(j * dy)] - y[int(((j + 1) * dy))])
-                            + m_rib[int(((j + 1) * dy))]
+                            (k_top + k_bot) * A_str * rho * L / (N_ribs + 1) + m_rib[yi1] * N_ribs
                     )
-                    strdis.append(k)
-                    sig.append(sig_crit)
+                    strdis.append((k_top, k_bot))
                 iteration_mass.append(mass)
-                ItInfo.append([mass, strdis, sig])
-            np.array(iteration_mass)
-            I = np.where(iteration_mass[1:] == np.min(iteration_mass[1:]))[0][0]
-            print(Fore.BLUE +
-                  f"The best stringer distribution is {ItInfo[I + 1][1]}, having a mass of {ItInfo[I + 1][0]} [kg]"
-                  )
-            return ItInfo[I + 1]
+                if N_ribs > 0:
+                    if mass > ItInfo[-1][0]:
+                        m = ItInfo[-1][0]
+                        break
+                ItInfo.append([mass, strdis])
+            return ItInfo[-1]
         else:
             print(Fore.BLUE + 'All members are in tension. No buckling will occur' + Fore.WHITE)
             return ItInfo
 
     def plot_internal_loading(self, structure: str):
-        fig, (axs1, axs2) = plt.subplots(2, 1, figsize=(4.5, 3))
+        fig, (axs1, axs2) = plt.subplots(2, 1, figsize=(4.5, 2.5))
         set_plotting_theme()
         f_loading = np.reshape(self.f_loading, (len(self.y), 3))
         m_loading = np.reshape(self.m_loading, (len(self.y), 3))
 
-        axs1.plot(np.abs(self.y), f_loading[:, 0] / 1e3, label=r"$V_x$")
-        axs1.plot(np.abs(self.y), f_loading[:, 1] / 1e3, label=r"$V_y$")
-        axs1.plot(np.abs(self.y), f_loading[:, 2] / 1e3, label=r"$V_z$")
+        axs1.plot(np.abs(self.y), f_loading[:, 0] / 1e3, label=r"$V_x$", linestyle='solid')
+        axs1.plot(np.abs(self.y), f_loading[:, 1] / 1e3, label=r"$V_y$", linestyle='dashed')
+        axs1.plot(np.abs(self.y), f_loading[:, 2] / 1e3, label=r"$V_z$", linestyle='dotted')
         axs1.set_xlabel("Span [m]")
         axs1.set_ylabel("Force [kN]")
         axs1.legend()
 
-        axs2.plot(np.abs(self.y), m_loading[:, 0] / 1e3, label=r"$M_x$")
-        axs2.plot(np.abs(self.y), m_loading[:, 1] / 1e3, label=r"$M_y$")
-        axs2.plot(np.abs(self.y), m_loading[:, 2] / 1e3, label=r"$M_z$")
+        axs2.plot(np.abs(self.y), m_loading[:, 0] / 1e3, label=r"$M_x$", linestyle='solid')
+        axs2.plot(np.abs(self.y), m_loading[:, 1] / 1e3, label=r"$M_y$", linestyle='dashed')
+        axs2.plot(np.abs(self.y), m_loading[:, 2] / 1e3, label=r"$M_z$", linestyle='dotted')
         axs2.set_xlabel("Span [m]")
         axs2.set_ylabel("Moment [kNm]")
         axs2.legend()
 
-        plt.tight_layout()
         format_plot()
         save_plot('.', 'Internal_loading_' + structure)
         plt.show()

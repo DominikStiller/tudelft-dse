@@ -20,6 +20,7 @@ class TestBeam(TestCase):
             "square",
             material="Al/Si",
             fixing_points=np.array([[x / 2], [z / 2]]) * np.ones(100),
+            name='wing'
         )
 
         F = 1
@@ -46,6 +47,7 @@ class TestBeam(TestCase):
             "square",
             material="Al/Si",
             fixing_points=np.array([[x / 2], [z / 2]]) * np.ones(100),
+            name='wing'
         )
 
         F = np.array([[0, 0, 0], [0, 0, 0], [1, 1, 1]])
@@ -118,6 +120,7 @@ class TestBeam(TestCase):
             cross_section=np.vstack((x, z)) * np.ones((np.size(l), 2, 1)),
             material="Al/Si",
             fixing_points=np.array([[0], [0]]) * np.ones(100),
+            name='wing'
         )
         Applied_Load = Force(
             magnitude=np.array([[1000], [0], [-10000]]),
@@ -178,6 +181,7 @@ class TestBeam(TestCase):
             cross_section=np.vstack((x, z)) * np.ones((np.size(l), 2, 1)),
             material="Al/Si",
             fixing_points=np.array([[0], [0]]) * np.ones(np.size(l)),
+            name='test_beam'
         )
         Applied_Load = Force(
             magnitude=np.array([[1000], [0], [-10000]]),
@@ -252,6 +256,7 @@ class TestBeam(TestCase):
             cross_section=np.vstack((x, z)) * np.ones((np.size(l), 2, 1)),
             material="Al/Si",
             fixing_points=np.array([[0], [0]]) * np.ones(np.size(l)),
+            name='test_beam'
         )
         Applied_Load = Force(
             magnitude=np.array([[0], [0], [10000]]),
@@ -297,6 +302,7 @@ class TestBeam(TestCase):
             cross_section=np.vstack((x, z)) * np.ones((100, 1, 1)),
             material="Al/Si",
             fixing_points=np.array([[0], [0]]) * np.ones(100),
+            name='test_beam'
         )
         A = np.ones((np.size(x), 100))
 
@@ -379,6 +385,7 @@ class TestBeam(TestCase):
             cross_section=np.vstack((x, z)) * np.ones((100, 1, 1)),
             material="Al/Si",
             fixing_points=np.array([[0], [0]]) * np.ones(100),
+            name='test_beam'
         )
 
         dummy_force_2 = Force(
@@ -412,6 +419,7 @@ class TestBeam(TestCase):
             cross_section="square",
             material="Al/Si",
             fixing_points=np.array([[x / 2], [z / 2]]) * np.ones(100),
+            name='test_beam'
         )
 
         infill = 0.1
@@ -453,6 +461,7 @@ class TestBeam(TestCase):
             cross_section=np.vstack((x, z)) * np.ones((100, 1, 1)),
             material="Al/Si",
             fixing_points=np.array([[1], [1]]) * np.ones(100),
+            name='test_beam'
         )
         infill = 0.1
         A = np.max(piramid.x, 0) * np.max(piramid.z, 0) * infill
@@ -485,6 +494,7 @@ class TestBeam(TestCase):
             cross_section="square",
             material="Al/Si",
             fixing_points=np.array([[x0 / 2], [z0 / 2]]) * np.ones(100),
+            name='test_beam'
         )
         t = 0.005
         x1 = x0 - 2 * t
@@ -517,6 +527,7 @@ class TestBeam(TestCase):
             cross_section="square",
             material="Al/Si",
             fixing_points=np.array([[x0 / 2], [z0 / 2]]) * np.ones(100),
+            name='test_beam'
         )
 
         t_plate = 0.001
@@ -563,12 +574,13 @@ class TestBeam(TestCase):
             cross_section="square",
             material="Al/Si",
             fixing_points=np.array([[x0 / 2], [z0 / 2]]) * np.ones(100),
+            name='test_beam'
         )
 
         squareBeam.Bi = 4*0.1*0.005/np.size(squareBeam.x) * np.ones(np.shape(squareBeam.x))
         squareBeam.t = 0.005 * np.ones(np.shape(squareBeam.x))
         s_code = squareBeam._buckling_stress(0, 0, 0)
-        s_analytic = -7 * np.pi**2 * materials['Al/Si'].E / (12 * (1 - materials['Al/Si'].poisson**2)) * (0.005/0.1)**2
+        s_analytic = -5.6 * np.pi**2 * materials['Al/Si'].E / (12 * (1 - materials['Al/Si'].poisson**2)) * (0.005/0.1)**2
 
         assert_allclose(s_code, s_analytic, rtol=1e-12)
 
@@ -604,6 +616,7 @@ class ValidateBeam(TestCase):
             cross_section="square",
             material="Al/Si",
             fixing_points=np.array([[0.025], [0.025]]) * np.ones(100),
+            name='test_beam'
         )
 
         for i in range(3):

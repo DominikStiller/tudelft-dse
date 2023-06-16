@@ -14,15 +14,12 @@ def size_structure():
     # Rotors
     print(Fore.WHITE + "\n### Rotor blade sizing started ###\n")
     frontBlade, rearBlade, mr = size_rotor_blades()
-    frontBlade.buckling()
-    rearBlade.buckling()
+    # mr = 344
 
-    mr = 400
     # Wings
     print(Fore.WHITE + "\n### Wing sizing started ###\n")
     wing, f_loading, moments = size_wing(wingDims['span'], wingDims['rootChord'], wingDims['taper'], mr, -1)
     wing.m_loading = moments
-    wing.buckling()
     wing_vibrations(wing)
     wing.design_joint(b=np.min(wing.y) / 2)
     wing.design_joint(b=0)
@@ -30,8 +27,6 @@ def size_structure():
     # Tails
     print(Fore.WHITE + "\n### Tail sizing started ###\n")
     hStabilizer, vStabilizer, tailPoleMass = size_tail()
-    hStabilizer.buckling()
-    vStabilizer.buckling()
 
     return frontBlade, rearBlade, wing, hStabilizer, vStabilizer
 
@@ -196,10 +191,10 @@ def size_rotor_blades(overwrite=False):
         rearBlade.plot_internal_loading('rear_blade')
 
         frontBlade.InternalStress(0, 0, 0, x_scale=0.5, y_scale=0.5)
-        frontBlade.calculate_mass()
+        frontBlade.m = np.sum(frontBlade.masses())
 
-        rearBlade.InternalStress(0, 0, 0)
-        rearBlade.calculate_mass()
+        rearBlade.InternalStress(0, 0, 0, x_scale=0.5, y_scale=0.5)
+        rearBlade.m = np.sum(frontBlade.masses())
 
         diff = np.maximum(
             np.abs(rotorMass - frontBlade.m - 2) / (rotorMass - 2),
@@ -382,7 +377,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         const["g"] / np.sin(theta) * (1.1 * const["MTOM"] / 2 - (mr / 2 + const["engineMass"]))
     )
     bracing_TO = Force(
-        magnitude=bracing_TO_mag * np.array([[0], [np.cos(theta)], [-np.sin(theta)]]),
+        magnitude=bracing_TO_mag * np.array([[0], [-np.cos(theta)], [-np.sin(theta)]]),
         point_of_application=np.array([[Xac_wing], [-span], [Zac_wing]]),
     )
 
@@ -441,7 +436,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         * (liftMoment - span * const["g"] * (mr / 2 + const["engineMass"]))
     )
     bracing_cruise = Force(
-        magnitude=bracing_cr_mag * np.array([[0], [np.cos(theta)], [-np.sin(theta)]]),
+        magnitude=bracing_cr_mag * np.array([[0], [-np.cos(theta)], [-np.sin(theta)]]),
         point_of_application=np.array([[Xac_wing], [-span], [Zac_wing]]),
     )
 
@@ -464,7 +459,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
     wing.add_loading(bracing_cruise)
     wing.add_loading(aerodynamic_forces)
     wing.plot_internal_loading(structure='wing_cruise')
-    wing.InternalStress(0, 0, 0)
+    wing.InternalStress(0, 0, 0, y_scale=0.75)
     f_loading_Cr = wing.f_loading
     moments = wing.m_loading
     thickness2 = wing.t
@@ -478,7 +473,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
     wing.sigma[np.where(stress_cr > 0)] = np.maximum(stress_cr[np.where(stress_cr > 0)], np.abs(stress_TO[np.where(stress_cr > 0)]))
     f_loading_abs = np.maximum(np.abs(f_loading_TO), np.abs(f_loading_Cr))
 
-
+    print(f'Buckling in cruise:')
     wing.calculate_mass()
     print(Fore.BLUE + f"Mass of each wing = {np.round(wing.m, 2)}kg" + Fore.WHITE)
     return wing, f_loading_abs, moments
