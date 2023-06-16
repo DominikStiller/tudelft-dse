@@ -6,7 +6,7 @@ import pandas as pd
 import csv
 from tqdm import tqdm
 from colorama import Fore
-from dse.plotting import format_plot, save_plot
+from dse.plotting import format_plot, save_plot, set_plotting_theme
 
 
 def xflr_forces(filename, q, b, adrian=None):
@@ -535,6 +535,7 @@ class Beam:
         # plt.axhline(sigma_ult)
         # plt.axhline(-sigma_ult)
         plt.figure(figsize=(9 * x_scale, 5 * y_scale))
+        set_plotting_theme()
         plt.plot(np.abs(self.y), sigma.transpose()/1e6)
         plt.xlabel('Span [m]')
         plt.ylabel('Stress [MPa]')
@@ -759,6 +760,7 @@ class Beam:
 
     def plot_internal_loading(self, structure: str):
         fig, (axs1, axs2) = plt.subplots(2, 1, figsize=(4.5, 3))
+        set_plotting_theme()
         f_loading = np.reshape(self.f_loading, (len(self.y), 3))
         m_loading = np.reshape(self.m_loading, (len(self.y), 3))
 
