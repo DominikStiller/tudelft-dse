@@ -861,7 +861,7 @@ class TailVibes():
                 [x_dot_i, float(self.F_u[i] - self.ceq * np.sign(x_dot_i) * x_dot_i ** 2 - self.keq * x_i)]))
         self.x = np.array(X)[:, 0]
         self.v = np.array(X)[:, 1]
-        print('k')
+
 
     def results(self):
         period = []
@@ -881,14 +881,18 @@ class TailVibes():
 
     def plot(self):
         nth = int((1 / self.dt) / 1e4)
-        plt.figure()
+        plt.figure(figsize=(9,2.5))
         plt.plot(self.t[::nth], self.x[::nth], label="Displacement")
-        plt.plot(self.t[::nth], self.v[::nth], label="Velocity")
+        # plt.plot(self.t[::nth], self.v[::nth], label="Velocity")
         # plt.plot(self.t[::nth], self.F_u[::nth]/self.keq, label="Force")
         # plt.axhline(self.avg)
-        plt.legend()
+        # plt.legend()
+        plt.xlabel('Time [s]')
+        plt.ylabel('Displacement [m]')
+        format_plot()
+        save_plot('.','Tail vibrations')
         plt.show()
-        print('l')
+
 
 if __name__ == "__main__":
     ...
