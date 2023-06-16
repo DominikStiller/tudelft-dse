@@ -12,6 +12,10 @@ from matplotlib.font_manager import fontManager
 for f in glob.glob(os.path.abspath(os.path.dirname(__file__)) + "/../fonts/*.ttf"):
     fontManager.addfont(f)
 
+assert (
+    "Bookman Old Style" in fontManager.get_font_names()
+), "Could not find plot font. Contact Dominik."
+
 sb.set(
     context="paper",
     style="ticks",
