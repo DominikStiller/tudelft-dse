@@ -1,3 +1,4 @@
+import glob
 import os
 from pathlib import Path
 from typing import Union
@@ -5,22 +6,25 @@ from typing import Union
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sb
+from matplotlib.font_manager import fontManager
 
-sb.set(
-    context="paper",
-    style="ticks",
-    font="serif",
-    rc={
-        "lines.linewidth": 1.2,
-        "axes.titleweight": "bold",
-        "font.serif": "Latin Modern Roman",
-        "mathtext.fontset": "custom",
-        "mathtext.it": "Latin Modern Math:italic",
-        "mathtext.cal": "Latin Modern Math",
-        "mathtext.rm": "Latin Modern Math",
-        "axes.titleweight": "bold",
-    },
-)
+
+def set_plotting_theme():
+    sb.set_theme(
+        context="paper",
+        style="ticks",
+        font="serif",
+        rc={
+            "lines.linewidth": 1.2,
+            "axes.titleweight": "bold",
+            "font.serif": "Bookman Old Style",
+            "mathtext.fontset": "custom",
+            "mathtext.it": "Cambria Math:italic",
+            "mathtext.cal": "Cambria Math",
+            "mathtext.rm": "Cambria Math",
+            "figure.dpi": 300,
+        },
+    )
 
 
 def save_plot(results_folder: Union[Path, str], name: str, fig=None, type="pdf"):
@@ -45,6 +49,8 @@ def format_plot(
     ylocator=None,
     tight_layout=True,
     zeroline=False,
+    xgrid=True,
+    ygrid=True,
 ):
     fig = plt.gcf()
     for ax in fig.axes:
@@ -67,8 +73,22 @@ def format_plot(
 
         ax.get_xaxis().set_minor_locator(xlocator_ax)
         ax.get_yaxis().set_minor_locator(ylocator_ax)
-        ax.grid(visible=True, which="major", linewidth=1.0)
-        ax.grid(visible=True, which="minor", linewidth=0.5, linestyle="-.")
+
+        if xgrid:
+            ax.grid(visible=True, which="major", linewidth=1.0)
+        if ygrid:
+            ax.grid(visible=True, which="minor", linewidth=0.5, linestyle="-.")
 
     if tight_layout:
         fig.tight_layout(pad=0.1, h_pad=0.4, w_pad=0.4)
+
+
+# Load fonts
+for f in glob.glob(os.path.abspath(os.path.dirname(__file__)) + "/../fonts/*.ttf"):
+    fontManager.addfont(f)
+
+assert (
+    "Bookman Old Style" in fontManager.get_font_names()
+), "Could not find plot font. Contact Dominik."
+
+set_plotting_theme()

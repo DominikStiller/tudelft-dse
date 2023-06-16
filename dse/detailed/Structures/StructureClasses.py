@@ -1,15 +1,12 @@
 from dse.detailed.Structures.material_properties import materials, Material
 from scipy.interpolate import InterpolatedUnivariateSpline
-from scipy.integrate import odeint
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-import vibration_toolbox as vtb
 import numpy as np
 import pandas as pd
 import csv
-import scipy as sp
 from tqdm import tqdm
 from colorama import Fore
+from dse.plotting import format_plot, save_plot, set_plotting_theme
 
 
 def xflr_forces(filename, q, b, adrian=None):
@@ -75,7 +72,8 @@ def xflr_forces(filename, q, b, adrian=None):
 
     else:
         if adrian == -1:
-            df = pd.read_csv(filename)
+            filepath = f'dse\\detailed\\Structures\\{filename}'
+            df = pd.read_csv(filepath)
             cl_array = np.fromstring(df["Cl_dist"][0][1:-1], sep=" ")
             cd_array = np.fromstring(df["Cd_dist"][0][1:-1], sep=" ")
             sp_array = np.fromstring(df["y_span"][0][1:-1], sep=" ")
@@ -124,7 +122,7 @@ class Force:
 
 
 class Beam:
-    def __init__(self, width, length, height, cross_section, material, fixing_points):
+    def __init__(self, width, length, height, cross_section, material, fixing_points, name):
         # Beam dimensions
         if type(length) == int or type(length) == float:
             self.y = np.linspace(-length, 0, 100)
@@ -236,6 +234,8 @@ class Beam:
                 "Fixing points needs to be a 2x1 array with constant cross section or 2xn array"
             )
 
+        self.name = name
+
         # Parameters to be calculated later
         self.t = None
         self.sigma = None
@@ -325,7 +325,10 @@ class Beam:
         return Bi_initial
 
     def DesignConstraints(self):
-        n = 1.5  # [-] Safety factor
+        if np.any(self.mat == 4) or np.any(self.mat == 5) or np.any(self.mat == 8) or np.any(self.mat == 10) or np.any(self.mat == 11):
+            n = 4.5  # [-] Safety factor
+        else:
+            n = 1.5
         sigma_yield = np.zeros(np.shape(self.mat))
         for i in range(np.shape(self.mat)[0]):
             for j in range(np.shape(self.mat)[1]):
@@ -369,7 +372,7 @@ class Beam:
         # Stress calculations
         sigma_nr = (
             (Mx * Izz - Mz * Ixz) * (z_booms - NAz) + (Mz * Ixx - Mx * Ixz) * (x_booms - NAx)
-        ) / (Ixx * Izz - Ixz**2) - (Fy / np.sum(boomArea_nr, 0)) * np.ones(np.shape(boomArea_nr))
+        ) / (Ixx * Izz - Ixz**2) + (Fy / np.sum(boomArea_nr, 0)) * np.ones(np.shape(boomArea_nr))
         return sigma_nr
 
     def TorsionStress(self, boomArea_nr, A_Airfoil):
@@ -444,7 +447,7 @@ class Beam:
             ) + tSkin[i] * boomDistance[i] / 6 * (2 + sigma[i + 1] / sigma[i])
         return boomAreaCopy
 
-    def InternalStress(self, boom_coordinates, interconnection, i, title=None):
+    def InternalStress(self, boom_coordinates, interconnection, i, title=None, x_scale=1, y_scale=1):
         if interconnection != 0:  # define the interconnection of all of the boom areas
             print("Interconnection between stringers still need to be implemented")
 
@@ -479,10 +482,10 @@ class Beam:
         ## Initial guess for the boom area and skin thickness and stress
         tSkin = np.ones(np.shape(boomDistance)) * tSkin_min
         Bi_initial = (
-            np.sum(boomDistance, 0)
-            * tSkin_min
-            / np.shape(boomDistance)[0]
-            * np.ones(np.shape(boomDistance))
+                np.sum(boomDistance, 0)
+                * tSkin_min
+                / np.shape(boomDistance)[0]
+                * np.ones(np.shape(boomDistance))
         )
         boomArea_nr = np.ones((np.shape(x_booms_nr)[0], np.size(self.y))) * Bi_initial
         sigma = n * sigma_ult
@@ -531,9 +534,15 @@ class Beam:
         self.Bi = boomArea_nr
         # plt.axhline(sigma_ult)
         # plt.axhline(-sigma_ult)
-        plt.plot(self.y, sigma.transpose())
+        plt.figure(figsize=(9 * x_scale, 5 * y_scale))
+        set_plotting_theme()
+        plt.plot(np.abs(self.y), sigma.transpose()/1e6)
+        plt.xlabel('Span [m]')
+        plt.ylabel('Stress [MPa]')
         if title is not None:
             plt.title(title)
+        format_plot()
+        save_plot('.', 'stress_distribution' + self.name)
         plt.show()
 
     def calculate_mass(self):
@@ -768,26 +777,29 @@ class Beam:
             print(Fore.BLUE + 'All members are in tension. No buckling will occur' + Fore.WHITE)
             return ItInfo
 
-    def plot_internal_loading(self):
-        fig, (axs1, axs2) = plt.subplots(2, 1)
+    def plot_internal_loading(self, structure: str):
+        fig, (axs1, axs2) = plt.subplots(2, 1, figsize=(4.5, 3))
+        set_plotting_theme()
         f_loading = np.reshape(self.f_loading, (len(self.y), 3))
         m_loading = np.reshape(self.m_loading, (len(self.y), 3))
 
-        axs1.plot(self.y, f_loading[:, 0] / 1e3, label=r"$V_x$")
-        axs1.plot(self.y, f_loading[:, 1] / 1e3, label=r"$V_y$")
-        axs1.plot(self.y, f_loading[:, 2] / 1e3, label=r"$V_z$")
+        axs1.plot(np.abs(self.y), f_loading[:, 0] / 1e3, label=r"$V_x$")
+        axs1.plot(np.abs(self.y), f_loading[:, 1] / 1e3, label=r"$V_y$")
+        axs1.plot(np.abs(self.y), f_loading[:, 2] / 1e3, label=r"$V_z$")
         axs1.set_xlabel("Span [m]")
         axs1.set_ylabel("Force [kN]")
         axs1.legend()
 
-        axs2.plot(self.y, m_loading[:, 0] / 1e3, label=r"$M_x$")
-        axs2.plot(self.y, m_loading[:, 1] / 1e3, label=r"$M_y$")
-        axs2.plot(self.y, m_loading[:, 2] / 1e3, label=r"$M_z$")
+        axs2.plot(np.abs(self.y), m_loading[:, 0] / 1e3, label=r"$M_x$")
+        axs2.plot(np.abs(self.y), m_loading[:, 1] / 1e3, label=r"$M_y$")
+        axs2.plot(np.abs(self.y), m_loading[:, 2] / 1e3, label=r"$M_z$")
         axs2.set_xlabel("Span [m]")
         axs2.set_ylabel("Moment [kNm]")
         axs2.legend()
 
         plt.tight_layout()
+        format_plot()
+        save_plot('.', 'Internal_loading_' + structure)
         plt.show()
 
 

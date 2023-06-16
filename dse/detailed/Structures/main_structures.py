@@ -2,12 +2,12 @@ from dse.detailed.Structures.StructureClasses import Beam, Force, xflr_forces, T
 from dse.detailed.Structures.rotor_sizing import y_transformation
 from dse.detailed.Structures.material_properties import materials
 from dse.detailed.Structures.constants import *
+from dse.plotting import format_plot, save_plot
 import vibration_toolbox as vtb
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from colorama import Fore
-
+import pandas as pd
+import numpy as np
 
 
 def size_structure():
@@ -17,6 +17,7 @@ def size_structure():
     frontBlade.buckling()
     rearBlade.buckling()
 
+    mr = 400
     # Wings
     print(Fore.WHITE + "\n### Wing sizing started ###\n")
     wing, f_loading, moments = size_wing(wingDims['span'], wingDims['rootChord'], wingDims['taper'], mr, -1)
@@ -102,6 +103,7 @@ def size_rotor_blades(overwrite=False):
         cross_section=frontSect,
         material="CFRCy",
         fixing_points=np.array([[Xac_rotor], [Zac_rotor]]) * np.ones(np.size(l_front)),
+        name='front_blade'
     )
 
     rearBlade = Beam(
@@ -111,16 +113,17 @@ def size_rotor_blades(overwrite=False):
         cross_section=rearSect,
         material="CFRCy",
         fixing_points=np.array([[Xac_rotor], [Zac_rotor]]) * np.ones(np.size(l_front)),
+        name='rear_blade'
     )
 
     # Define the applied forces
     liftOffperBlade = (
         np.ones(np.shape(frontTwist))
-        * 1.1
-        * const["MTOM"]
-        * const["g"]
-        / (const["bladePerRotor"] * const["numRotors"])
+        * 3071.90776835 / const["bladePerRotor"]
         / np.size(frontTwist)
+    )
+    liftOffDrag = (
+        np.ones(np.shape(frontTwist)) * 250.676835 / (rotorDims['radius'] * (1 - rotorDims['cutout'])) / np.size(frontTwist)
     )
     application = np.ones(np.shape(frontTwist)) * np.array(
         [[Xac_rotor], [-rotorDims["radius"]], [Zac_rotor]]
@@ -128,7 +131,12 @@ def size_rotor_blades(overwrite=False):
     application[1] = l_front
 
     liftOffForce_front = Force(
-        magnitude=liftOffperBlade * np.array([[-1 / 54.178], [0], [1]]),
+        magnitude=liftOffperBlade * np.array([[0], [0], [1]]),
+        point_of_application=application,
+    )
+
+    liftOffDrag_front = Force(
+        magnitude=liftOffDrag * np.array([[-1], [0], [0]]),
         point_of_application=application,
     )
 
@@ -137,7 +145,11 @@ def size_rotor_blades(overwrite=False):
     )
     application2[1] = l_rear
     liftOffForce_rear = Force(
-        magnitude=liftOffperBlade * np.array([[-1 / 54.178], [0], [1]]),
+        magnitude=liftOffperBlade * np.array([[0], [0], [1]]),
+        point_of_application=application2,
+    )
+    liftOffDrag_rear = Force(
+        magnitude=liftOffDrag * np.array([[-1], [0], [0]]),
         point_of_application=application2,
     )
 
@@ -149,7 +161,7 @@ def size_rotor_blades(overwrite=False):
         frontBlade.unload()
         rearBlade.unload()
 
-        rotationForce_front = frontRotorMass * const["rpm"] ** 2 * l_front
+        rotationForce_front = frontRotorMass * const["rpm"] ** 2 * -l_front
         rotatingForce_front = Force(
             magnitude=np.vstack(
                 (
@@ -161,7 +173,7 @@ def size_rotor_blades(overwrite=False):
             point_of_application=application,
         )
 
-        rotationForce_rear = rearRotorMass * const["rpm"] ** 2 * l_rear
+        rotationForce_rear = rearRotorMass * const["rpm"] ** 2 * -l_rear
         rotatingForce_rear = Force(
             magnitude=np.vstack(
                 (
@@ -174,14 +186,16 @@ def size_rotor_blades(overwrite=False):
         )
 
         frontBlade.add_loading(liftOffForce_front)
+        frontBlade.add_loading(liftOffDrag_front)
         frontBlade.add_loading(rotatingForce_front)
-        frontBlade.plot_internal_loading()
+        frontBlade.plot_internal_loading('front_blade')
 
         rearBlade.add_loading(liftOffForce_rear)
+        rearBlade.add_loading(liftOffDrag_rear)
         rearBlade.add_loading(rotatingForce_rear)
-        rearBlade.plot_internal_loading()
+        rearBlade.plot_internal_loading('rear_blade')
 
-        frontBlade.InternalStress(0, 0, 0)
+        frontBlade.InternalStress(0, 0, 0, x_scale=0.5, y_scale=0.5)
         frontBlade.calculate_mass()
 
         rearBlade.InternalStress(0, 0, 0)
@@ -238,11 +252,10 @@ def plot_mode_response(x, U):
     ax.plot(x, U * 1e3, label=[f"Mode {i + 1}" for i in range(np.shape(U)[1])])
     ax.set_xlabel("Span [m]")
     ax.set_ylabel("Displacement [mm]")
-
-    ax.grid(True)
     ax.legend()
 
-    fig.tight_layout()
+    format_plot()
+    save_plot('.', 'vibration_modes_wing')
     plt.show()
 
 
@@ -335,7 +348,6 @@ def wing_vibrations(wing, pars=None):
     print(Fore.BLUE + f"Natural frequency of the wing = {w}")
     print(Fore.WHITE + f"Max deflection = {np.max(np.abs(U))} [m]")
     plot_mode_response(x, U)
-
     return w, x, U
 
 
@@ -360,6 +372,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         cross_section=section,
         material="CFRPeek",
         fixing_points=np.array([[Xac_wing], [Zac_wing]]) * np.ones(np.size(l)),
+        name='wing'
     )
 
     theta = np.arctan(const["fuselageHeight"] / span)
@@ -390,7 +403,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         aerodynamic_forces = xflr_forces("Test_xflr5_file.csv", const["q"], float(span))
     else:
         if wing_model == -1:
-            cl, cd, y_L = xflr_forces("javier.csv", const["q"], float(span), adrian=wing_model)
+            cl, cd, y_L = xflr_forces("freek.csv", const["q"], float(span), adrian=wing_model)
         else:
             cl, cd, y_L = xflr_forces("wings.csv", const["q"], float(span), adrian=wing_model)
 
@@ -401,7 +414,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         Cd = np.zeros(np.size(dy))
         app = np.zeros(np.size(dy))
         for i in range(np.size(dy)):
-            indx = (np.abs(wing.y[i] - y_L)).argmin()
+            indx = (np.abs(wing.y[i] + y_L)).argmin()
             Cl[i] = cl[indx]
             Cd[i] = cd[indx]
             app[i] = wing.y[i]
@@ -432,33 +445,39 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         point_of_application=np.array([[Xac_wing], [-span], [Zac_wing]]),
     )
 
-    # Apply loads and size
-    wing.add_loading(engine_and_rotor_weight)
-    wing.add_loading(cruiseThrust)
-    wing.add_loading(bracing_cruise)
-    wing.add_loading(aerodynamic_forces)
-    wing.plot_internal_loading()
-    wing.InternalStress(0, 0, 0)
-    f_loading_Cr = wing.f_loading
-    moments = wing.m_loading
-    thickness2 = wing.t
-    B2 = wing.Bi
 
     # Apply loads and size
     wing.unload()
     wing.add_loading(liftOffLoad)
     wing.add_loading(engine_and_rotor_weight)
     wing.add_loading(bracing_TO)
-    wing.plot_internal_loading()
+    wing.plot_internal_loading('wing_TO')
     wing.InternalStress(0, 0, 0)
     f_loading_TO = wing.f_loading
     thickness = wing.t
     B1 = wing.Bi
+    stress_TO = wing.sigma
+
+    # Apply loads and size
+    wing.add_loading(engine_and_rotor_weight)
+    wing.add_loading(cruiseThrust)
+    wing.add_loading(bracing_cruise)
+    wing.add_loading(aerodynamic_forces)
+    wing.plot_internal_loading(structure='wing_cruise')
+    wing.InternalStress(0, 0, 0)
+    f_loading_Cr = wing.f_loading
+    moments = wing.m_loading
+    thickness2 = wing.t
+    B2 = wing.Bi
+    stress_cr = wing.sigma
 
     # Choose the most critical structure
     wing.t = np.maximum(thickness, thickness2)
     wing.Bi = np.maximum(B1, B2)
+    wing.sigma = np.minimum(stress_TO, stress_cr)
+    wing.sigma[np.where(stress_cr > 0)] = np.maximum(stress_cr[np.where(stress_cr > 0)], np.abs(stress_TO[np.where(stress_cr > 0)]))
     f_loading_abs = np.maximum(np.abs(f_loading_TO), np.abs(f_loading_Cr))
+
 
     wing.calculate_mass()
     print(Fore.BLUE + f"Mass of each wing = {np.round(wing.m, 2)}kg" + Fore.WHITE)
@@ -474,7 +493,7 @@ def size_tail():
     # Define the geometry
     tailChord = np.linspace(hTailDims["tipChord"], hTailDims["rootChord"], m)
     NACA0012 = pd.read_csv(
-        "NACA 0012.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"]
+        ".\\dse\\detailed\\Structures\\NACA 0012.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"]
     )
 
     l = np.linspace(-hTailDims["span"], 0, m)
@@ -492,6 +511,7 @@ def size_tail():
         cross_section=section,
         material="CFRPeek",
         fixing_points=np.array([[Xac], [Zac]]) * np.ones(m),
+        name='hStabilizer'
     )
 
     # Define the loads
@@ -512,7 +532,7 @@ def size_tail():
     # Apply loads and size
     hStabilizer.add_loading(lift)
     hStabilizer.add_loading(drag)
-    hStabilizer.plot_internal_loading()
+    hStabilizer.plot_internal_loading('hStabilizer')
     hStabilizer.InternalStress(0, 0, 0)
     hStabilizer.calculate_mass()
     print(f"Horizontal stabilizer's mass is {2*np.round(hStabilizer.m)} [kg]")
@@ -536,6 +556,7 @@ def size_tail():
         cross_section=section,
         material="AL_light",
         fixing_points=np.array([[Xac], [Zac]]) * np.ones(m),
+        name='vStabilizer'
     )
 
     # Define loads
@@ -554,7 +575,7 @@ def size_tail():
 
     # Apply loads and size
     vStabilizer.add_loading(restoring)
-    vStabilizer.plot_internal_loading()
+    vStabilizer.plot_internal_loading('vStabilizer')
     vStabilizer.InternalStress(0, 0, 0)
     vStabilizer.calculate_mass()
     print(f"Vertical stabilizer's mass is {np.round(vStabilizer.m)} [kg]")
