@@ -573,9 +573,6 @@ class Beam:
         dy = self.y[1:] - self.y[:-1]
         volumes = self.Bi[:, :-1] * dy
         rho = self.rho()
-        ItInfo = self.buckling()
-        print(
-            f"The best stringer distribution is {ItInfo[1]}, having a mass of {ItInfo[0]} [kg], and the {len(ItInfo[1]) - 1} ribs")
         return volumes * rho
 
     def youngs_mod(self):
