@@ -15,7 +15,7 @@ class Coefficients:
         self.CL_alpha_A = 5.271  # cl alpha curve for aircraft
         self.downwash_angle = 0  # downwash induced angle
         self.length_h = 13  # xh - xw (distance between tail and main wing)
-        self.main_wing_chord = 3.11  # main wing chord 3.978    
+        self.main_wing_chord = 3.11  # main wing chord 3.978
         self.Vh_V = 1  # ratio of tail speed to wing speed
         self.X_ac = 0.25  # location of aerodynamic center with respect to the chord
         self.SM = 0.05  # safety margin
@@ -26,7 +26,7 @@ class Coefficients:
         self.C_h_alpha = -0.118    # Dummy number, TBD
         self.C_h_delta = -0.279     # Dummy number, TBD
         self.C_h_delta_t = -0.228   # Dummy number, TBD
-        self.C_m_0 = 0.0  # Dummy number, TBD
+        self.C_m_0 = 0.271  # Dummy number, TBD
         self.d_deltae_d_deltase = 2.18    # Dummy number, TBD
         self.W0 = 3000 * 3.71   # weight
         self.rho = 0.01         # density
@@ -162,9 +162,10 @@ class Coefficients:
         plt.show()
         control_force = self.d_deltae_d_deltase * area_tail * self.S * self.tail_chord * self.Vh_V**2 * \
                         (self.W0 * self.C_h_delta * cg_chord * xn_free_chord / (self.S * C_m_delta) - 0.5 * self.rho * self.vel**2 * self.C_h_delta_t * single_deflection)
-
         elevator_deflection = (- 1 / C_m_delta) * (self.C_m_0 + self.W0 * (cg_chord - xn_fixed_chord) / (0.5 * self.rho * V**2 * self.S))
-        print(C_m_delta, self.C_m_0, "aaaaaaaaaaaa")
+        cruise_elevator_deflection = (- 1 / C_m_delta) * (
+                    self.C_m_0 + self.W0 * (cg_chord - xn_fixed_chord) / (0.5 * self.rho * self.vel ** 2 * self.S))
+        print(f"At the velocity of {self.vel}, the elevator trim: {np.degrees(cruise_elevator_deflection)}")
 
         plt.plot(V, elevator_deflection, color='tab:blue', label='Elevator trim curve')
         plt.axvline(x=self.vel, color='tab:orange', label='cruise velocity')
@@ -329,11 +330,11 @@ s1, s2 = equilibrium.rudder_sizing(x_location_tail)
 print(f"minimum tail size for sideslip {s1}, and engine off {s2}")
 
 cmintime = []
-for aoa in np.arange(np.radians(0), np.radians(5), np.radians(0.1)):
+for aoa in np.arange(np.radians(0), np.radians(1.01), np.radians(0.1)):
     a = equilibrium.moments_change_alpha(x_location_tail, z_location_tail, aoa)
     cmintime.append(a)
 
-plt.plot(np.arange(0, 5, 0.1), cmintime)
+plt.plot(np.arange(0, 1.01, 0.1), cmintime)
 plt.title("Cm vs alpha")
 plt.show()
 def landing_distance():
@@ -348,6 +349,7 @@ def landing_distance():
     mu_break = 0.5  # performance brakes coefficient
     v_stall = np.sqrt((m * g - thrust_up) / (0.5 * rho * surface_area_w * cl_max))
     v_approach = v_stall * 1.1
+    print(v_approach)
     v = v_approach
     distance = 0
     dt = 0.01
