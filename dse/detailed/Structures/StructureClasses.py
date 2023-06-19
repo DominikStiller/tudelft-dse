@@ -685,7 +685,7 @@ class Beam:
             print(Fore.WHITE)
             return n1, D1
 
-    def wingbox_beam(self, b=44.665, t=0.001, d=0.0225, rho=materials['CFRPeek'].rho):
+    def wing225box_beam(self, b=44.665, t=0.001, d=0.0225, rho=materials['CFRPeek'].rho):
         r = d / 2
         mass_rod = b * (2 * np.pi * r * t) * rho
         l_overlap = 1  # [m]
@@ -831,13 +831,13 @@ class TailVibes():
         self.keq = ((2 * np.pi * 3 / (2 * self.l) * q * self.S + (3 * self.E * self.I) / (
                     self.l ** 3))) / self.m_tail  # Stiffness of the spring
 
-    def userinput(self, ah):
+    def userinput(self, cl):
         q = 0.5 * 0.01 * (400 / 3.6) ** 2
         self.i = 0
         if self.i == 0:
-            self.F_u = (-2 * np.pi * q * self.S * ah) / self.m_tail * np.ones(len(self.t))
+            self.F_u = (-cl * q * self.S) / self.m_tail * np.ones(len(self.t))
         elif self.i == 1:
-            self.F_u = (-2 * np.pi * q * self.S * ah) / self.m_tail * np.hstack(
+            self.F_u = (-cl * q * self.S) / self.m_tail * np.hstack(
                 (np.arange(0, 1 + self.dt, self.dt), np.ones(len(self.t) - len(np.arange(0, 1 + self.dt, self.dt)))))
         elif self.i == 2:
             self.F_u = np.zeros(len(self.t))
@@ -881,7 +881,7 @@ class TailVibes():
 
     def plot(self):
         nth = int((1 / self.dt) / 1e4)
-        plt.figure(figsize=(9,2.5))
+        plt.figure(figsize=(9, 2.5))
         plt.plot(self.t[::nth], self.x[::nth], label="Displacement")
         # plt.plot(self.t[::nth], self.v[::nth], label="Velocity")
         # plt.plot(self.t[::nth], self.F_u[::nth]/self.keq, label="Force")

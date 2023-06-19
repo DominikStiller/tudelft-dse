@@ -475,7 +475,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
 
     print(f'Buckling in cruise:')
     wing.calculate_mass()
-    print(Fore.BLUE + f"Mass of each wing = {np.round(wing.m, 2)}kg" + Fore.WHITE)
+    print(Fore.BLUE + f"Mass of each wing = {np.round(wing.m + wing.wingbox_beam(), 2)}kg" + Fore.WHITE)
     return wing, f_loading_abs, moments
 
 
@@ -602,19 +602,41 @@ def size_tail():
         Fore.BLUE
         + f"The total tail group mass is {2*hStabilizer.m + vStabilizer.m + tailPoleMass} [kg]"
     )
-    l = 15 - 2.1439
-    t = 0.001
-    r = tailPoleMass / (2 * np.pi * t * l * materials['CFRCy'].rho)
-    tail_mass = hStabilizer.m + vStabilizer.m + tailPoleMass
-    T = TailVibes(E=materials['CFRCy'].E, density=materials['CFRCy'].rho, radius=r, length=l, thickness=t,
-                  tail_mass=tail_mass, surface_area=20)
-
-    T.simsetting()
-    T.sysparam()
-    T.userinput(ah=0.1)
-    T.syssim()
-    # T.results()
-    T.plot()
+    # l = 15 - 2.1439
+    # t = 0.001
+    # r = tailPoleMass / (2 * np.pi * t * l * materials['CFRCy'].rho82)
+    # tail_mass = hStabilizer.m + vStabilizer.m + tailPoleMass
+    # Th = TailVibes(E=materials['CFRCy'].E, density=materials['CFRCy'].rho, radius=r, length=l, thickness=t,
+    #               tail_mass=tail_mass, surface_area=16.955)
+    #
+    # Th.simsetting()
+    # Th.sysparam()
+    # Th.userinput(cl=1)
+    # Th.syssim()
+    # Th.results()
+    #
+    # Tv = TailVibes(E=materials['CFRCy'].E, density=materials['CFRCy'].rho, radius=r, length=l, thickness=t,
+    #               tail_mass=tail_mass, surface_area=11.333)
+    #
+    # Tv.simsetting()
+    # Tv.sysparam()
+    # Tv.userinput(cl=1)
+    # Tv.syssim()
+    # # T.results()
+    # nth = int((1 / Th.dt) / 1e4)
+    # plt.figure(figsize=(9, 2.5))
+    # plt.plot(Th.t[::nth], Th.x[::nth], label="Displacement due to elevator deflection")
+    # plt.plot(Tv.t[::nth], Tv.x[::nth], label="Displacement due to rudder deflection", linestyle="dashed")
+    # plt.legend()
+    # # plt.plot(self.t[::nth], self.v[::nth], label="Velocity")
+    # # plt.plot(self.t[::nth], self.F_u[::nth]/self.keq, label="Force")
+    # # plt.axhline(self.avg)
+    # # plt.legend()
+    # plt.xlabel('Time [s]')
+    # plt.ylabel('Displacement [m]')
+    # format_plot()
+    # save_plot('.', 'Tail vibrations')
+    # plt.show()
     return hStabilizer, vStabilizer, tailPoleMass
 
 
