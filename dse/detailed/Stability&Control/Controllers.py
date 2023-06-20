@@ -2,16 +2,15 @@
 
 
 class PID:
-    def __init__(self, Kp=1., Ki=1., Kd=1.):
+    def __init__(self, Kp=1.0, Ki=1.0, Kd=1.0):
         self.Kp = Kp
         self.Ki = Ki
         self.Kd = Kd
 
-        self.prev_error = 0.
-        self.integral = 0.
+        self.prev_error = 0.0
+        self.integral = 0.0
 
     def __call__(self, error, dt):
-
         # Calculate the integral term
         self.integral += error * dt
 
@@ -25,7 +24,7 @@ class PID:
 
 
 class Controller:
-    def __init__(self, dt=0.01, Kp=1., Ki=1., Kd=1.):
+    def __init__(self, dt=0.01, Kp=1.0, Ki=1.0, Kd=1.0):
         self.PID_theta = PID(Kp=Kp, Ki=Ki, Kd=Kd)
         self.dt = dt
 
@@ -39,15 +38,15 @@ class Controller:
 
 
 class Controller2:
-    def __init__(self, dt=0.01, Kp=1., Ki=1., Kd=1.):
+    def __init__(self, dt=0.01, Kp=1.0, Ki=1.0, Kd=1.0):
         self.PID_thrust = PID(Kp=Kp, Ki=Ki, Kd=Kd)
         self.dt = dt
 
     def __call__(self, error_velocity):
         T = self.PID_thrust(error_velocity, self.dt)
         # for our plane
-        Tlx = T/2
-        Trx = T/2
+        Tlx = T / 2
+        Trx = T / 2
         if Tlx > 900:
             Tlx = 900
             Trx = 900
@@ -61,7 +60,7 @@ class Controller2:
 
 
 class Controller3:
-    def __init__(self, dt=0.01, Kp=1., Ki=1., Kd=1.):
+    def __init__(self, dt=0.01, Kp=1.0, Ki=1.0, Kd=1.0):
         self.PID_rudder = PID(Kp=Kp, Ki=Ki, Kd=Kd)
         self.dt = dt
 
@@ -75,7 +74,7 @@ class Controller3:
 
 
 class Controller4:
-    def __init__(self, dt=0.01, Kp=1., Ki=1., Kd=1.):
+    def __init__(self, dt=0.01, Kp=1.0, Ki=1.0, Kd=1.0):
         self.PID_aileron = PID(Kp=Kp, Ki=Ki, Kd=Kd)
         self.dt = dt
 
@@ -85,4 +84,4 @@ class Controller4:
             ail = 1066
         elif ail < -1066:
             ail = -1066
-        return ail/2, -ail/2
+        return ail / 2, -ail / 2

@@ -16,12 +16,36 @@ def calculate_parameters(inputs):
     return shs, xn_fix, xn_free, control_force
 
 
-if __name__ == '__main__':
-    coefficients = ['mass_low', 'location_low', 'Cl_alpha_h', 'Cl_alpha_a', 'downwash_angle',
-                    'length_h', 'main_wing_chord', 'Vh_V', 'X_ac', 'SM', 'CL_h', 'Cl_Ah', 'C_mac',
-                    'C_N_h_delta', 'C_h_alpha', 'C_h_delta', 'C_h_delta_t', 'C_m_delta',
-                    'Cm0', 'd_deltae_d_deltase', 'W0', 'airDensity', 'S',
-                    'Vel', 'tailChord', 'location_up', 'mass_up']
+if __name__ == "__main__":
+    coefficients = [
+        "mass_low",
+        "location_low",
+        "Cl_alpha_h",
+        "Cl_alpha_a",
+        "downwash_angle",
+        "length_h",
+        "main_wing_chord",
+        "Vh_V",
+        "X_ac",
+        "SM",
+        "CL_h",
+        "Cl_Ah",
+        "C_mac",
+        "C_N_h_delta",
+        "C_h_alpha",
+        "C_h_delta",
+        "C_h_delta_t",
+        "C_m_delta",
+        "Cm0",
+        "d_deltae_d_deltase",
+        "W0",
+        "airDensity",
+        "S",
+        "Vel",
+        "tailChord",
+        "location_up",
+        "mass_up",
+    ]
     bounds = [
         [1, 5000],  # mass lower bound
         [0.4, 0.45],  # location lower bound
@@ -49,18 +73,14 @@ if __name__ == '__main__':
         [75, 150],  # vel
         [1, 4],  # tail_chord
         [0.45, 0.5],  # Location upper bound
-        [5000, 10000]  # Mass upper bound
+        [5000, 10000],  # Mass upper bound
     ]
 
-    Outputs = ['Tail area', 'xn_fix', 'xn_free', 'control_force']
+    Outputs = ["Tail area", "xn_fix", "xn_free", "control_force"]
 
-    problem = {
-        "num_vars": len(bounds),
-        "names": coefficients,
-        "bounds": bounds
-    }
+    problem = {"num_vars": len(bounds), "names": coefficients, "bounds": bounds}
 
-    param_values = saltelli.sample(problem, 2 ** 6)
+    param_values = saltelli.sample(problem, 2**6)
     # Sh_S
     Y = np.zeros((param_values.shape[0], 4))
     for i in tqdm(range(len(param_values))):
@@ -75,5 +95,5 @@ if __name__ == '__main__':
         S_err[i] = Si[i]["ST_conf"]
 
     df1 = pd.DataFrame(np.round(S.T, 2), index=coefficients, columns=Outputs)
-    df1.to_excel('Coefficients_sensitivity.xlsx')
+    df1.to_excel("Coefficients_sensitivity.xlsx")
     print(df1.to_latex())

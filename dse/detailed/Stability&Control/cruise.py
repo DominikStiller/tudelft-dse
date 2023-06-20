@@ -3,17 +3,18 @@ from Controllers import Controller, Controller2, Controller3, Controller4
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+
 mpl.use("TkAgg")
 
 dt = 0.01
 system = System()
-controller_pitch = Controller(dt=dt, Kp=25000., Ki=6000., Kd=5000.)
-controller_thrust = Controller2(dt=dt, Kp=1000., Ki=5., Kd=0.)
-controller_yaw = Controller3(dt=dt, Kp=-15000., Ki=-50., Kd=-15000.)
-controller_roll = Controller4(dt=dt, Kp=-4000., Ki=-1., Kd=-7500.)
+controller_pitch = Controller(dt=dt, Kp=25000.0, Ki=6000.0, Kd=5000.0)
+controller_thrust = Controller2(dt=dt, Kp=1000.0, Ki=5.0, Kd=0.0)
+controller_yaw = Controller3(dt=dt, Kp=-15000.0, Ki=-50.0, Kd=-15000.0)
+controller_roll = Controller4(dt=dt, Kp=-4000.0, Ki=-1.0, Kd=-7500.0)
 
-euler_ref = np.array([0, 0, 0.])
-velocity_linear_ref = np.array([400/3.6, 0, 0.])
+euler_ref = np.array([0, 0, 0.0])
+velocity_linear_ref = np.array([400 / 3.6, 0, 0.0])
 euler_in_time = []
 velocity_linear_in_time = []
 
@@ -55,8 +56,8 @@ plt.show()
 plt.plot(velocity_linear_in_time[:, 1])
 plt.ylabel("velocity in the y direction")
 plt.show()
-plt.plot(np.degrees(euler_in_time[:, 2]), color='b')
-plt.plot(np.degrees(euler_in_time[:, 1]), color='g')
-plt.plot(np.degrees(euler_in_time[:, 0]), color='r')
-plt.legend('ypr')
+plt.plot(np.degrees(euler_in_time[:, 2]), color="b")
+plt.plot(np.degrees(euler_in_time[:, 1]), color="g")
+plt.plot(np.degrees(euler_in_time[:, 0]), color="r")
+plt.legend("ypr")
 plt.show()
