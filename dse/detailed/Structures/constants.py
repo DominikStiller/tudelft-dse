@@ -20,6 +20,7 @@ const = {
     "liftToDragTail": 15,
     "extraForceTail": 500,
     "q": 0.5 * 0.01 * 112**2,
+    "load_factor": 1
 }
 
 rotorDims = {

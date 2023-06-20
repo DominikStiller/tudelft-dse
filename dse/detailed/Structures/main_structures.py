@@ -414,8 +414,8 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
             Cd[i] = cd[indx]
             app[i] = wing.y[i]
 
-        lift = Cl * const["q"] * c_arr * dy
-        drag = Cd * const["q"] * c_arr * dy
+        lift = const["load_factor"] * Cl * const["q"] * c_arr * dy
+        drag = const["load_factor"] * Cd * const["q"] * c_arr * dy
 
         aerodynamic_forces = Force(
             magnitude=np.vstack((-drag, np.zeros(np.size(lift)), lift)),
@@ -475,7 +475,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
 
     print(f'Buckling in cruise:')
     wing.calculate_mass()
-    print(Fore.BLUE + f"Mass of each wing = {np.round(wing.m + wing.wingbox_beam(), 2)}kg" + Fore.WHITE)
+    print(Fore.BLUE + f"Mass of each wing = {np.round(wing.m, 2)}kg" + Fore.WHITE)
     return wing, f_loading_abs, moments
 
 
