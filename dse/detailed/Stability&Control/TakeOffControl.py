@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-mpl.use("TkAgg")
+from dse.plotting import format_plot
+from dse.plotting import save_plot
 
 def define_geometry():
     """
@@ -21,17 +21,14 @@ def define_geometry():
     return R
 
 def define_areas():
-    # plane design parameters
-    downwash = 3  # in deg
-    instalation = 0  # in deg
-    aoastall = 15  # in deg
-    area = [56, 56, 15]  # left wing, right wing, stabilizer
-    imain = np.radians(4)  # angle of incidence main
-    itail = np.radians(4)  # angle of incidence tail
-    m = 2700
-    I = np.array([[81250, 0, 0], [0, 19750, 0], [0, 0, 91500]])  # mass moments of inertia ixx, iyy, izz
+    # Plane design parameters
+    area = [66.75, 66.75, 16.9, 31]  # left wing, right wing, stabilizer, fuselage
+    imain = np.radians(1)  # angle of incidence main
+    itail = np.radians(1)  # angle of incidence tail
+    m = 3000
+    I = np.array([[98156, 0, 0], [0, 5645, 0], [0, 0, 98310]])
     W0 = m * 3.71
-    max_thrust = -11000
+    max_thrust = -12284
     return area, imain, itail, m, I, W0, max_thrust
 
 def get_coefficients(aoal, aoar, aoah):
@@ -48,38 +45,83 @@ def get_coefficients(aoal, aoar, aoah):
         cdwr: drag coefficient of right wing
         cdh: drag coefficient of horizontal stabilizer
     '''
-    aoalistw = np.radians(np.arange(-5, 15, 0.1))
-    aoalisth = np.radians(np.arange(-5, 15, 0.1))
-    cllistw = aoalistw * 2 * np.pi   # will later be a csv file
-    cllisth = aoalisth * 2 * np.pi   # will later be a csv file
-    cldivcdw = np.ones(len(aoalistw)) * 20   # will later be a csv file
-    cldivcdh = np.ones(len(aoalisth)) * 20   # will later be a csv file
-    if np.radians(-5) <= aoal <= np.radians(15):
+    # aoalistw = np.radians(np.arange(-5, 15, 0.1))
+    # aoalisth = np.radians(np.arange(-5, 15, 0.1))
+    # cllistw = aoalistw * 2 * np.pi   # will later be a csv file
+    # cllisth = aoalisth * 2 * np.pi   # will later be a csv file
+    # cldivcdw = np.ones(len(aoalistw)) * 20   # will later be a csv file
+    # cldivcdh = np.ones(len(aoalisth)) * 20   # will later be a csv file
+    # if np.radians(-5) <= aoal <= np.radians(15):
+    #     clwl = np.interp(aoal, aoalistw, cllistw)
+    #     cdwl = clwl / np.interp(aoal, aoalistw, cldivcdw)
+    # else:
+    #     clwl = 0
+    #     cdwl = 1.28
+    # if np.radians(-5) <= aoar <= np.radians(15):
+    #     clwr = np.interp(aoar, aoalistw, cllistw)
+    #     cdwr = clwr / np.interp(aoar, aoalistw, cldivcdw)
+    # else:
+    #     clwr = 0
+    #     cdwr = 1.28
+    # if np.radians(-5) <= aoal <= np.radians(15):
+    #     clh = np.interp(aoah, aoalistw, cllisth)
+    #     cdh = clh / np.interp(aoah, aoalisth, cldivcdh)
+    # else:
+    #     clh = 0
+    #     cdh = 1.28
+
+    if aoal > np.radians(15) or aoal < np.radians(-5):
+        aoalistw = np.radians(np.arange(-180, 181, 5))
+        cllistw = np.array(
+            [0.15, 0.4, 0.6, 0.65, 0.2, 0.4, 0.7, 0.9, 1.1, 1.2, 1.1, 1.0, 0.95, 0.8, 0.7, 0.55, 0.3, 0.0, -0.3, -0.45,
+             -0.65, -0.75, -0.85, -0.95, -1.05, -1.1, -1.15, -1.2, -1.0, -0.8, -0.6, -0.3, 0, -0.6, -0.2, 0.4, 1.2, 1.75,
+             2.2, 2.3, 1.5, 0.8, 0.6, 0.8, 0.9, 1, 1.1, 1.15, 1.1, 1.0, 0.8, 0.6, 0.4, 0.2, 0, -0.3, -0.45, -0.65, -0.75,
+             -0.85, -0.95, -1.05, -1.1, -1.15, -1.2, -1.0, -0.8, -0.6, -0.3, 0, -0.3, -0.5, -0.1])
         clwl = np.interp(aoal, aoalistw, cllistw)
-        cdwl = clwl / np.interp(aoal, aoalistw, cldivcdw)
     else:
-        clwl = 0
-        cdwl = 1.28
-    if np.radians(-5) <= aoar <= np.radians(15):
+        aoalistw = np.radians(np.arange(-5, 15.1, 1))
+        cllistw = np.array([0.4, 0.4, 0.5, 0.9, 1.1, 1.2, 1.33, 1.43, 1.53, 1.64, 1.75, 1.85, 1.95, 2.05, 2.15, 2.25, 2.3, 2.35, 2.4, 2.35, 2.3])
+        clwl = np.interp(aoal, aoalistw, cllistw)
+
+    if aoar > np.radians(15) or aoar < np.radians(-5):
+        aoalistw = np.radians(np.arange(-180, 181, 5))
+        cllistw = np.array(
+            [0.15, 0.4, 0.6, 0.65, 0.2, 0.4, 0.7, 0.9, 1.1, 1.2, 1.1, 1.0, 0.95, 0.8, 0.7, 0.55, 0.3, 0.0, -0.3, -0.45,
+             -0.65, -0.75, -0.85, -0.95, -1.05, -1.1, -1.15, -1.2, -1.0, -0.8, -0.6, -0.3, 0, -0.6, -0.2, 0.4, 1.2, 1.75,
+             2.2, 2.3, 1.5, 0.8, 0.6, 0.8, 0.9, 1, 1.1, 1.15, 1.1, 1.0, 0.8, 0.6, 0.4, 0.2, 0, -0.3, -0.45, -0.65, -0.75,
+             -0.85, -0.95, -1.05, -1.1, -1.15, -1.2, -1.0, -0.8, -0.6, -0.3, 0, -0.3, -0.5, -0.1])
         clwr = np.interp(aoar, aoalistw, cllistw)
-        cdwr = clwr / np.interp(aoar, aoalistw, cldivcdw)
     else:
-        clwr = 0
-        cdwr = 1.28
-    if np.radians(-5) <= aoal <= np.radians(15):
-        clh = np.interp(aoah, aoalistw, cllisth)
-        cdh = clh / np.interp(aoah, aoalisth, cldivcdh)
+        aoalistw = np.radians(np.arange(-5, 15.1, 1))
+        cllistw = np.array([0.4, 0.4, 0.5, 0.9, 1.1, 1.2, 1.33, 1.43, 1.53, 1.64, 1.75, 1.85, 1.95, 2.05, 2.15, 2.25, 2.3, 2.35, 2.4, 2.35, 2.3])
+        clwr = np.interp(aoar, aoalistw, cllistw)
+
+    if aoah > np.radians(15) or aoah < np.radians(-5):
+        aoalisth = np.radians(np.arange(-180, 181, 5))
+        cllisth = np.array(
+            [0.15, 0.4, 0.6, 0.65, 0.2, 0.4, 0.7, 0.9, 1.1, 1.2, 1.1, 1.0, 0.95, 0.8, 0.7, 0.55, 0.3, 0.0, -0.3, -0.45,
+             -0.65, -0.75, -0.85, -0.95, -1.05, -1.1, -1.15, -1.2, -1.0, -0.8, -0.6, -0.3, -0.7, -1.2, -1, -0.6, 0.0, 0.6,
+             1, 1.5, 0.8, 0.4, 0.6, 0.8, 0.9, 1, 1.1, 1.15, 1.1, 1.0, 0.8, 0.6, 0.4, 0.2, 0, -0.3, -0.45, -0.65, -0.75,
+             -0.85, -0.95, -1.05, -1.1, -1.15, -1.2, -1.0, -0.8, -0.6, -0.3, 0, -0.3, -0.5, -0.1])
+        clh = np.interp(aoah, aoalisth, cllisth)
     else:
-        clh = 0
-        cdh = 1.28
-    # add the fuselage contribution later and add s fuselage
-    return clwl, clwr, clh, cdwl, cdwr, cdh
+        aoalisth = np.radians(np.arange(-5, 15.1, 1))
+        cllisth = np.array([-0.6, -0.5, -0.4, -0.3, -0.15, 0, 0.1635, 0.327, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.5])
+        clh = np.interp(aoah, aoalisth, cllisth)
+
+
+    cdwr = 0.6625 - 0.6175 * np.cos(2 * aoar)
+    cdwl = 0.6625 - 0.6175 * np.cos(2 * aoal)
+    cdh = 0.6625 - 0.6175 * np.cos(2 * aoah)
+    cdb = 0.031
+
+    return clwl, clwr, clh, cdwr, cdwl, cdh, cdb
 
 class System:
     def __init__(self):
         self.geometry = define_geometry()
         self.area, self.imain, self.itail, self.m, self.I, self.W0, self.max_thrust = define_areas()
-        self.rho = 0.015
+        self.rho = 0.01
 
         # previous state
         self.euler_prev = np.array([0, 0, 0.])  # the euler angles: roll(at X), pitch(at Y), yaw(at Z)
@@ -102,12 +144,13 @@ class System:
         # Fr = [0, 0, 0]
         Tl, Tr = exc_sig
         aoawings = np.arctan2(self.velocity_linear[2] - self.velocity_angular[1], self.velocity_linear[0])
-        aoatail = np.arctan2(self.velocity_linear[2] + self.velocity_angular[1]*10, self.velocity_linear[0])
+        aoatail = np.arctan2(self.velocity_linear[2] + self.velocity_angular[1]*13, self.velocity_linear[0])
         # aoa = np.arctan2(self.velocity_linear[2], self.velocity_linear[0])  # if you are ambitious, go do something
         # velocitywings = np.array([self.velocity_linear[0], self.velocity_linear[0], self.velocity_linear[0]]) # if you are ambitious, go do something
         velocitywings = np.array([self.velocity_linear[0] - self.velocity_angular[1], self.velocity_linear[0] - self.velocity_angular[1], self.velocity_linear[0] + self.velocity_angular_prev[1] * 10])
-        wl, wr, h = self.aero_forces(aoawings, aoatail, velocitywings, self.euler[2], self.euler[1])
+        wl, wr, h, b = self.aero_forces(aoawings, aoatail, velocitywings, self.euler[2], self.euler[1])
         W = np.array([-self.W0 * np.sin(self.euler[1]), 0, self.W0 * np.cos(self.euler[1])])
+        W = W + b
         F = np.array([wl, wr, h, np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, 0]), np.array([0, 0, 0]), Tl,
                       Tr, W])
 
@@ -144,27 +187,31 @@ class System:
         '''
 
         # aoa includes the effective angle of attack due to the pitch and angular velocity
-        clwl, clwr, clh, cdwl, cdwr, cdh = get_coefficients(aoaw + self.imain, aoaw + self.imain, aoah + self.itail)
-        # Lwl = 0.5 * self.rho * self.area[0] * clwl * v[0] ** 2
-        # Lwr = 0.5 * self.rho * self.area[1] * clwr * v[1] ** 2
-        # Lh = 0.5 * self.rho * self.area[2] * clh * v[2] ** 2
-        # Dwl = 0.5 * self.rho * self.area[0] * cdwl * v[0] ** 2
-        # Dwr = 0.5 * self.rho * self.area[1] * cdwr * v[1] ** 2
-        # Dh = 0.5 * self.rho * self.area[2] * cdh * v[2] ** 2
+        clwl, clwr, clh, cdwl, cdwr, cdh, cdb = get_coefficients(aoaw + self.imain, aoaw + self.imain,
+                                                                 aoah + self.itail)
+        Lwl = 0.5 * self.rho * self.area[0] * clwl * v[0] ** 2
+        Lwr = 0.5 * self.rho * self.area[1] * clwr * v[1] ** 2
+        Lh = 0.5 * self.rho * self.area[2] * clh * v[2] ** 2
+        Dwl = 0.5 * self.rho * self.area[0] * cdwl * v[0] ** 2
+        Dwr = 0.5 * self.rho * self.area[1] * cdwr * v[1] ** 2
+        Dh = 0.5 * self.rho * self.area[2] * cdh * v[2] ** 2
+        Db = 0.5 * self.rho * self.area[3] * cdb * v[0] ** 2
 
-        Dwl = 0.5 * self.rho * self.area[0] * cdwl * self.velocity_linear[2] ** 2 * -np.sign(self.velocity_linear[2])
-        Dwr = 0.5 * self.rho * self.area[1] * cdwr * self.velocity_linear[2] ** 2 * -np.sign(self.velocity_linear[2])
-        Dh = 0.5 * self.rho * self.area[2] * cdh * self.velocity_linear[2] ** 2 * -np.sign(self.velocity_linear[2])
+        # Dwl = 0.5 * self.rho * self.area[0] * cdwl * self.velocity_linear[2] ** 2 * -np.sign(self.velocity_linear[2])
+        # Dwr = 0.5 * self.rho * self.area[1] * cdwr * self.velocity_linear[2] ** 2 * -np.sign(self.velocity_linear[2])
+        # Dh = 0.5 * self.rho * self.area[2] * cdh * self.velocity_linear[2] ** 2 * -np.sign(self.velocity_linear[2])
 
-        wl = np.array([0, 0, Dwl])
-        wr = np.array([0, 0, Dwr])
-        h = np.array([0, 0, Dh])
+        wl = np.array([-Dwl, 0, -Lwl])
+        wr = np.array([-Dwr, 0, -Lwr])
+        h = np.array([-Dh, 0, -Lh])
+        b = np.array([-Db, 0, 0])
 
         wl = np.matmul(self.aero_to_body(pitch, beta), wl)
         wr = np.matmul(self.aero_to_body(pitch, beta), wr)
         h = np.matmul(self.aero_to_body(pitch, beta), h)
+        b = np.matmul(self.aero_to_body(pitch, beta), b)
 
-        return wl, wr, h
+        return wl, wr, h, b
 
     def aero_to_body(self, aoa, b):
         '''
@@ -174,8 +221,8 @@ class System:
         Returns:
             T: the transformation matrix
         '''
-        a = np.radians(aoa)
-        b = np.radians(b)
+        a = aoa
+        b = b
         T = np.array([[np.cos(b) * np.cos(a), np.sin(b), np.cos(b) * np.sin(a)],
                       [-np.sin(b) * np.cos(a), np.cos(b), -np.sin(b) * np.sin(a)],
                       [-np.sin(a), 0, np.cos(a)]])
@@ -312,12 +359,10 @@ for i in range(int(1e4)):
     Tlx, Trx = controller_pitch(error_euler[1])
     Tl = [Tlx, 0, Tlz]
     Tr = [Trx, 0, Trz]
+    T = np.array(Tl) + np.array(Tr)
 
+    thrust_in_time.append(np.copy(T))
 
-    thrust_in_time.append(np.copy(Tl+Tr))
-
-    print(Tl, Tr, error_velocity_linear)
-    # thrust_in_time.append([list(Tl+Tr),i])
     exc_sig = Tl, Tr
 
     system(exc_sig, dt)
@@ -326,25 +371,48 @@ euler_in_time = np.array(euler_in_time)
 velocity_linear_in_time = np.array(velocity_linear_in_time)
 position_in_time = np.array(position_in_time)
 thrust_in_time = np.array(thrust_in_time)
-# print(thrust_in_time[::][0][0][2])
 
-# plt.plot(velocity_linear_in_time[:, 0])
-# plt.ylabel("velocity in the x direction")
+# plt.plot(np.array(np.arange(0,1e4,1))*dt,position_in_time[:, 0])
+# plt.ylabel("Position in x-direction [m]")
+# plt.xlabel("Time [s]")
 # plt.show()
-plt.plot(velocity_linear_in_time[:, 2])
-plt.ylabel("velocity in the z direction")
+# plt.plot(np.array(np.arange(0,1e4,1))*dt,position_in_time[:, 1])
+# plt.ylabel("Position in y-direction [m]")
+# plt.xlabel("Time [s]")
+# plt.show()
+plt.plot(np.array(np.arange(0,1e4,1))*dt,position_in_time[:, 2])
+plt.ylabel("Position in z-direction (downward positive) [m]")
+plt.xlabel("Time [s]")
+format_plot()
+save_plot("/Users/thomas/Documents/Thomas' bestanden/TU Delft/BSC3/Q4 - DSE/Figures", "ZPosition_vs_Time_TakeOff")
 plt.show()
-# plt.plot(position_in_time[:, 2])
-# plt.ylabel("position in the z direction")
+
+# plt.plot(np.array(np.arange(0,1e4,1))*dt,velocity_linear_in_time[:, 0])
+# plt.ylabel("Velocity in x-direction [m/s]")
+# plt.xlabel("Time [s]")
 # plt.show()
-# plt.plot(thrust_in_time[:,2])
-# plt.ylabel("total thrust")
+# plt.plot(np.array(np.arange(0,1e4,1))*dt,velocity_linear_in_time[:, 1])
+# plt.ylabel("Velocity in y-direction [m/s]")
+# plt.xlabel("Time [s]")
 # plt.show()
-# # plt.plot(velocity_linear_in_time[:, 1])
-# plt.ylabel("velocity in the y direction")
-# plt.show()
-plt.plot(euler_in_time[:, 2], color='b')
-plt.plot(euler_in_time[:, 1], color='g')
-plt.plot(euler_in_time[:, 0], color='r')
-plt.legend('ypr')
+plt.plot(np.array(np.arange(0,1e4,1))*dt,velocity_linear_in_time[:, 2])
+plt.ylabel("Velocity in z-direction [m/s]")
+plt.xlabel("Time [s]")
+format_plot()
+save_plot("/Users/thomas/Documents/Thomas' bestanden/TU Delft/BSC3/Q4 - DSE/Figures", "ZVelocity_vs_Time_TakeOff")
+plt.show()
+
+plt.plot(np.array(np.arange(0,1e4,1))*dt,thrust_in_time[:,2], label="Thrust in z-direction (downward positive)")
+plt.ylabel("Thrust in z-direction (downward positive) [N]")
+plt.xlabel("Time [s]")
+format_plot()
+plt.show()
+
+plt.plot(euler_in_time[:, 2], color='b', label="Yaw")
+plt.plot(euler_in_time[:, 1], color='g', label="Pitch")
+plt.plot(euler_in_time[:, 0], color='r', label="Roll")
+plt.ylabel("Angle [°]")
+plt.xlabel("Time [s]")
+plt.legend()
+format_plot()
 plt.show()
