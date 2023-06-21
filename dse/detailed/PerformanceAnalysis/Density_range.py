@@ -11,7 +11,7 @@ if __name__ == '__main__':
     density = np.arange(0.01, 0.02, np.shape(power_required)[1])
 
     plt.figure(figsize=(9, 2.5))
-    plt.plot(density, max_range)
+    plt.plot(density, max_range.T)
     plt.legend(['Helios', 'Atlas'])
     plt.xlabel(r'Atmospheric density [kg/m$^3$]')
     plt.ylabel('Range [km]')
