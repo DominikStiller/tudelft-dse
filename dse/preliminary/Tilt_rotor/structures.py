@@ -340,7 +340,7 @@ def max_rotor_loads(airfoil_shape):
     # print(f'Fill factor: {fill_factor}')
     # print(f'Final Rotor Mass possible: {const["bladeDensity"] * aircraftParameters["rotorRadius"] * initial_area * (fill_factor)}')
     # print(f'Thickness: {(initial_area*fill_factor)/length}')
-    print(f'Maximum absolute stress: {np.max(np.abs(max_stress))}')
+    print(f"Maximum absolute stress: {np.max(np.abs(max_stress))}")
     return np.array([F_x, F_y, F_z]), np.array([Mx, 0, Mz]), max_stress, fill_factor
 
 

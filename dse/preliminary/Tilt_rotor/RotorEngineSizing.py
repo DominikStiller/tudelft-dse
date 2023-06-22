@@ -492,6 +492,7 @@ def RotorInCruise(V_cr, omega, R):
     plt.plot(r, np.cos(phi))
     plt.show()
 
+
 if __name__ == "__main__":
     gm = const["gravityMars"]
     rho = const["airDensity"]  # kg/m3
