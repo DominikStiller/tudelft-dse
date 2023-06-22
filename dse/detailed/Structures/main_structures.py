@@ -14,12 +14,15 @@ def size_structure():
     # Rotors
     print(Fore.WHITE + "\n### Rotor blade sizing started ###\n")
     frontBlade, rearBlade, mr = size_rotor_blades()
-    # mr = 344
+    rearBlade.plot_geometry()
+    # mr = 344.16
 
     # Wings
     print(Fore.WHITE + "\n### Wing sizing started ###\n")
     wing, f_loading, moments = size_wing(wingDims['span'], wingDims['rootChord'], wingDims['taper'], mr, -1)
     wing.m_loading = moments
+    plot_discretized_results(wing, 'stress')
+    wing.plot_geometry()
     wing_vibrations(wing)
     wing.design_joint(b=np.min(wing.y) / 2)
     wing.design_joint(b=0)
@@ -31,7 +34,29 @@ def size_structure():
     return frontBlade, rearBlade, wing, hStabilizer, vStabilizer
 
 
-def size_rotor_blades(overwrite=False):
+def plot_discretized_results(beam: Beam, parameter: str):
+    indx = np.where(np.abs(beam.sigma) == np.max(np.abs(beam.sigma)))[1][0]
+    x, z = beam.section[indx][:, :-1]
+    if parameter == 'area':
+        param = beam.Bi[:, indx]
+        lab = r'Boom area [m$^2$]'
+        plt.scatter(x, z, c=param, vmin=np.min(param), vmax=np.max(param), cmap='seismic')
+    elif parameter == 'stress':
+        param = beam.sigma[:, indx] / 1e6
+        lab = r'Internal stress [MPa]'
+        plt.scatter(x, z, c=param, vmin=-100, vmax=100, cmap='seismic')
+    else:
+        raise ValueError('plotting discretized results is only available for boom area and stress')
+
+    plt.gca().set_aspect('equal')
+    plt.axis('off')
+    plt.colorbar(label=lab, orientation='horizontal')
+    plt.tight_layout()
+    save_plot('.', f'Internal_{parameter}')
+    plt.show()
+
+
+def size_rotor_blades(overwrite: bool = False):
     discretization = 5
     frontTwist = np.zeros(discretization * (np.size(rotorDims["frontBladeTwist"]) - 1))
     rearTwist = np.zeros(discretization * (np.size(rotorDims["rearBladeTwist"]) - 1))
@@ -71,6 +96,10 @@ def size_rotor_blades(overwrite=False):
         np.size(rearTwist),
     )
 
+    global Xac_rotor, Zac_rotor
+    Xac_rotor = np.max(const["Airfoil"]["x"]) * frontChord[-1] / 4
+    Zac_rotor = 0.077 * frontChord[0] / 20
+
     frontSect = rearSect = np.vstack((const["Airfoil"]["x"], const["Airfoil"]["z"]))
 
     frontSect = (
@@ -78,18 +107,14 @@ def size_rotor_blades(overwrite=False):
         * frontSect
         * np.reshape(frontChord, (np.size(frontChord), 1, 1))
     )
-    frontSect = y_transformation(frontTwist, frontSect)
+    frontSect = y_transformation(frontTwist, frontSect, fix_points=np.array([[Xac_rotor], [Zac_rotor]]))
 
     rearSect = (
         np.ones((np.size(l_rear), 2, 1))
         * rearSect
         * np.reshape(rearChord, (np.size(rearChord), 1, 1))
     )
-    rearSect = y_transformation(rearTwist, rearSect)
-
-    global Xac_rotor, Zac_rotor
-    Xac_rotor = np.max(const["Airfoil"]["x"]) * frontChord[-1] / 4
-    Zac_rotor = 0.077 * frontChord[0] / 20
+    rearSect = y_transformation(rearTwist, rearSect, np.array([[Xac_rotor], [Zac_rotor]]))
 
     frontBlade = Beam(
         width=frontSect[:, 0].T,
@@ -454,6 +479,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
     stress_TO = wing.sigma
 
     # Apply loads and size
+    wing.unload()
     wing.add_loading(engine_and_rotor_weight)
     wing.add_loading(cruiseThrust)
     wing.add_loading(bracing_cruise)

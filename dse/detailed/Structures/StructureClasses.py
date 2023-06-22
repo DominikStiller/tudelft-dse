@@ -777,6 +777,32 @@ class Beam:
             print(Fore.BLUE + 'All members are in tension. No buckling will occur' + Fore.WHITE)
             return ItInfo
 
+    def plot_geometry(self):
+        # Side view
+        plt.figure(figsize=(9, 2.5))
+        plt.scatter(self.x[:, -1], self.z[:, -1], label='root')
+        plt.scatter(self.x[:, 0], self.z[:, 0], label='tip')
+        plt.xlabel('Chord [m]')
+        plt.ylabel('Thickness [m]')
+        plt.gca().set_aspect('equal')
+        plt.legend()
+        format_plot()
+        save_plot('.', f'{self.name}_geometry_side')
+        plt.show()
+
+        # Top view
+        plt.figure(figsize=(9, 2.5))
+        plt.plot(-self.y, np.min(self.x, 0), color='tab:blue')
+        plt.plot(-self.y, np.max(self.x, 0), color='tab:blue')
+        plt.vlines(np.min(np.abs(self.y)), np.min(self.x[:, -1]), np.max(self.x[:, -1]))
+        plt.vlines(np.max(np.abs(self.y)), np.min(self.x[:, 0]), np.max(self.x[:, 0]))
+        plt.xlabel('Span [m]')
+        plt.ylabel('Chord [m]')
+        plt.gca().set_aspect('equal')
+        format_plot()
+        save_plot('.', f'{self.name}_geometry_top')
+        plt.show()
+
     def plot_internal_loading(self, structure: str):
         fig, (axs1, axs2) = plt.subplots(2, 1, figsize=(4.5, 2.5))
         set_plotting_theme()
