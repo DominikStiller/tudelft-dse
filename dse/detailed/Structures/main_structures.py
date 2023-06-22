@@ -1,3 +1,5 @@
+import os
+
 from dse.detailed.Structures.StructureClasses import Beam, Force, xflr_forces, TailVibes
 from dse.detailed.Structures.rotor_sizing import y_transformation
 from dse.detailed.Structures.material_properties import materials
@@ -527,7 +529,7 @@ def size_tail():
     # Define the geometry
     tailChord = np.linspace(hTailDims["tipChord"], hTailDims["rootChord"], m)
     NACA0012 = pd.read_csv(
-        ".\\dse\\detailed\\Structures\\NACA 0012.dat",
+        os.path.normpath("dse/detailed/Structures/NACA 0012.dat"),
         delimiter="\s+",
         dtype=float,
         skiprows=1,

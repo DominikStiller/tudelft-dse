@@ -32,7 +32,7 @@ def read_material_properties(filename):
 
 
 print(os.getcwd())
-a = read_material_properties(".\\dse\\detailed\\Structures\\materials.csv")
+a = read_material_properties(os.path.normpath("dse/detailed/Structures/materials.csv"))
 
 materials = dict()
 for i, mat in enumerate(a.index):
