@@ -41,7 +41,7 @@ def design(
             N_blades=aircraftParameters["bladesPerRotor"],
             coaxial=aircraftParameters["coaxial"],
             V_tip=takeOffTipSpeed,
-            print_results=Print,
+            print_results=True,
         )
 
         if aircraftParameters["rotorRadius"] == "N_rotors has to be greater than zero.":
