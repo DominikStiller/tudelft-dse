@@ -99,22 +99,20 @@ class Fuselage:
         return area
 
 
-# Testing
+if __name__ == "__main__":
+    cabin_width = 1.5
+    cabin_height = 1.8
+    fuselage_length = 6
+    fuselage_area = 30.81
 
-cabin_width = 1.5
-cabin_height = 1.8
-fuselage_length = 6
-fuselage_area = 30.81
+    fuselage = Fuselage(cabin_width, cabin_height, fuselage_length, fuselage_area)
 
+    print(
+        f" Width:{fuselage.width}        Height:{fuselage.height}       Length:{round(fuselage.length, 3)}    Area:{round(fuselage.area, 5)}     cd:{round(fuselage.cd, 5)}"
+    )
 
-fuselage = Fuselage(cabin_width, cabin_height, fuselage_length, fuselage_area)
-
-print(
-    f" Width:{fuselage.width}        Height:{fuselage.height}       Length:{round(fuselage.length, 3)}    Area:{round(fuselage.area, 5)}     cd:{round(fuselage.cd, 5)}"
-)
-
-v = 111
-rho = 0.01
-drag = round(fuselage.drag_simulation(v, rho), 2)
-# drag = round(drag, 3)
-print("drag force: ", drag, "[N]")
+    v = 111
+    rho = 0.01
+    drag = round(fuselage.drag_simulation(v, rho), 2)
+    # drag = round(drag, 3)
+    print("drag force: ", drag, "[N]")

@@ -922,7 +922,7 @@ class AircraftClimbPerformance_Unittest(unittest.TestCase):
         for item in battery_mass_lst:
             ROC = AircraftClimbPerf(
                 item,
-                const["batteryPowerDensity"],
+                const["takeoffBatteryPowerDensity"],
                 Mass_design,
                 aircraftParameters["rotorRadius"],
                 const["cruiseSpeed"],
@@ -1054,7 +1054,7 @@ class AircraftClimbPerformance_Unittest(unittest.TestCase):
         for item in design_mass_lst:
             ROC = AircraftClimbPerf(
                 aircraftParameters["batteryMass"],
-                const["batteryPowerDensity"],
+                const["takeoffBatteryPowerDensity"],
                 item,
                 aircraftParameters["rotorRadius"],
                 const["cruiseSpeed"],

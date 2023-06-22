@@ -281,7 +281,6 @@ def RadiusMassElementMomentum(
         pow = power(T, R)
     sigma = b * c / (np.pi * R)
     # print(Ct/sigma)
-    print(torque)
 
     # Rotor Weight:
     x_cord_top = np.flip(
