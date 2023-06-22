@@ -7,7 +7,8 @@ const = {
     "MTOM": 3000,
     "g": 3.71,
     "rpm": 232 * 2 * 3.141592 / 60,
-    "Airfoil": pd.read_csv("./dse/detailed/Structures/S1223.dat",
+    "Airfoil": pd.read_csv(
+        "./dse/detailed/Structures/S1223.dat",
         delimiter="\s+",
         dtype=float,
         skiprows=1,
@@ -20,7 +21,7 @@ const = {
     "liftToDragTail": 15,
     "extraForceTail": 500,
     "q": 0.5 * 0.01 * 112**2,
-    "load_factor": 1
+    "load_factor": 1,
 }
 
 rotorDims = {
@@ -359,9 +360,9 @@ hTailDims = {
 vTailDims = {"span": 4.76025, "rootChord": 3.40018, "tipChord": 1.36007}
 
 wingDims = {
-    "span": 44.665/2,
+    "span": 44.665 / 2,
     "rootChord": 3.9103,
-    "taper": 1.9851/3.9103,
+    "taper": 1.9851 / 3.9103,
     "cl": ...,
     "cd": ...,
     "y": ...,

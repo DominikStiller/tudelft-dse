@@ -19,9 +19,11 @@ def size_structure():
 
     # Wings
     print(Fore.WHITE + "\n### Wing sizing started ###\n")
-    wing, f_loading, moments = size_wing(wingDims['span'], wingDims['rootChord'], wingDims['taper'], mr, -1)
+    wing, f_loading, moments = size_wing(
+        wingDims["span"], wingDims["rootChord"], wingDims["taper"], mr, -1
+    )
     wing.m_loading = moments
-    plot_discretized_results(wing, 'stress')
+    plot_discretized_results(wing, "stress")
     wing.plot_geometry()
     wing_vibrations(wing)
     wing.design_joint(b=np.min(wing.y) / 2)
@@ -37,22 +39,22 @@ def size_structure():
 def plot_discretized_results(beam: Beam, parameter: str):
     indx = np.where(np.abs(beam.sigma) == np.max(np.abs(beam.sigma)))[1][0]
     x, z = beam.section[indx][:, :-1]
-    if parameter == 'area':
+    if parameter == "area":
         param = beam.Bi[:, indx]
-        lab = r'Boom area [m$^2$]'
-        plt.scatter(x, z, c=param, vmin=np.min(param), vmax=np.max(param), cmap='seismic')
-    elif parameter == 'stress':
+        lab = r"Boom area [m$^2$]"
+        plt.scatter(x, z, c=param, vmin=np.min(param), vmax=np.max(param), cmap="seismic")
+    elif parameter == "stress":
         param = beam.sigma[:, indx] / 1e6
-        lab = r'Internal stress [MPa]'
-        plt.scatter(x, z, c=param, vmin=-100, vmax=100, cmap='seismic')
+        lab = r"Internal stress [MPa]"
+        plt.scatter(x, z, c=param, vmin=-100, vmax=100, cmap="seismic")
     else:
-        raise ValueError('plotting discretized results is only available for boom area and stress')
+        raise ValueError("plotting discretized results is only available for boom area and stress")
 
-    plt.gca().set_aspect('equal')
-    plt.axis('off')
-    plt.colorbar(label=lab, orientation='horizontal')
+    plt.gca().set_aspect("equal")
+    plt.axis("off")
+    plt.colorbar(label=lab, orientation="horizontal")
     plt.tight_layout()
-    save_plot('.', f'Internal_{parameter}')
+    save_plot(".", f"Internal_{parameter}")
     plt.show()
 
 
@@ -107,7 +109,9 @@ def size_rotor_blades(overwrite: bool = False):
         * frontSect
         * np.reshape(frontChord, (np.size(frontChord), 1, 1))
     )
-    frontSect = y_transformation(frontTwist, frontSect, fix_points=np.array([[Xac_rotor], [Zac_rotor]]))
+    frontSect = y_transformation(
+        frontTwist, frontSect, fix_points=np.array([[Xac_rotor], [Zac_rotor]])
+    )
 
     rearSect = (
         np.ones((np.size(l_rear), 2, 1))
@@ -123,7 +127,7 @@ def size_rotor_blades(overwrite: bool = False):
         cross_section=frontSect,
         material="CFRCy",
         fixing_points=np.array([[Xac_rotor], [Zac_rotor]]) * np.ones(np.size(l_front)),
-        name='front_blade'
+        name="front_blade",
     )
 
     rearBlade = Beam(
@@ -133,17 +137,18 @@ def size_rotor_blades(overwrite: bool = False):
         cross_section=rearSect,
         material="CFRCy",
         fixing_points=np.array([[Xac_rotor], [Zac_rotor]]) * np.ones(np.size(l_front)),
-        name='rear_blade'
+        name="rear_blade",
     )
 
     # Define the applied forces
     liftOffperBlade = (
-        np.ones(np.shape(frontTwist))
-        * 3071.90776835 / const["bladePerRotor"]
-        / np.size(frontTwist)
+        np.ones(np.shape(frontTwist)) * 3071.90776835 / const["bladePerRotor"] / np.size(frontTwist)
     )
     liftOffDrag = (
-        np.ones(np.shape(frontTwist)) * 250.676835 / (rotorDims['radius'] * (1 - rotorDims['cutout'])) / np.size(frontTwist)
+        np.ones(np.shape(frontTwist))
+        * 250.676835
+        / (rotorDims["radius"] * (1 - rotorDims["cutout"]))
+        / np.size(frontTwist)
     )
     application = np.ones(np.shape(frontTwist)) * np.array(
         [[Xac_rotor], [-rotorDims["radius"]], [Zac_rotor]]
@@ -208,12 +213,12 @@ def size_rotor_blades(overwrite: bool = False):
         frontBlade.add_loading(liftOffForce_front)
         frontBlade.add_loading(liftOffDrag_front)
         frontBlade.add_loading(rotatingForce_front)
-        frontBlade.plot_internal_loading('front_blade')
+        frontBlade.plot_internal_loading("front_blade")
 
         rearBlade.add_loading(liftOffForce_rear)
         rearBlade.add_loading(liftOffDrag_rear)
         rearBlade.add_loading(rotatingForce_rear)
-        rearBlade.plot_internal_loading('rear_blade')
+        rearBlade.plot_internal_loading("rear_blade")
 
         frontBlade.InternalStress(0, 0, 0, x_scale=0.5, y_scale=0.5)
         frontBlade.m = np.sum(frontBlade.masses())
@@ -257,7 +262,11 @@ def size_rotor_blades(overwrite: bool = False):
     print(
         f"Each rear blade weights {np.round(rearBlade.m, 2) + 2} kg, including 2 kg of reinforcements"
     )
-    print(Fore.BLUE + f"Total rotor mass = {np.round(12 * (frontBlade.m + 2) + 12 * (rearBlade.m + 2), 2)} kg" + Fore.WHITE)
+    print(
+        Fore.BLUE
+        + f"Total rotor mass = {np.round(12 * (frontBlade.m + 2) + 12 * (rearBlade.m + 2), 2)} kg"
+        + Fore.WHITE
+    )
 
     if not overwrite:
         wn_rotor, x_rotor, U_rotor = rotor_vibrations(frontBlade)
@@ -275,7 +284,7 @@ def plot_mode_response(x, U):
     ax.legend()
 
     format_plot()
-    save_plot('.', 'vibration_modes_wing')
+    save_plot(".", "vibration_modes_wing")
     plt.show()
 
 
@@ -392,7 +401,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         cross_section=section,
         material="CFRPeek",
         fixing_points=np.array([[Xac_wing], [Zac_wing]]) * np.ones(np.size(l)),
-        name='wing'
+        name="wing",
     )
 
     theta = np.arctan(const["fuselageHeight"] / span)
@@ -406,9 +415,12 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         point_of_application=np.array([[Xac_wing], [-span], [Zac_wing]]),
     )
 
-    R_brace = bracing_TO_mag / (2 * np.pi * 0.001 * materials['CFRPeek'].compressive / 4.5)
-    m_brace = materials['CFRPeek'].rho * span/np.cos(theta) * 2 * np.pi * R_brace * 0.001
-    print(Fore.BLUE + f'The brace needs to have a radius of {R_brace} [m] and will weight {m_brace} [kg]')
+    R_brace = bracing_TO_mag / (2 * np.pi * 0.001 * materials["CFRPeek"].compressive / 4.5)
+    m_brace = materials["CFRPeek"].rho * span / np.cos(theta) * 2 * np.pi * R_brace * 0.001
+    print(
+        Fore.BLUE
+        + f"The brace needs to have a radius of {R_brace} [m] and will weight {m_brace} [kg]"
+    )
     engine_and_rotor_weight = Force(
         magnitude=np.array([[0], [0], [-(mr / 2 + const["engineMass"]) * const["g"]]]),
         point_of_application=np.array([[Xac_wing], [-span], [Zac_wing]]),
@@ -465,13 +477,12 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
         point_of_application=np.array([[Xac_wing], [-span], [Zac_wing]]),
     )
 
-
     # Apply loads and size
     wing.unload()
     wing.add_loading(liftOffLoad)
     wing.add_loading(engine_and_rotor_weight)
     wing.add_loading(bracing_TO)
-    wing.plot_internal_loading('wing_TO')
+    wing.plot_internal_loading("wing_TO")
     wing.InternalStress(0, 0, 0)
     f_loading_TO = wing.f_loading
     thickness = wing.t
@@ -484,7 +495,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
     wing.add_loading(cruiseThrust)
     wing.add_loading(bracing_cruise)
     wing.add_loading(aerodynamic_forces)
-    wing.plot_internal_loading(structure='wing_cruise')
+    wing.plot_internal_loading(structure="wing_cruise")
     wing.InternalStress(0, 0, 0, y_scale=0.75)
     f_loading_Cr = wing.f_loading
     moments = wing.m_loading
@@ -496,10 +507,12 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
     wing.t = np.maximum(thickness, thickness2)
     wing.Bi = np.maximum(B1, B2)
     wing.sigma = np.minimum(stress_TO, stress_cr)
-    wing.sigma[np.where(stress_cr > 0)] = np.maximum(stress_cr[np.where(stress_cr > 0)], np.abs(stress_TO[np.where(stress_cr > 0)]))
+    wing.sigma[np.where(stress_cr > 0)] = np.maximum(
+        stress_cr[np.where(stress_cr > 0)], np.abs(stress_TO[np.where(stress_cr > 0)])
+    )
     f_loading_abs = np.maximum(np.abs(f_loading_TO), np.abs(f_loading_Cr))
 
-    print(f'Buckling in cruise:')
+    print(f"Buckling in cruise:")
     wing.calculate_mass()
     print(Fore.BLUE + f"Mass of each wing = {np.round(wing.m, 2)}kg" + Fore.WHITE)
     return wing, f_loading_abs, moments
@@ -514,7 +527,11 @@ def size_tail():
     # Define the geometry
     tailChord = np.linspace(hTailDims["tipChord"], hTailDims["rootChord"], m)
     NACA0012 = pd.read_csv(
-        ".\\dse\\detailed\\Structures\\NACA 0012.dat", delimiter="\s+", dtype=float, skiprows=1, names=["x", "z"]
+        ".\\dse\\detailed\\Structures\\NACA 0012.dat",
+        delimiter="\s+",
+        dtype=float,
+        skiprows=1,
+        names=["x", "z"],
     )
 
     l = np.linspace(-hTailDims["span"], 0, m)
@@ -532,7 +549,7 @@ def size_tail():
         cross_section=section,
         material="CFRPeek",
         fixing_points=np.array([[Xac], [Zac]]) * np.ones(m),
-        name='hStabilizer'
+        name="hStabilizer",
     )
 
     # Define the loads
@@ -553,7 +570,7 @@ def size_tail():
     # Apply loads and size
     hStabilizer.add_loading(lift)
     hStabilizer.add_loading(drag)
-    hStabilizer.plot_internal_loading('hStabilizer')
+    hStabilizer.plot_internal_loading("hStabilizer")
     hStabilizer.InternalStress(0, 0, 0)
     hStabilizer.calculate_mass()
     print(f"Horizontal stabilizer's mass is {2*np.round(hStabilizer.m)} [kg]")
@@ -577,7 +594,7 @@ def size_tail():
         cross_section=section,
         material="AL_light",
         fixing_points=np.array([[Xac], [Zac]]) * np.ones(m),
-        name='vStabilizer'
+        name="vStabilizer",
     )
 
     # Define loads
@@ -596,7 +613,7 @@ def size_tail():
 
     # Apply loads and size
     vStabilizer.add_loading(restoring)
-    vStabilizer.plot_internal_loading('vStabilizer')
+    vStabilizer.plot_internal_loading("vStabilizer")
     vStabilizer.InternalStress(0, 0, 0)
     vStabilizer.calculate_mass()
     print(f"Vertical stabilizer's mass is {np.round(vStabilizer.m)} [kg]")

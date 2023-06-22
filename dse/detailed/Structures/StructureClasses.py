@@ -71,7 +71,7 @@ def xflr_forces(filename, q, b, adrian=None):
         return Force(magnitude=mag, point_of_application=application)
 
     else:
-        filepath = f'dse\\detailed\\Structures\\{filename}'
+        filepath = f"dse\\detailed\\Structures\\{filename}"
         if adrian == -1:
             df = pd.read_csv(filepath)
             cl_array = np.fromstring(df["Cl_dist"][0][1:-1], sep=" ")
@@ -325,7 +325,13 @@ class Beam:
         return Bi_initial
 
     def DesignConstraints(self):
-        if np.any(self.mat == 4) or np.any(self.mat == 5) or np.any(self.mat == 8) or np.any(self.mat == 10) or np.any(self.mat == 11):
+        if (
+            np.any(self.mat == 4)
+            or np.any(self.mat == 5)
+            or np.any(self.mat == 8)
+            or np.any(self.mat == 10)
+            or np.any(self.mat == 11)
+        ):
             n = 4.5  # [-] Safety factor
         else:
             n = 1.5
@@ -447,7 +453,9 @@ class Beam:
             ) + tSkin[i] * boomDistance[i] / 6 * (2 + sigma[i + 1] / sigma[i])
         return boomAreaCopy
 
-    def InternalStress(self, boom_coordinates, interconnection, i, title=None, x_scale=1, y_scale=1):
+    def InternalStress(
+        self, boom_coordinates, interconnection, i, title=None, x_scale=1, y_scale=1
+    ):
         if interconnection != 0:  # define the interconnection of all of the boom areas
             print("Interconnection between stringers still need to be implemented")
 
@@ -482,10 +490,10 @@ class Beam:
         ## Initial guess for the boom area and skin thickness and stress
         tSkin = np.ones(np.shape(boomDistance)) * tSkin_min
         Bi_initial = (
-                np.sum(boomDistance, 0)
-                * tSkin_min
-                / np.shape(boomDistance)[0]
-                * np.ones(np.shape(boomDistance))
+            np.sum(boomDistance, 0)
+            * tSkin_min
+            / np.shape(boomDistance)[0]
+            * np.ones(np.shape(boomDistance))
         )
         boomArea_nr = np.ones((np.shape(x_booms_nr)[0], np.size(self.y))) * Bi_initial
         sigma = n * sigma_ult
@@ -536,13 +544,13 @@ class Beam:
         # plt.axhline(-sigma_ult)
         plt.figure(figsize=(9 * x_scale, 5 * y_scale))
         set_plotting_theme()
-        plt.plot(np.abs(self.y), sigma.transpose()/1e6)
-        plt.xlabel('Span [m]')
-        plt.ylabel('Stress [MPa]')
+        plt.plot(np.abs(self.y), sigma.transpose() / 1e6)
+        plt.xlabel("Span [m]")
+        plt.ylabel("Stress [MPa]")
         if title is not None:
             plt.title(title)
         format_plot()
-        save_plot('.', 'stress_distribution' + self.name)
+        save_plot(".", "stress_distribution" + self.name)
         plt.show()
 
     def calculate_mass(self):
@@ -554,7 +562,8 @@ class Beam:
                 rho[i, j] = self.material_types[self.mat[i, j]].rho
         ItInfo = self.buckling()
         print(
-            f"The best stringer distribution is {ItInfo[1]} and {len(ItInfo[1]) - 1} ribs, having a mass of {ItInfo[0]} [kg]")
+            f"The best stringer distribution is {ItInfo[1]} and {len(ItInfo[1]) - 1} ribs, having a mass of {ItInfo[0]} [kg]"
+        )
         self.m = np.sum(volume * rho) + ItInfo[0]
 
     def rho(self):
@@ -640,7 +649,9 @@ class Beam:
         width = np.max(self.x[:, indx]) - np.min(self.x[:, indx])
         thickness = np.min(self.t[:, indx])
         plate_mat = self.material_types[self.mat[0, indx]]
-        Py = np.abs(self.f_loading[indx][1]) + np.abs(self.m_loading[indx][0] * (np.max(self.section[indx][1]) - self.fix[1][indx]))
+        Py = np.abs(self.f_loading[indx][1]) + np.abs(
+            self.m_loading[indx][0] * (np.max(self.section[indx][1]) - self.fix[1][indx])
+        )
 
         Py = Py / n_rows
         n_rivets = 1
@@ -673,24 +684,26 @@ class Beam:
         n1, D1 = self._determine_pitch_and_D(2, b)
 
         if n0 * D0 < 2 * n1 * D1:
-            print(Fore.BLUE +
-                f"The lightest option at {-b} [m] from the root is to have 1 row of {n0} rivets of {D0 * 1e3} mm in diameter"
+            print(
+                Fore.BLUE
+                + f"The lightest option at {-b} [m] from the root is to have 1 row of {n0} rivets of {D0 * 1e3} mm in diameter"
             )
             print(Fore.WHITE)
             return n0, D0
         else:
-            print(Fore.BLUE +
-                f"The lightest option at {-b} [m] from the root is to have 2 rows of {n1} rivets of {D1 * 1e3} mm in diameter"
+            print(
+                Fore.BLUE
+                + f"The lightest option at {-b} [m] from the root is to have 2 rows of {n1} rivets of {D1 * 1e3} mm in diameter"
             )
             print(Fore.WHITE)
             return n1, D1
 
-    def wing225box_beam(self, b=44.665, t=0.001, d=0.0225, rho=materials['CFRPeek'].rho):
+    def wing225box_beam(self, b=44.665, t=0.001, d=0.0225, rho=materials["CFRPeek"].rho):
         r = d / 2
         mass_rod = b * (2 * np.pi * r * t) * rho
         l_overlap = 1  # [m]
         l_beam = (b - 2 * l_overlap) / 3  # [m] The length of the beam
-        m_rib = rho * (np.pi * (r - t) ** 2 - np.pi * (.200 / 2) ** 2) * t
+        m_rib = rho * (np.pi * (r - t) ** 2 - np.pi * (0.200 / 2) ** 2) * t
         m_overlap = 2 * np.pi * (r - t) * 2 * t * rho * l_overlap
         m_end = b / 3 * 2 * np.pi * r * t * rho + 5 * m_rib + m_overlap
         m_middle = b / 3 * 2 * np.pi * r * t * rho + m_rib * 5
@@ -721,9 +734,13 @@ class Beam:
         b = max(abs(self.x[:, yi1])) / (n_stringers + 1)
         Kc = 5.6  # Conservative estimate based on https://core.ac.uk/download/pdf/229099116.pdf
 
-        sig_crit = -Kc * np.pi**2 * np.mean(E[yi:yi1]) / ((12 * (1 - np.mean(v[yi:yi1])**2)) * (b / np.mean(t[yi:yi1])) ** 2)
+        sig_crit = (
+            -Kc
+            * np.pi**2
+            * np.mean(E[yi:yi1])
+            / ((12 * (1 - np.mean(v[yi:yi1]) ** 2)) * (b / np.mean(t[yi:yi1])) ** 2)
+        )
         return sig_crit
-
 
     def _determine_stringers(self, n_ribs, section, x1, x2):
         sig_crit = 1e10  # Initial guess - high so that it always goes into the while loop
@@ -735,17 +752,16 @@ class Beam:
             sig_crit = self._buckling_stress(n_ribs=n_ribs, n_stringers=k, section=section)
         return k
 
-
     def buckling(self):
         ## Wingbox Geometry
         y = self.y
         x = (self.x[:, 0]).argmin()
 
-        rho = np.mean(self.rho())                             # [kg/m3] The density of the ribs
-        A_rib = self.AirfoilArea() * 0.1                        # [m2] Area of the ribs
-        t_rib = 0.001                                           # [m] thickness of the ribs
+        rho = np.mean(self.rho())  # [kg/m3] The density of the ribs
+        A_rib = self.AirfoilArea() * 0.1  # [m2] Area of the ribs
+        t_rib = 0.001  # [m] thickness of the ribs
         m_rib = rho * A_rib * t_rib  # [kg] mass of a rib
-        A_str = 0.04 * 0.001                                    # [m2] Area of the stringers
+        A_str = 0.04 * 0.001  # [m2] Area of the stringers
 
         sigma = self.sigma
         iteration_mass = []
@@ -762,9 +778,7 @@ class Beam:
                     k_top = self._determine_stringers(n_ribs=N_ribs, section=j, x1=0, x2=x)
                     k_bot = self._determine_stringers(n_ribs=N_ribs, section=j, x1=x, x2=-1)
                     k.append(k_top + k_bot)
-                    mass += (
-                            (k_top + k_bot) * A_str * rho * L / (N_ribs + 1) + m_rib[yi1] * N_ribs
-                    )
+                    mass += (k_top + k_bot) * A_str * rho * L / (N_ribs + 1) + m_rib[yi1] * N_ribs
                     strdis.append((k_top, k_bot))
                 iteration_mass.append(mass)
                 if N_ribs > 0:
@@ -774,33 +788,33 @@ class Beam:
                 ItInfo.append([mass, strdis])
             return ItInfo[-1]
         else:
-            print(Fore.BLUE + 'All members are in tension. No buckling will occur' + Fore.WHITE)
+            print(Fore.BLUE + "All members are in tension. No buckling will occur" + Fore.WHITE)
             return ItInfo
 
     def plot_geometry(self):
         # Side view
         plt.figure(figsize=(9, 2.5))
-        plt.scatter(self.x[:, -1], self.z[:, -1], label='root')
-        plt.scatter(self.x[:, 0], self.z[:, 0], label='tip')
-        plt.xlabel('Chord [m]')
-        plt.ylabel('Thickness [m]')
-        plt.gca().set_aspect('equal')
+        plt.scatter(self.x[:, -1], self.z[:, -1], label="root")
+        plt.scatter(self.x[:, 0], self.z[:, 0], label="tip")
+        plt.xlabel("Chord [m]")
+        plt.ylabel("Thickness [m]")
+        plt.gca().set_aspect("equal")
         plt.legend()
         format_plot()
-        save_plot('.', f'{self.name}_geometry_side')
+        save_plot(".", f"{self.name}_geometry_side")
         plt.show()
 
         # Top view
         plt.figure(figsize=(9, 2.5))
-        plt.plot(-self.y, np.min(self.x, 0), color='tab:blue')
-        plt.plot(-self.y, np.max(self.x, 0), color='tab:blue')
+        plt.plot(-self.y, np.min(self.x, 0), color="tab:blue")
+        plt.plot(-self.y, np.max(self.x, 0), color="tab:blue")
         plt.vlines(np.min(np.abs(self.y)), np.min(self.x[:, -1]), np.max(self.x[:, -1]))
         plt.vlines(np.max(np.abs(self.y)), np.min(self.x[:, 0]), np.max(self.x[:, 0]))
-        plt.xlabel('Span [m]')
-        plt.ylabel('Chord [m]')
-        plt.gca().set_aspect('equal')
+        plt.xlabel("Span [m]")
+        plt.ylabel("Chord [m]")
+        plt.gca().set_aspect("equal")
         format_plot()
-        save_plot('.', f'{self.name}_geometry_top')
+        save_plot(".", f"{self.name}_geometry_top")
         plt.show()
 
     def plot_internal_loading(self, structure: str):
@@ -809,26 +823,26 @@ class Beam:
         f_loading = np.reshape(self.f_loading, (len(self.y), 3))
         m_loading = np.reshape(self.m_loading, (len(self.y), 3))
 
-        axs1.plot(np.abs(self.y), f_loading[:, 0] / 1e3, label=r"$V_x$", linestyle='solid')
-        axs1.plot(np.abs(self.y), f_loading[:, 1] / 1e3, label=r"$V_y$", linestyle='dashed')
-        axs1.plot(np.abs(self.y), f_loading[:, 2] / 1e3, label=r"$V_z$", linestyle='dotted')
+        axs1.plot(np.abs(self.y), f_loading[:, 0] / 1e3, label=r"$V_x$", linestyle="solid")
+        axs1.plot(np.abs(self.y), f_loading[:, 1] / 1e3, label=r"$V_y$", linestyle="dashed")
+        axs1.plot(np.abs(self.y), f_loading[:, 2] / 1e3, label=r"$V_z$", linestyle="dotted")
         axs1.set_xlabel("Span [m]")
         axs1.set_ylabel("Force [kN]")
         axs1.legend()
 
-        axs2.plot(np.abs(self.y), m_loading[:, 0] / 1e3, label=r"$M_x$", linestyle='solid')
-        axs2.plot(np.abs(self.y), m_loading[:, 1] / 1e3, label=r"$M_y$", linestyle='dashed')
-        axs2.plot(np.abs(self.y), m_loading[:, 2] / 1e3, label=r"$M_z$", linestyle='dotted')
+        axs2.plot(np.abs(self.y), m_loading[:, 0] / 1e3, label=r"$M_x$", linestyle="solid")
+        axs2.plot(np.abs(self.y), m_loading[:, 1] / 1e3, label=r"$M_y$", linestyle="dashed")
+        axs2.plot(np.abs(self.y), m_loading[:, 2] / 1e3, label=r"$M_z$", linestyle="dotted")
         axs2.set_xlabel("Span [m]")
         axs2.set_ylabel("Moment [kNm]")
         axs2.legend()
 
         format_plot()
-        save_plot('.', 'Internal_loading_' + structure)
+        save_plot(".", "Internal_loading_" + structure)
         plt.show()
 
 
-class TailVibes():
+class TailVibes:
     def __init__(self, E, density, radius, length, thickness, tail_mass, surface_area):
         # Material properties
         self.E = E
@@ -837,8 +851,9 @@ class TailVibes():
         self.r = radius  # [m] Radius of the tail beam
         self.l = length  # [m] length of the beam
         self.t_skin = thickness  # [m] thickness of the beam skin
-        self.m_beam = self.rho * np.pi * (
-                    (self.r + self.t_skin) ** 2 - (self.r - self.t_skin) ** 2) * self.l  # [kg] Mass of the tail beam
+        self.m_beam = (
+            self.rho * np.pi * ((self.r + self.t_skin) ** 2 - (self.r - self.t_skin) ** 2) * self.l
+        )  # [kg] Mass of the tail beam
         self.I = np.pi * (2 * self.r) ** 3 * self.t_skin / 8
         self.m_tail = tail_mass
         self.S = surface_area
@@ -852,10 +867,11 @@ class TailVibes():
         Cd = 1.28
         rho0 = 0.01
         V = 400 / 3.6
-        q = 0.5 * rho0 * V ** 2
+        q = 0.5 * rho0 * V**2
         self.ceq = (Cd * self.S * 0.5 * rho0) / self.m_tail
-        self.keq = ((2 * np.pi * 3 / (2 * self.l) * q * self.S + (3 * self.E * self.I) / (
-                    self.l ** 3))) / self.m_tail  # Stiffness of the spring
+        self.keq = (
+            (2 * np.pi * 3 / (2 * self.l) * q * self.S + (3 * self.E * self.I) / (self.l**3))
+        ) / self.m_tail  # Stiffness of the spring
 
     def userinput(self, cl):
         q = 0.5 * 0.01 * (400 / 3.6) ** 2
@@ -863,8 +879,16 @@ class TailVibes():
         if self.i == 0:
             self.F_u = (-cl * q * self.S) / self.m_tail * np.ones(len(self.t))
         elif self.i == 1:
-            self.F_u = (-cl * q * self.S) / self.m_tail * np.hstack(
-                (np.arange(0, 1 + self.dt, self.dt), np.ones(len(self.t) - len(np.arange(0, 1 + self.dt, self.dt)))))
+            self.F_u = (
+                (-cl * q * self.S)
+                / self.m_tail
+                * np.hstack(
+                    (
+                        np.arange(0, 1 + self.dt, self.dt),
+                        np.ones(len(self.t) - len(np.arange(0, 1 + self.dt, self.dt))),
+                    )
+                )
+            )
         elif self.i == 2:
             self.F_u = np.zeros(len(self.t))
             self.F_u[0] = 1 / self.dt
@@ -876,33 +900,44 @@ class TailVibes():
         print(f"The applied aerodynamic load is {max(abs(self.F_u)) * self.m_tail} [N]")
 
     def syssim(self):
-        X_init = np.array([0., 0.])
+        X_init = np.array([0.0, 0.0])
         X = []
         X.append(X_init)
 
         for i in range(len(self.t) - 1):
             x_i = X[-1][0]
             x_dot_i = X[-1][1]
-            X.append(X[-1] + self.dt * np.array(
-                [x_dot_i, float(self.F_u[i] - self.ceq * np.sign(x_dot_i) * x_dot_i ** 2 - self.keq * x_i)]))
+            X.append(
+                X[-1]
+                + self.dt
+                * np.array(
+                    [
+                        x_dot_i,
+                        float(
+                            self.F_u[i]
+                            - self.ceq * np.sign(x_dot_i) * x_dot_i**2
+                            - self.keq * x_i
+                        ),
+                    ]
+                )
+            )
         self.x = np.array(X)[:, 0]
         self.v = np.array(X)[:, 1]
-
 
     def results(self):
         period = []
         for i in range(int(len(self.t) / 2), len(self.x) - 1):
             if self.x[i - 1] < self.x[i] > self.x[i + 1]:
                 period.append(i)
-                print('k')
+                print("k")
         P = self.t[period[2]] - self.t[period[1]]
-        self.avg = (max(self.x[int(len(self.t) / 2):]) + min(self.x[int(len(self.t) / 2):])) / 2
-        deflection = max(self.x[int(len(self.t) / 2):] - self.avg)
+        self.avg = (max(self.x[int(len(self.t) / 2) :]) + min(self.x[int(len(self.t) / 2) :])) / 2
+        deflection = max(self.x[int(len(self.t) / 2) :] - self.avg)
         print(f"The period of the response is {P} [s]")
         print(f"The natural frequency is {1 / P} [Hz]")
         print(f"The extra deflection is {deflection} [m]")
         print(f"The new steady state is {self.avg} [m]")
-        self.pi = 3 * self.E * self.I / self.l ** 3 * deflection
+        self.pi = 3 * self.E * self.I / self.l**3 * deflection
         print(f"The induced load due to the vibration is {self.pi} [N]")
 
     def plot(self):
@@ -913,10 +948,10 @@ class TailVibes():
         # plt.plot(self.t[::nth], self.F_u[::nth]/self.keq, label="Force")
         # plt.axhline(self.avg)
         # plt.legend()
-        plt.xlabel('Time [s]')
-        plt.ylabel('Displacement [m]')
+        plt.xlabel("Time [s]")
+        plt.ylabel("Displacement [m]")
         format_plot()
-        save_plot('.','Tail vibrations')
+        save_plot(".", "Tail vibrations")
         plt.show()
 
 

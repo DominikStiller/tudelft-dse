@@ -13,7 +13,7 @@ class Material:
         tensile_strength,
         compressive_strength,
         shear_strength,
-        poisson_ratio
+        poisson_ratio,
     ):
         self.rho = density
         self.E = E
@@ -30,6 +30,7 @@ def read_material_properties(filename):
     material_properties = pd.read_csv(filename, delimiter=";", index_col=0)
     return material_properties
 
+
 print(os.getcwd())
 a = read_material_properties(".\\dse\\detailed\\Structures\\materials.csv")
 
@@ -44,5 +45,5 @@ for i, mat in enumerate(a.index):
         compressive_strength=a["compressive strength"][i] * 1e6,
         thermal_exp_coefficient=None,
         shear_strength=a["shear strength"][i] * 1e6,
-        poisson_ratio=a["poisson"][i]
+        poisson_ratio=a["poisson"][i],
     )
