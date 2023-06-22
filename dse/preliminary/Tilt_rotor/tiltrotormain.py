@@ -80,11 +80,9 @@ def design(
         if Print:
             print(f'Total Drag on the aircraft: {aircraftParameters["cruiseThrust"]}[N]')
 
-        (
-            aircraftParameters["batteryMass"],
-            aircraftParameters["panelMass"],
-            powerSurplus,
-        ) = size_power_subsystem(
+        aircraftParameters["batteryMass"],
+        aircraftParameters["panelMass"],
+        powerSurplus = size_power_subsystem(
             aircraftParameters["rotorRadius"],
             takeOffThrustPerEngine,
             aircraftParameters["cruiseThrust"],
