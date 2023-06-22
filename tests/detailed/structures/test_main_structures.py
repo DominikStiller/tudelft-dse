@@ -1,11 +1,12 @@
 import unittest
-
-from numpy.testing import assert_allclose
-from dse.detailed.Structures.main_structures import *
-from dse.detailed.Structures.StructureClasses import Beam
 from unittest import TestCase
+
 import numpy as np
 import vibration_toolbox as vtb
+from numpy.testing import assert_allclose
+
+from dse.detailed.Structures.StructureClasses import Beam
+from dse.detailed.Structures.main_structures import *
 
 
 class TestMainStructures(TestCase):

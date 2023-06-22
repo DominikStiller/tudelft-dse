@@ -1,15 +1,16 @@
 import os
 
-from dse.detailed.Structures.StructureClasses import Beam, Force, xflr_forces, TailVibes
-from dse.detailed.Structures.rotor_sizing import y_transformation
-from dse.detailed.Structures.material_properties import materials
-from dse.detailed.Structures.constants import *
-from dse.plotting import format_plot, save_plot
-import vibration_toolbox as vtb
 import matplotlib.pyplot as plt
-from colorama import Fore
-import pandas as pd
 import numpy as np
+import pandas as pd
+import vibration_toolbox as vtb
+from colorama import Fore
+
+from dse.detailed.Structures.StructureClasses import Beam, Force, xflr_forces
+from dse.detailed.Structures.constants import *
+from dse.detailed.Structures.material_properties import materials
+from dse.detailed.Structures.rotor_sizing import y_transformation
+from dse.plotting import format_plot, save_plot
 
 
 def size_structure(plotting: bool = False):

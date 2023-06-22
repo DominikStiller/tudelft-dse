@@ -1,7 +1,9 @@
+from unittest import TestCase
+
 from numpy.testing import assert_allclose
+
 from dse.detailed.Structures.StructureClasses import *
 from dse.detailed.Structures.material_properties import materials
-from unittest import TestCase
 
 
 class TestBeam(TestCase):

@@ -1,11 +1,13 @@
-from dse.detailed.Structures.material_properties import materials, Material
-from scipy.interpolate import InterpolatedUnivariateSpline
+import csv
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import csv
-from tqdm import tqdm
 from colorama import Fore
+from scipy.interpolate import InterpolatedUnivariateSpline
+from tqdm import tqdm
+
+from dse.detailed.Structures.material_properties import materials
 from dse.plotting import format_plot, save_plot, set_plotting_theme
 
 

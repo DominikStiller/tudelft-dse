@@ -1,8 +1,4 @@
 from material_properties import materials
-import matplotlib.pyplot as plt
-import vibration_toolbox as vtb
-import numpy as np
-
 
 # Let's try to do a 2m long, square beam
 material = materials["Al/Si"]
