@@ -6,7 +6,6 @@ import numpy as np
 import scipy.optimize
 from scipy import integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
-from tqdm import tqdm
 
 warnings.filterwarnings("ignore")  # TODO: DELETE THIS!!!
 

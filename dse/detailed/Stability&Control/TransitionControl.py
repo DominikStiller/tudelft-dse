@@ -1,7 +1,7 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from dse.plotting import format_plot
-from dse.plotting import save_plot
 
 
 def define_geometry(ithrust):

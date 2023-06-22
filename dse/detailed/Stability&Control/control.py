@@ -1,7 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy
-
 
 aoa = np.radians(5)
 Fx = []

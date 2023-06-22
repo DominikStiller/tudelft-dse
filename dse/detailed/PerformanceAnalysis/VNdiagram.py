@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
+
 from dse.plotting import format_plot
 from dse.plotting import save_plot
 

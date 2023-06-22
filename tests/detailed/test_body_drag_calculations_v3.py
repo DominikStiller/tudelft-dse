@@ -1,6 +1,8 @@
 import unittest
-from dse.detailed.body_drag_calculations_v3 import Fuselage  # Change to V2 later
+
 import numpy as np
+
+from dse.detailed.body_drag_calculations_v3 import Fuselage  # Change to V2 later
 
 """
 Note the name of the tests, e.g. "test_layer1_object_creation".

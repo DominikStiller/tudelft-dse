@@ -1,9 +1,10 @@
-from static_stability import Coefficients
+import numpy as np
+import pandas as pd
 from SALib.analyze import sobol
 from SALib.sample import saltelli
 from tqdm import tqdm
-import pandas as pd
-import numpy as np
+
+from static_stability import Coefficients
 
 
 def calculate_parameters(inputs):

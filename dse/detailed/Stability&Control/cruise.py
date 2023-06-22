@@ -1,8 +1,9 @@
-from System import System
-from Controllers import Controller, Controller2, Controller3, Controller4
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+
+from Controllers import Controller, Controller2, Controller3, Controller4
+from System import System
 
 mpl.use("TkAgg")
 

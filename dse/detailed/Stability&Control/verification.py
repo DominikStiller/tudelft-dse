@@ -1,9 +1,9 @@
-import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 
-from System import SecondOrderSystem
 from Controllers import PID
+from System import SecondOrderSystem
 
 mpl.use("MacOSX")
 
