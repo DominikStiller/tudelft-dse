@@ -244,7 +244,7 @@ class Link:
 
     def print_configuration(self):
         print(self.name.upper())
-        print(f"Transmitter power: {self.tx_power:.0f} W")
+        print(f"Transmitter power: {self.tx_power:.1f} W")
         print(f"EIRP: {self.eirp:.0f} dBW = {db_to_dbm(self.eirp):.0f} dBm")
         print(f"Rx power: {self.rx_power:.0f} dBW = {db_to_dbm(self.rx_power):.0f} dBm")
         print(f"Frequency: {self.frequency / 1e6:.1f} MHz")
@@ -268,6 +268,7 @@ class Link:
 
         round_trip_time = 2 * self.latency_factor * calculate_travel_time(self.tx_rx_distance)
         print(f"Round-trip time: {round_trip_time * 1e3:.0f} ms")
+        print(f"Tx-Rx distance: {self.tx_rx_distance / 1e3:.0f} km")
 
     def print_table(self):
         budget = list(self.budget.itertuples(name=None))
@@ -369,8 +370,8 @@ if __name__ == "__main__":
 
     aircraft_power_uhf = 25
     relay_power_uhf = 15
-    aircraft_power_hf = 1
-    base_power_hf = 5
+    aircraft_power_hf = 0.1
+    base_power_hf = 1
 
     tx_loss = -1
     rx_loss = -1
@@ -384,7 +385,8 @@ if __name__ == "__main__":
     nv_skywave_tx_rx_distance = 320e3
 
     relay_environment_loss_uhf = -0.5
-    skywave_environment_loss_hf = 2 * -0.5 - 39
+    skywave_environment_loss_hf = 2 * -0.5 - 3
+    nv_skywave_environment_loss_hf = 2 * -0.5 - 39
 
     temperature_antenna_upward_looking = 54
     temperature_antenna_downward_looking = 155
@@ -394,7 +396,7 @@ if __name__ == "__main__":
 
     budget_uplink_relay = Link(
         name="Uplink (relay)",
-        frequency=402e6,
+        frequency=401.6e6,
         tx_power=aircraft_power_uhf,
         tx_loss=tx_loss,
         tx_gain=aircraft_gain_uhf,
@@ -418,7 +420,7 @@ if __name__ == "__main__":
     print()
     budget_downlink_relay = Link(
         name="Downlink (relay)",
-        frequency=437e6,
+        frequency=437.1e6,
         tx_power=relay_power_uhf,
         tx_loss=tx_loss,
         tx_gain=relay_gain_uhf_tx,
@@ -494,7 +496,7 @@ if __name__ == "__main__":
         tx_gain=aircraft_gain_hf,
         tx_pointing_loss=aircraft_pointing_loss_hf,
         tx_rx_distance=nv_skywave_tx_rx_distance,
-        loss_environment=skywave_environment_loss_hf,
+        loss_environment=nv_skywave_environment_loss_hf,
         rx_pointing_loss=base_pointing_loss_hf,
         rx_gain=base_gain_hf,
         rx_loss=rx_loss,
@@ -517,7 +519,7 @@ if __name__ == "__main__":
         tx_gain=base_gain_hf,
         tx_pointing_loss=base_pointing_loss_hf,
         tx_rx_distance=nv_skywave_tx_rx_distance,
-        loss_environment=skywave_environment_loss_hf,
+        loss_environment=nv_skywave_environment_loss_hf,
         rx_pointing_loss=aircraft_pointing_loss_hf,
         rx_gain=aircraft_gain_hf,
         rx_loss=rx_loss,
