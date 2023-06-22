@@ -105,8 +105,8 @@ class Fuselage:
 
 cabin_width = 1.5
 cabin_height = 1.8
-fuselage_length = 5.72
-fuselage_area = 25.88
+fuselage_length = 6
+fuselage_area = 30.81
 
 
 fuselage = Fuselage(cabin_width, cabin_height, fuselage_length, fuselage_area)
@@ -119,11 +119,5 @@ drag = round(fuselage.drag_simulation(v, rho),2)
 # drag = round(drag, 3)
 print("drag force: ", drag, "[N]")
 
-"""
-#  --------------------------------  TO DO  --------------------------------  #
 
-V -> Fix calculations and results based on the new excel sheet
--> Apply changes to the unit tests.
-
-"""
 

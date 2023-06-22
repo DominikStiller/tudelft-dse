@@ -101,10 +101,3 @@ class TestFuselageLogic(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
 
-
-"""
-#  --------------------------------  TO DO  --------------------------------  #
-
--> Finish implementing the tests
-
-"""
