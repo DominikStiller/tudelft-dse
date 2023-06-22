@@ -454,7 +454,7 @@ class Beam:
         return boomAreaCopy
 
     def InternalStress(
-        self, boom_coordinates, interconnection, i, title=None, x_scale=1, y_scale=1
+        self, boom_coordinates, interconnection, i, title=None, x_scale=1, y_scale=1, plotting: bool = False
     ):
         if interconnection != 0:  # define the interconnection of all of the boom areas
             print("Interconnection between stringers still need to be implemented")
@@ -540,18 +540,19 @@ class Beam:
         self.sigma = sigma_nr
         self.tau = tau
         self.Bi = boomArea_nr
-        # plt.axhline(sigma_ult)
-        # plt.axhline(-sigma_ult)
-        plt.figure(figsize=(9 * x_scale, 5 * y_scale))
-        set_plotting_theme()
-        plt.plot(np.abs(self.y), sigma.transpose() / 1e6)
-        plt.xlabel("Span [m]")
-        plt.ylabel("Stress [MPa]")
-        if title is not None:
-            plt.title(title)
-        format_plot()
-        save_plot(".", "stress_distribution" + self.name)
-        plt.show()
+        if plotting:
+            # plt.axhline(sigma_ult)
+            # plt.axhline(-sigma_ult)
+            plt.figure(figsize=(9 * x_scale, 5 * y_scale))
+            set_plotting_theme()
+            plt.plot(np.abs(self.y), sigma.transpose() / 1e6)
+            plt.xlabel("Span [m]")
+            plt.ylabel("Stress [MPa]")
+            if title is not None:
+                plt.title(title)
+            format_plot()
+            save_plot(".", "stress_distribution" + self.name)
+            plt.show()
 
     def calculate_mass(self):
         dy = self.y[1:] - self.y[:-1]

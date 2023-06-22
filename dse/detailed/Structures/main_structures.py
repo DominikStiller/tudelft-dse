@@ -12,11 +12,12 @@ import pandas as pd
 import numpy as np
 
 
-def size_structure():
+def size_structure(plotting: bool = False):
     # Rotors
     print(Fore.WHITE + "\n### Rotor blade sizing started ###\n")
     frontBlade, rearBlade, mr = size_rotor_blades()
-    rearBlade.plot_geometry()
+    if plotting:
+        rearBlade.plot_geometry()
     # mr = 344.16
 
     # Wings
@@ -25,8 +26,9 @@ def size_structure():
         wingDims["span"], wingDims["rootChord"], wingDims["taper"], mr, -1
     )
     wing.m_loading = moments
-    plot_discretized_results(wing, "stress")
-    wing.plot_geometry()
+    if plotting:
+        plot_discretized_results(wing, "stress")
+        wing.plot_geometry()
     wing_vibrations(wing)
     wing.design_joint(b=np.min(wing.y) / 2)
     wing.design_joint(b=0)
@@ -60,7 +62,7 @@ def plot_discretized_results(beam: Beam, parameter: str):
     plt.show()
 
 
-def size_rotor_blades(overwrite: bool = False):
+def size_rotor_blades(overwrite: bool = False, plotting: bool = False):
     discretization = 5
     frontTwist = np.zeros(discretization * (np.size(rotorDims["frontBladeTwist"]) - 1))
     rearTwist = np.zeros(discretization * (np.size(rotorDims["rearBladeTwist"]) - 1))
@@ -215,12 +217,14 @@ def size_rotor_blades(overwrite: bool = False):
         frontBlade.add_loading(liftOffForce_front)
         frontBlade.add_loading(liftOffDrag_front)
         frontBlade.add_loading(rotatingForce_front)
-        frontBlade.plot_internal_loading("front_blade")
+        if plotting:
+            frontBlade.plot_internal_loading("front_blade")
 
         rearBlade.add_loading(liftOffForce_rear)
         rearBlade.add_loading(liftOffDrag_rear)
         rearBlade.add_loading(rotatingForce_rear)
-        rearBlade.plot_internal_loading("rear_blade")
+        if plotting:
+            rearBlade.plot_internal_loading("rear_blade")
 
         frontBlade.InternalStress(0, 0, 0, x_scale=0.5, y_scale=0.5)
         frontBlade.m = np.sum(frontBlade.masses())
@@ -300,7 +304,7 @@ def equivalent_load(deflection, position, E, I):
     return P
 
 
-def rotor_vibrations(rotorBlade, reinforce=True, overwrite_I=None):
+def rotor_vibrations(rotorBlade, reinforce=True, overwrite_I=None, plotting: bool = False):
     L1 = np.abs(np.min(rotorBlade.y))
     E1 = materials["CFRCy"].E
     if np.shape(rotorBlade.Bi) == np.shape(rotorBlade.z[:-1]):
@@ -352,11 +356,12 @@ def rotor_vibrations(rotorBlade, reinforce=True, overwrite_I=None):
 
         print(f"Equivalent load due to vibrations in rotor blades is {P} [N]")
 
-    plot_mode_response(x, U)
+    if plotting:
+        plot_mode_response(x, U)
     return w, x, U
 
 
-def wing_vibrations(wing, pars=None):
+def wing_vibrations(wing, pars=None, plotting: bool = False):
     # Define parameters
     if pars is None:
         L = -np.min(wing.y)
@@ -378,11 +383,12 @@ def wing_vibrations(wing, pars=None):
     print(f"Average moment of inertia of the airfoil = {parameters[1]}")
     print(Fore.BLUE + f"Natural frequency of the wing = {w}")
     print(Fore.WHITE + f"Max deflection = {np.max(np.abs(U))} [m]")
-    plot_mode_response(x, U)
+    if plotting:
+        plot_mode_response(x, U)
     return w, x, U
 
 
-def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
+def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None, plotting: bool = False):
     mr = rotor_mass
     l = np.linspace(-span, 0, 100)
     chord_array = np.linspace(chord_root * taper, chord_root, np.size(l))
@@ -484,7 +490,8 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
     wing.add_loading(liftOffLoad)
     wing.add_loading(engine_and_rotor_weight)
     wing.add_loading(bracing_TO)
-    wing.plot_internal_loading("wing_TO")
+    if plotting:
+        wing.plot_internal_loading("wing_TO")
     wing.InternalStress(0, 0, 0)
     f_loading_TO = wing.f_loading
     thickness = wing.t
@@ -497,7 +504,8 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
     wing.add_loading(cruiseThrust)
     wing.add_loading(bracing_cruise)
     wing.add_loading(aerodynamic_forces)
-    wing.plot_internal_loading(structure="wing_cruise")
+    if plotting:
+        wing.plot_internal_loading(structure="wing_cruise")
     wing.InternalStress(0, 0, 0, y_scale=0.75)
     f_loading_Cr = wing.f_loading
     moments = wing.m_loading
@@ -520,7 +528,7 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None):
     return wing, f_loading_abs, moments
 
 
-def size_tail():
+def size_tail(plotting: bool = False):
     # span, 14.23/2  chord 2.7106, tip = 1.0834 NACA0012
     # Assumptions
     m = 25
@@ -572,7 +580,8 @@ def size_tail():
     # Apply loads and size
     hStabilizer.add_loading(lift)
     hStabilizer.add_loading(drag)
-    hStabilizer.plot_internal_loading("hStabilizer")
+    if plotting:
+        hStabilizer.plot_internal_loading("hStabilizer")
     hStabilizer.InternalStress(0, 0, 0)
     hStabilizer.calculate_mass()
     print(f"Horizontal stabilizer's mass is {2*np.round(hStabilizer.m)} [kg]")
@@ -615,7 +624,8 @@ def size_tail():
 
     # Apply loads and size
     vStabilizer.add_loading(restoring)
-    vStabilizer.plot_internal_loading("vStabilizer")
+    if plotting:
+        vStabilizer.plot_internal_loading("vStabilizer")
     vStabilizer.InternalStress(0, 0, 0)
     vStabilizer.calculate_mass()
     print(f"Vertical stabilizer's mass is {np.round(vStabilizer.m)} [kg]")
