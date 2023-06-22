@@ -440,7 +440,9 @@ def size_wing(span, chord_root, taper, rotor_mass=500, wing_model=None, plotting
 
     # Define loads during cruise
     if wing_model is None:
-        aerodynamic_forces = xflr_forces("Test_xflr5_file.csv", const["q"], float(span))
+        aerodynamic_forces = xflr_forces(
+            os.path.normpath("dse/detailed/Structures/Test_xflr5_file.csv"), const["q"], float(span)
+        )
     else:
         if wing_model == -1:
             cl, cd, y_L = xflr_forces("freek.csv", const["q"], float(span), adrian=wing_model)

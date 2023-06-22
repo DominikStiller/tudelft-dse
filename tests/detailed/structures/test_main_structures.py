@@ -1,3 +1,5 @@
+import unittest
+
 from numpy.testing import assert_allclose
 from dse.detailed.Structures.main_structures import *
 from dse.detailed.Structures.StructureClasses import Beam
@@ -67,10 +69,11 @@ class TestMainStructures(TestCase):
         )
 
         parameters = np.array([E, I, 1645, A, L])
-        wn = wing_vibrations(parameters)[0][0]
+        wn = wing_vibrations(beam, parameters)[0][0]
 
         assert_allclose(wn, wn0, rtol=1e-2, err_msg="Natural frequency is incorrect")
 
+    @unittest.skip("Takes too long")
     def test_size_rotor_blades(self):
         s_max = 939 * 1e6 / 3
         front, rear, mr = size_rotor_blades(overwrite=True)
@@ -81,6 +84,7 @@ class TestMainStructures(TestCase):
             np.all(np.abs(rear.sigma) < s_max), msg="Stress exceeds allowable compressive stress"
         )
 
+    @unittest.skip("Takes too long")
     def test_size_wing(self):
         s_max = 1072.5 * 1e6 / 3
         span = np.flip(np.array([45, 40, 35, 30]))

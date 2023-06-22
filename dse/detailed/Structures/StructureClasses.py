@@ -122,7 +122,7 @@ class Force:
 
 
 class Beam:
-    def __init__(self, width, length, height, cross_section, material, fixing_points, name):
+    def __init__(self, width, length, height, cross_section, material, fixing_points, name=""):
         # Beam dimensions
         if type(length) == int or type(length) == float:
             self.y = np.linspace(-length, 0, 100)
@@ -454,7 +454,14 @@ class Beam:
         return boomAreaCopy
 
     def InternalStress(
-        self, boom_coordinates, interconnection, i, title=None, x_scale=1, y_scale=1, plotting: bool = False
+        self,
+        boom_coordinates,
+        interconnection,
+        i,
+        title=None,
+        x_scale=1,
+        y_scale=1,
+        plotting: bool = False,
     ):
         if interconnection != 0:  # define the interconnection of all of the boom areas
             print("Interconnection between stringers still need to be implemented")
