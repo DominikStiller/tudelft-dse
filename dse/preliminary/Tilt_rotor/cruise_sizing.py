@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.stats as sstats
 
-from .constants import const
+from .constants import const, aircraftParameters
 
 
 def update_wingspan(Print=True):

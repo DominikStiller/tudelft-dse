@@ -132,7 +132,7 @@ def Class2Weight(
     Wtot = Wwing2Wto * Wto + Wtail2Wto + Wf + RotorMass + m_payload + m_solar
     Range, Endurance, m_battery_TO, m_battery_cr = RangeCalc(Wto, Wtot, R, V_cr)
 
-    # if print_results:
+    # if Print:
     # print('Wing weight: ' + str(Wwing2Wto * Wto) + '[kg]')
     # print('Tail weight: ' + str(Wtail2Wto) + '[kg]')
     # print('Body weight: ' + str(Wf) + '[kg]')

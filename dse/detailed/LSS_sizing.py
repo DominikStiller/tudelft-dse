@@ -7,17 +7,15 @@ Life Support System (LSS) sizing
 Author: Joachim Bron
 Created: 25-05-2023
 """
+import inspect
+from decimal import Decimal
+
 # =============================================================================
 # IMPORTS
 # =============================================================================
 import numpy as np
-import inspect
-from functools import partial
 from scipy.optimize import root
-from pprint import pprint
-import inspect
 from tabulate import tabulate
-from decimal import Decimal
 
 
 # =============================================================================

@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
+
 from dse.plotting import format_plot
 from dse.plotting import save_plot
 
@@ -29,11 +29,13 @@ if __name__ == "__main__":
     n_gust = [1, 1.5217, 1.531, 1.329, 0.671, 0.469, 0.478, 1]
     V_gust = [0, 83.35, 112, 138.75, 138.75, 112, 83.35, 0]
 
+    plt.figure(figsize=(9, 3.5))
     plt.plot(V, n, color="b", label="Load envelope")
     plt.plot(V, n2, color="b")
     plt.vlines(138.75, 0, 2.2, color="b")
-    plt.plot(V_gust, n_gust, color="darkgray", linestyle="--", label="Gust envelope")
-    plt.axvline(111.11, color="black", linestyle="-.", label=r"V$_{cr}$")
+    plt.plot(V_gust, n_gust, color="gray", linestyle="--", label="Gust envelope")
+    plt.axvline(111.11, color="black", linestyle="-.", label=r"V$_{cruise}$")
+    plt.axvline(V[np.abs(n - 1).argmin()], color="red", linestyle="-.", label=r"V$_{stall}$")
     plt.ylabel("Load factor [-]")
     plt.xlabel("Velocity [m/s]")
     plt.legend()

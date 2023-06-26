@@ -92,7 +92,7 @@ class TestLinkbudget(TestCase):
             rx_loss=-1,
             # noise_figure=from_db(4.9),
             # temperature_antenna=155,
-            temperature_system_noise=1400,
+            temperature_system_noise=1410,
             data_rate=150e3,
             bit_error_rate=1e-6,
             modulation="bpsk",

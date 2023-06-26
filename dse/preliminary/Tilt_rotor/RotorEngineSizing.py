@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
 
@@ -40,51 +41,215 @@ def RadiusMassElementMomentum(
     R = 1
 
     if ExtremeValue is True:
-        c = R / 20  # Update the chord
+        c = R / 10  # Update the chord
         pow = power(T, R)
 
     while T < T_min:
         R += 0.1  # Increase the radius
+        # Rename constants
+        gm = const["gravityMars"]
+        rho = const["airDensity"]
+        V_m = const["soundSpeed"]
+
+        # if N_rotors <= 0:
+        #     return "N_rotors has to be greater than zero.",0,0,0
+        # elif N_blades <= 0:
+        #     return "N_blades has to be greater than zero.",0,0,0
+
+        b = N_blades
+        v_tip = V_tip
+
         c = R / 20  # Update the chord
 
-        theta_tip = np.radians(6)  # Assumed angle
-        x0 = c / R  # Distance from the blade's base to the centre of rotation
-        omega = v_tip / R  # Angular velocity
+        x0 = c / 2  # Distance from the blade's base to the centre of rotation
+        omega = v_tip / R * 0.92  # Angular velocity
 
         n_elements = 15  # Split up blade into set of elements
-        a0 = 6
+
+        takeoffAOA = np.radians(6)
+
+        alpha_data = [
+            -5.5,
+            -5.25,
+            -5,
+            -4.75,
+            -4.5,
+            -4.25,
+            -4,
+            -3.75,
+            -3.5,
+            -3.25,
+            -3,
+            -2.75,
+            -2.5,
+            -2.25,
+            -2,
+            -1.75,
+            -1.5,
+            -1.25,
+            -1,
+            -0.75,
+            -0.5,
+            -0.25,
+            0,
+            0.25,
+            0.5,
+            0.75,
+            1,
+            1.25,
+            1.5,
+            1.75,
+            2,
+            2.25,
+            2.5,
+            2.75,
+            3,
+            3.25,
+            3.5,
+            3.75,
+            4,
+            4.25,
+            4.5,
+            4.75,
+            5,
+            5.25,
+            5.5,
+            5.75,
+            6,
+            6.25,
+            6.5,
+            6.75,
+            7,
+            7.25,
+            7.5,
+            7.75,
+            8,
+            8.25,
+            8.5,
+            8.75,
+            9,
+            9.25,
+            9.5,
+            9.75,
+            10,
+            10.5,
+            10.75,
+            11.5,
+            11.75,
+        ]
+        CL = [
+            -0.0105,
+            0.0047,
+            0.0103,
+            0.0386,
+            0.0702,
+            0.0884,
+            0.1103,
+            0.1289,
+            0.1542,
+            0.1897,
+            0.224,
+            0.2714,
+            0.3355,
+            0.4065,
+            0.4772,
+            0.8569,
+            0.9316,
+            0.9834,
+            1.0275,
+            1.0711,
+            1.1236,
+            1.1483,
+            1.1729,
+            1.1995,
+            1.2338,
+            1.2672,
+            1.2977,
+            1.3313,
+            1.365,
+            1.3918,
+            1.4219,
+            1.4531,
+            1.4823,
+            1.5037,
+            1.5223,
+            1.5379,
+            1.5728,
+            1.6028,
+            1.6248,
+            1.649,
+            1.6752,
+            1.7032,
+            1.7335,
+            1.7484,
+            1.7673,
+            1.7899,
+            1.8152,
+            1.8443,
+            1.8582,
+            1.8685,
+            1.886,
+            1.911,
+            1.9414,
+            1.9463,
+            1.9457,
+            1.9623,
+            1.9937,
+            2.022,
+            1.9896,
+            1.9883,
+            2.0272,
+            2.0814,
+            1.9821,
+            1.9679,
+            2.0778,
+            1.8149,
+            1.4189,
+        ]
+
+        CLalpha = InterpolatedUnivariateSpline(np.radians(alpha_data), CL)
+        a0 = CLalpha.derivative(1)
+
         alpha0 = -np.radians(5)
         A = np.pi * R**2
 
         r2R = np.arange(1, n_elements + 1) / n_elements  # Local radius to total rotor
+
         c2R = c / R
+
         M_local = (r2R) * (omega * R / V_m)  # Local Mach number (omega*R = V_tip which is constant)
-        a = a0 / (np.sqrt(1 - M_local**2))  # Lift curve slope corrected for mach number
-        Dtheta = theta_tip / r2R
-        theta0 = (
-            -min(
-                Dtheta
-                - np.ones(
-                    n_elements,
-                )
-                * alpha0
+
+        a = a0(takeoffAOA) / (
+            np.sqrt(1 - M_local**2)
+        )  # Lift curve slope corrected for mach number
+
+        def v12Omegar(theta):
+            return (
+                (a * b * c2R)
+                / (16 * np.pi * r2R)
+                * (-1 + np.sqrt(1 + (32 * np.pi * theta * r2R) / (a * b * c2R)))
             )
-            + theta_tip
-        )
-        theta = theta0 + Dtheta - alpha0
-        v12Omegar = (
-            a
-            * b
-            * c2R
-            / (16 * np.pi * r2R)
-            * (-1 + np.sqrt(1 + (32 * np.pi * theta * r2R) / (a * b * c2R)))
+
+        alpha = takeoffAOA * np.ones(n_elements)
+
+        def func(x):
+            return alpha - (x - np.arctan(v12Omegar(x)))
+
+        theta = scipy.optimize.fsolve(
+            func,
+            0.1
+            * np.ones(
+                n_elements,
+            ),
         )
 
-        alpha = 6 * np.pi / 180 * np.ones(n_elements)
+        # plt.plot(r2R, np.degrees(theta))
+        # plt.title("Required twist angle")
+        # plt.show()
 
         # S1223
-        cl = const["cl"]
-        cd = const["cd"]
+        cl = CLalpha(alpha)
+        cd = cl / 50
         DctDr2R = b * r2R**2 * c2R * cl / (2 * np.pi)
         # Create spline of data points in order
         funCT = InterpolatedUnivariateSpline(r2R, DctDr2R)
@@ -100,13 +265,14 @@ def RadiusMassElementMomentum(
         Dcq0Dr2R = b * r2R**3 * c2R * cd / (2 * np.pi)
         funCQ0 = InterpolatedUnivariateSpline(r2R, Dcq0Dr2R)
         CQ_profile = funCQ0.integral(x0, 1)
-        DcqiDr2R = b * r2R**3 * c2R * cl * v12Omegar / (2 * np.pi)
+        DcqiDr2R = b * r2R**3 * c2R * cl * v12Omegar(theta) / (2 * np.pi)
         funCQi = InterpolatedUnivariateSpline(r2R, DcqiDr2R)
         CQ_induced = funCQi.integral(B, 1)
 
         DCQ_I = 0.01 * CQ_induced
 
         Cq = (CQ_profile + CQ_induced + DCQ_I) / 0.95
+        torque = rho * A * (omega * R) ** 2 * Cq
 
         T = rho * A * (omega * R) ** 2 * Ct
         if coaxial:

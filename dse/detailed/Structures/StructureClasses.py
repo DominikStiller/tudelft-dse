@@ -1,11 +1,13 @@
-from dse.detailed.Structures.material_properties import materials, Material
-from scipy.interpolate import InterpolatedUnivariateSpline
+import csv
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import csv
-from tqdm import tqdm
 from colorama import Fore
+from scipy.interpolate import InterpolatedUnivariateSpline
+from tqdm import tqdm
+
+from dse.detailed.Structures.material_properties import materials
 from dse.plotting import format_plot, save_plot, set_plotting_theme
 
 
@@ -122,7 +124,7 @@ class Force:
 
 
 class Beam:
-    def __init__(self, width, length, height, cross_section, material, fixing_points, name):
+    def __init__(self, width, length, height, cross_section, material, fixing_points, name=""):
         # Beam dimensions
         if type(length) == int or type(length) == float:
             self.y = np.linspace(-length, 0, 100)
