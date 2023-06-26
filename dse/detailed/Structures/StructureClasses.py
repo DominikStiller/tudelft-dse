@@ -454,7 +454,14 @@ class Beam:
         return boomAreaCopy
 
     def InternalStress(
-        self, boom_coordinates, interconnection, i, title=None, x_scale=1, y_scale=1, plotting: bool = False
+        self,
+        boom_coordinates,
+        interconnection,
+        i,
+        title=None,
+        x_scale=1,
+        y_scale=1,
+        plotting: bool = False,
     ):
         if interconnection != 0:  # define the interconnection of all of the boom areas
             print("Interconnection between stringers still need to be implemented")
