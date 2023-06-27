@@ -8,6 +8,7 @@ Links:
 * See the [project plan](docs/project_plan.pdf) for the project organization
 * See the [baseline report](docs/report_baseline.pdf) for the generation and elimination of design concepts
 * See the [midterm report](docs/report_midterm.pdf) for the preliminary sizing and trade-off of design concepts
+* See the [final report](docs/report_final.pdf) for the detailed sizing of the tiltrotor subsystems
 
 
 ## Setup
